@@ -8,7 +8,7 @@ ASAN|requested allocation size X (Y after adjustments for alignment, red zones e
 UBSAN|call to function debug_sync(THD*, char const*, unsigned long) through pointer to incorrect function type 'void (*)(void *, const char *, unsigned long)'|storage/myisam/mi_open.c ## This is a 'ubf' supressed issue: Tip; use ./mtra instead
 SIGSEGV|libunwind::Registers_x86_64::Registers_x86_64|libunwind::UnwindCursor<libunwind::LocalAddressSpace, libunwind::Registers_x86_64>::UnwindCursor|__unw_init_local|_Unwind_Backtrace ## MSAN tool noise (not a server bug): libunwind dlsym("_dl_find_object")->_dlerror_run->free re-enters MSAN free interceptor at shutdown (no MsanThread, forced slow unwind) -> infinite recursion -> stack overflow. Root-fixed at next /MSAN_libs rebuild via AddressSpace.hpp dl_iterate_phdr sed in msan.instrumentedlibs_ubuntu2404.sh
 
-# Temp key: Ma2
+Ramesh Sivaraman:# Temp key: Ma2
 ##### MDEV-35915 testing v12+ #####
 LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|THD::create_temporary_table|THD::create_and_open_tmp_table ## MDEV-37968
 LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|init_alloc_root|init_sql_alloc  ## MDEV-37968
@@ -23,6 +23,22 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 
 ##### CURRENT BUGS (Search key: Mac) #####
 ASAN|stack-buffer-overflow|strings/strxmov.c|strxmov|archive_discover|discover_handlerton|plugin_foreach_with_mask                                                             ## MDEV-37154
+UBSAN|load of value X, which is not a valid value for type 'wkbByteOrder'|sql/spatial.cc|Gis_point::init_from_wkb|Gis_multi_point::init_from_wkb|Geometry::create_from_wkb|Item_func_geometry_from_wkb::val_str ## MDEV-40552
+MSAN|use-of-uninitialized-value|sql/mysqld.cc|temp_file_size_cb_func|_ma_update_tmp_file_size|_ma_set_share_data_file_length|write_block_record                                ## MDEV-40569
+MSAN|use-of-uninitialized-value|storage/spider/ha_spider.cc|ha_spider::append_select_sql_part|ha_spider::index_read_map_internal|handler::ha_index_read_map|mysql_ha_read      ## MDEV-40569
+MSAN|use-of-uninitialized-value|storage/spider/ha_spider.cc|spider_send_query|ha_spider::index_read_map_internal|handler::ha_index_read_map|mysql_ha_read                      ## MDEV-40569
+MSAN|use-of-uninitialized-value|storage/spider/spd_db_conn.cc|spider_db_open_handler|ha_spider::index_handler_init|ha_spider::index_read_map_internal|handler::ha_index_read_map  ## MDEV-40569
+ASAN|stack-use-after-return|strings/ctype-latin1.c|my_mb_wc_latin1|json_escape|st_append_escaped|Item_func_json_objectagg::add                                                 ## MDEV-40546
+UBSAN|inf is outside the range of representable values of type 'unsigned long long'|sql/sql_show.cc|get_schema_stat_record|fill_schema_table_by_open|get_all_tables|get_schema_tables_result ## MDEV-40537
+MSAN|use-of-uninitialized-value|sql/handler.cc|handler::calculate_checksum|mysql_checksum_table|mysql_execute_command|mysql_parse                                              ## MDEV-40534
+MSAN|use-of-uninitialized-value|sql/sql_statistics.h|Histogram::find_bucket|Histogram::range_selectivity|get_column_range_cardinality|records_in_column_ranges                 ## MDEV-40533
+MSAN|use-of-uninitialized-value|sql/sql_statistics.h|Histogram_binary::find_bucket|Histogram_binary::range_selectivity|get_column_range_cardinality|records_in_column_ranges   ## MDEV-40533
+MSAN|use-of-uninitialized-value|include/my_sys.h|my_b_write|write_keys|find_all_keys|filesort                                                                                  ## MDEV-29901
+MSAN|use-of-uninitialized-value|sql/sql_select.cc|bcmp|cmp_buffer_with_ref|join_read_key2|Expression_cache_tmptable::check_value                                               ## MDEV-32436
+MSAN|use-of-uninitialized-value|sql/sql_acl.cc|handle_grant_table|handle_grant_data|mysql_drop_user|mysql_execute_command                                                      ## MDEV-40528
+MSAN|use-of-uninitialized-value|include/dict0dict.h|dict_table_n_rows_inc|row_insert_for_mysql|ha_innobase::write_row|handler::ha_write_row                                    ## MDEV-40525
+MSAN|use-of-uninitialized-value|sql/sql_show.cc|get_one_variable|show_status_array|show_status_array|fill_status                                                               ## MDEV-40520
+MSAN|use-of-uninitialized-value|lib/krb5/keytab/ktbase.c|krb5_kt_resolve|krb5_kt_read_service_key|get_default_principal_name|plugin_init                                       ## MDEV-35575
 MSAN|use-of-uninitialized-value|sql/sql_select.cc|update_depend_map_for_order|remove_const|JOIN::optimize_stage2|JOIN::optimize_inner                                          ## MDEV-30756
 MSAN|use-of-uninitialized-value|strings/ctype-bin.c|memcmp|my_strnncoll_binary|my_strnncollsp_binary|my_ci_strnncollsp                                                         ## MDEV-40455
 UBSAN|division by zero|sql/item_windowfunc.h|Item_sum_ntile::val_int|Item_window_func::val_int|Item::save_int_in_field|Item::save_in_field                                     ## MDEV-40432
@@ -153,6 +169,7 @@ ASAN|heap-use-after-free|storage/spider/spd_db_conn.cc|spider_db_open_handler|ha
 UBSAN|addition of unsigned offset to X overflowed to Y|storage/connect/plugutil.cpp|PlugSetPath|TXTFAM::GetFileLength|DOSFAM::GetFileLength|TDBDOS::Cardinality                ## MDEV-38013
 UBSAN|member access within null pointer of type 'class KXYCOL'|storage/connect/xindex.cpp|XINDEX::FastFind|XINDEX::Range|CntIndexRange|ha_connect::records_in_range            ## MDEV-31911
 UBSAN|null pointer passed as argument 2, which is declared to never be null|storage/innobase/trx/trx0rec.cc|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo|btr_cur_optimistic_insert|row_ins_clust_index_entry_low ## MDEV-38034
+UBSAN|null pointer passed as argument 3, which is declared to never be null|storage/innobase/trx/trx0rec.cc|trx_undo_report_row_operation|btr_cur_ins_lock_and_undo|btr_cur_optimistic_insert|row_ins_clust_index_entry_low ## MDEV-38034
 UBSAN|applying zero offset to null pointer|strings/strcoll.inl|my_strnncollsp_utf8mb3_general_ci|Cached_item_str::cmp|test_if_group_changed|end_write_group                    ## MDEV-38027
 ASAN|heap-use-after-free|storage/innobase/handler/ha_innodb.cc|calc_row_difference|ha_innobase::update_row|handler::ha_update_row|replace_table_table                          ## MDEV-38016
 ASAN|stack-buffer-overflow|strings/strxmov.c|strxmov|open_table_def|mrn_create_tmp_table_share|ha_mroonga::delete_table                                                        ## MDEV-37955
