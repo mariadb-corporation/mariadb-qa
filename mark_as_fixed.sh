@@ -35,8 +35,8 @@ while read -r BUG; do
   KB_CURLINES=$(mktemp)
   KBS_CURLINES=$(mktemp)
 
-  grep "$BUG" known_bugs.strings | grep -v '## Fixed' > "$KB_CURLINES"
-  grep "$BUG" known_bugs.strings.SAN | grep -v '## Fixed' > "$KBS_CURLINES"
+  grep --binary-files=text "$BUG" known_bugs.strings | grep --binary-files=text -v '## Fixed' > "$KB_CURLINES"
+  grep --binary-files=text "$BUG" known_bugs.strings.SAN | grep --binary-files=text -v '## Fixed' > "$KBS_CURLINES"
 
   update_fixed_bugs(){
     local tmp_file=$1

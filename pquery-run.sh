@@ -1787,14 +1787,14 @@ pquery_test(){
       if [ -n "${REVGEN_VALIDATE_SOCKET}" ] && [ -S "${REVGEN_VALIDATE_SOCKET}" ]; then
         REV_VALIDATE="--validate-sql --socket ${REVGEN_VALIDATE_SOCKET}"
       fi
-      for REV_RUN_TRY in 1 2 3; do
+      for REV_RUN_TRY in 1 2 3 4 5; do
         ./revgen --threads ${GENERATION_THREADS} --yacc "${REVGEN_YACC}" ${REVGEN_OPTIONS:-} ${REV_VALIDATE} --output outrev${RANDOMD}.sql --queries ${QUERIES_PER_REVGEN_RUN} > /dev/null
-        if [ -r outrev${RANDOMD}.sql ]; then break; fi
-        echoit "Note: outrev${RANDOMD}.sql not present in ${PWD} after revgen execution (attempt ${REV_RUN_TRY}/3); pausing 30s and retrying..."
-        sleep 30
+        if [ -r outrev${RANDOMD}.sql ] && [ $(wc -l < outrev${RANDOMD}.sql) -ge 10 ]; then break; fi
+        echoit "Note: outrev${RANDOMD}.sql not present in ${PWD}, or it has fewer than 10 lines, after revgen execution (attempt ${REV_RUN_TRY}/5); pausing 10s and retrying..."
+        sleep 10
       done
-      if [ ! -r outrev${RANDOMD}.sql ]; then
-        echoit "Assert: outrev${RANDOMD}.sql not present in ${PWD} after revgen execution (3 retries)"
+      if [ ! -r outrev${RANDOMD}.sql ] || [ $(wc -l < outrev${RANDOMD}.sql) -lt 10 ]; then
+        echoit "Assert: outrev${RANDOMD}.sql not present in ${PWD}, or it has fewer than 10 lines, after revgen execution (5 attempts)"
         exit 1
       fi
       if [[ "${MYEXTRA^^}" != *"ROCKSDB"* ]]; then # If this is not a RocksDB run, exclude RocksDB SE
