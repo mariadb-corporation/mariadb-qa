@@ -14,6 +14,18 @@ cd "$(dirname "$0")"
 # libc++ avoids the gcc-14 libstdc++ <unicode.h> incompatibility with clang.
 FLAGS="-std=c++20 -stdlib=libc++ -Wall -Wextra -pthread"
 LIBS="-lmysqlclient"
+# The release binary is committed and has to run on machines whose shared
+# libc++ is older than the build box's, so its C++ runtime links statically.
+# -nostdlib++ keeps the driver from appending the shared libc++ after the
+# archives. A box without the archives builds a dynamic, local-only binary.
+CXXA=$(clang++ -print-file-name=libc++.a)
+ABIA=$(clang++ -print-file-name=libc++abi.a)
+UNWA=$(clang++ -print-file-name=libunwind.a)
+CXXRT=""
+if [ -f "$CXXA" ] && [ -f "$ABIA" ]; then
+  [ -f "$UNWA" ] || UNWA=""
+  CXXRT="-nostdlib++ $CXXA $ABIA $UNWA -static-libgcc"
+fi
 COV_MIN=${COV_MIN:-95}
 
 # Line coverage of revgen.cpp from a run of the test suite. Gated, because the
@@ -81,8 +93,10 @@ case "${BUILD}" in
   msan)   msan_build ;;
   tsan)   san tsan   -fsanitize=thread ;;
   *)
-    clang++ $FLAGS -O2 -o revgen revgen.cpp $LIBS
+    clang++ $FLAGS -O2 -o revgen revgen.cpp $CXXRT $LIBS
     echo "built revgen"
+    [ -n "$CXXRT" ] || echo "note: static libc++ archives not found -" \
+      "built against shared libc++; fine to run, do not commit this binary"
     [ -n "${SKIP_TESTS}" ] || ./test.sh ./revgen
     [ -n "${SKIP_COVERAGE}" ] || coverage
     ;;

@@ -184,13 +184,17 @@ Diagnostics (print and exit, except `--coverage`):
 ## Typed identifiers and the setup block
 
 Identifier leaves are filled by the role of the slot they sit in, so a name one
-statement creates is a name a later statement can reference: `t1`-`t4` tables,
-`c1`-`c4` columns, `sp1`/`sp2` procedures, `f1`/`f2` functions, `v1`/`v2` views,
-`tr` triggers, `ev` events, `sq` sequences, `idx` indexes, `cn` constraints, `p`
-partitions, `u` users, `r` roles, `d` databases, `srv` servers, `cur` cursors,
-`a` aliases, `i1`/`i2` where no more specific slot is known. A keyword in the
-production types the name that follows it, which is how `CREATE PROCEDURE` and
-`CREATE FUNCTION` are told apart when both route through `sp_name`.
+statement creates is a name a later statement can reference. The names are
+generatorcpp's, so in a mixed run each generator's statements resolve against
+the other's objects: `t1`-`t4` tables, `c1`-`c4` columns, `sp1`/`sp2`
+procedures and savepoints (own server namespaces), `f1`/`f2` functions,
+`cv1`/`cv2` views, `tr` triggers, `ev` events, `cs` sequences, `ci` indexes,
+`chk` constraints, `p` partitions, `u` users, `r` roles, `d` databases, `srv`
+servers, `cur` cursors, `a` aliases, `s1`/`s2` prepared statements, `w1`/`w2`
+windows, `cte1`/`cte2` CTEs, `@a`/`@b`/`@c` user variables, `i1`/`i2` where no
+more specific slot is known. A keyword in the production types the name that
+follows it, which is how `CREATE PROCEDURE` and `CREATE FUNCTION` are told
+apart when both route through `sp_name`.
 
 `--names` lists every production with an identifier leaf, so the role table can
 be checked against the whole grammar instead of a guessed subset.

@@ -160,7 +160,7 @@ has "qualified asterisk uses a table" "$W/g.sql" "\bt[0-9] \. \*"
 # The setup block must supply everything the identifier pools name.
 for obj in "CREATE TABLE IF NOT EXISTS t1" "CREATE TABLE IF NOT EXISTS t4" \
            "CREATE OR REPLACE PROCEDURE sp1" "CREATE OR REPLACE FUNCTION f1" \
-           "CREATE OR REPLACE VIEW v1" "CREATE SEQUENCE IF NOT EXISTS sq1" \
+           "CREATE OR REPLACE VIEW cv1" "CREATE SEQUENCE IF NOT EXISTS cs1" \
            "UNLOCK TABLES" "BACKUP UNLOCK"; do
   has "setup has '$obj'" "$W/g.sql" "^$obj"
 done
@@ -303,6 +303,21 @@ has "choice stats reported"    "$W/probe.err" "choices: [0-9]+"
 SC=$(grep -oE "structural [0-9]+/[0-9]+ \([0-9]+" "$W/cov.err" | grep -oE "\([0-9]+" | tr -d '(')
 [ -n "$SC" ] && [ "$SC" -ge 90 ] && ok || bad "structural coverage ${SC:-unknown}%, floor 90%"
 
+# Full-scale reach, release binary only (the same code runs 10-30x slower under
+# sanitizers, and the floor above already runs there): at 500,000 statements and
+# the production depth, the walk has to enter every rule a derivation can
+# complete (one is pruned by default) and try 99%+ of the structural
+# alternatives. This is the distribution bar for a whole fuzz run's input.
+if [ "$(basename "$BIN")" = "revgen" ]; then
+  "$BIN" --queries 500000 --depth 10 --seed 21 --threads 4 --coverage 0 \
+    --output /dev/null >/dev/null 2>"$W/full.err"
+  FS=$(grep -oE "structural [0-9]+/[0-9]+ \([0-9.]+" "$W/full.err" | grep -oE "[0-9.]+$")
+  NE=$(grep -oE "rules never entered \([0-9]+" "$W/full.err" | grep -oE "[0-9]+$")
+  awk -v s="${FS:-0}" 'BEGIN{exit !(s+0 >= 99)}' && ok \
+    || bad "full-scale structural coverage ${FS:-unknown}%, floor 99%"
+  [ "${NE:-99}" -le 1 ] && ok || bad "${NE:-unknown} rules never entered at 500k, allowed 1"
+fi
+
 # Random literals are drawn fresh each time. Cache them by mistake - the terminal
 # text is worked out once for the ones that are fixed - and every number, hex string
 # and bit string in the output becomes the same value.
@@ -382,9 +397,18 @@ gen "$W/lex.sql" --queries 200 --depth 6 --seed 19 \
 # the client library and the OpenSSL it initialises are uninstrumented system
 # builds, so every read they make of their own memory reads as uninitialised and
 # no suppression covers it.
+# A socket file alone does not mean a live server: this box reaps long-running
+# test servers, so the file often outlives the process. Probe before relying on
+# it, with revgen itself so no client binary path is assumed.
+server_answers() {
+  "$BIN" --queries 5 --depth 5 --seed 1 --threads 1 --validate-sql \
+    --socket "$SOCKET" --db test --output /dev/null 2>&1 |
+    grep -qE "validation disabled|connect failed" && return 1
+  return 0
+}
 if [ -n "${REVGEN_TEST_NO_CLIENT}" ]; then
   skip "PREPARE validation (client library excluded)"
-elif [ -S "$SOCKET" ]; then
+elif [ -S "$SOCKET" ] && server_answers; then
   "$BIN" --queries 3000 --depth 8 --seed 23 --validate-sql \
     --socket "$SOCKET" --db test --output "$W/v.sql" --fails "$W/v.fails" \
     >/dev/null 2>"$W/v.err"
@@ -406,8 +430,8 @@ elif [ -S "$SOCKET" ]; then
   "$BIN" --queries 200 --depth 6 --seed 25 --validate-sql \
     --socket "$SOCKET" --output "$W/dflt.sql" >/dev/null 2>&1
   [ -f "$W/revgen_failed_1064.sql" ] && ok || bad "default --fails path"
-else
-  skip "PREPARE validation (no socket at $SOCKET)"
+elif [ -n "${REVGEN_TEST_SOCKET}" ]; then
+  skip "PREPARE validation (no live server at $SOCKET)"
 fi
 # An unreachable socket disables validation and still emits.
 if [ -n "${REVGEN_TEST_NO_CLIENT}" ]; then

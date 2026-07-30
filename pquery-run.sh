@@ -1191,7 +1191,8 @@ handle_bugs() {
   else
     if [ "${ELIMINATE_KNOWN_BUGS}" == "1" -a -r ${SCRIPT_PWD}/known_bugs.strings ]; then # "1": String check hack to ensure backwards compatibility with older pquery-run.conf files
       IS_KNOWN_BUG=""
-      if [ ! -z "$(set +H; grep -Fi --binary-files=text "${TEXT}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null | grep -v '^[ \t]*#')" ]; then
+      FINDBUG="$(set +H; grep -Fi --binary-files=text "${TEXT}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null | grep --binary-files=text -v '^[ \t]*#')"
+      if [ ! -z "${FINDBUG}" ]; then
         IS_KNOWN_BUG=1
       fi
       HAS_ERROR_LOG_SCAN_ISSUE=""
@@ -1209,6 +1210,7 @@ handle_bugs() {
         NEWBUGS=$[ ${NEWBUGS} + 1 ]
         echoit "[${NEWBUGS}] *** NEW BUG *** (not found in ${SCRIPT_PWD}/known_bugs.strings, or found but marked as already fixed)"
       fi
+      FINDBUG=
       IS_KNOWN_BUG=
       HAS_ERROR_LOG_SCAN_ISSUE=
     fi

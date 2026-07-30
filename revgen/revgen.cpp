@@ -78,7 +78,7 @@ struct Xoshiro256pp {
 enum class Role {
   Generic, Table, Column, Proc, Func, View, Trigger, Event, Sequence,
   Index, Constraint, Partition, Savepoint, User, RoleName, Var, Db, Server,
-  Cursor, Alias, Stmt, ColumnSeq, SysVar, ExplainFormat
+  Cursor, Alias, Stmt, ColumnSeq, Window, Cte, SysVar, ExplainFormat
 };
 
 // A keyword appearing in a production types the identifiers that come after it
@@ -90,11 +90,11 @@ const std::unordered_map<std::string, Role> kKeywordRoles = {
     {"FUNCTION_SYM", Role::Func},      {"VIEW_SYM", Role::View},
     {"TRIGGER_SYM", Role::Trigger},    {"EVENT_SYM", Role::Event},
     {"SEQUENCE_SYM", Role::Sequence},  {"INDEX_SYM", Role::Index},
-    {"CONSTRAINT_SYM", Role::Constraint},
+    {"CONSTRAINT", Role::Constraint},
     {"PARTITION_SYM", Role::Partition},
     {"SUBPARTITION_SYM", Role::Partition},
     {"SAVEPOINT_SYM", Role::Savepoint}, {"ROLE_SYM", Role::RoleName},
-    {"DATABASE", Role::Db},            {"SCHEMA", Role::Db},
+    {"DATABASE", Role::Db},            {"SCHEMA_NAME_SYM", Role::Db},
     {"SERVER_SYM", Role::Server},   {"PRECEDES_SYM", Role::Trigger},
     {"FOLLOWS_SYM", Role::Trigger}, {"NEXTVAL_SYM", Role::Sequence},
     {"LASTVAL_SYM", Role::Sequence}, {"SETVAL_SYM", Role::Sequence},
@@ -145,10 +145,10 @@ const char *kSetupSql[] = {
     // tables carry partitions and two do not.
     "ALTER TABLE t1 PARTITION BY HASH(c1) (PARTITION p1, PARTITION p2)",
     "ALTER TABLE t3 PARTITION BY HASH(c1) (PARTITION p1, PARTITION p2)",
-    "CREATE SEQUENCE IF NOT EXISTS sq1 START WITH 1 INCREMENT BY 1",
-    "CREATE SEQUENCE IF NOT EXISTS sq2 START WITH 100 INCREMENT BY 2",
-    // The identifier leaves name routines and views (sp1, f1, v1) wherever the
-    // grammar has a slot for one, so without these every CALL and every
+    "CREATE SEQUENCE IF NOT EXISTS cs1 START WITH 1 INCREMENT BY 1",
+    "CREATE SEQUENCE IF NOT EXISTS cs2 START WITH 100 INCREMENT BY 2",
+    // The identifier leaves name routines and views (sp1, f1, cv1) wherever
+    // the grammar has a slot for one, so without these every CALL and every
     // function call comes back as "does not exist" and the whole statement is
     // lost. One takes no argument and one takes an integer, so both call shapes
     // resolve.
@@ -156,8 +156,8 @@ const char *kSetupSql[] = {
     "CREATE OR REPLACE PROCEDURE sp2(a INT) SELECT c1 FROM t3 WHERE c1 > a LIMIT 3",
     "CREATE OR REPLACE FUNCTION f1() RETURNS INT DETERMINISTIC RETURN 1",
     "CREATE OR REPLACE FUNCTION f2(a INT) RETURNS INT DETERMINISTIC RETURN a + 1",
-    "CREATE OR REPLACE VIEW v1 AS SELECT c1, c2, c3, c4 FROM t1",
-    "CREATE OR REPLACE VIEW v2 AS SELECT c1, c2 FROM t3 WHERE c1 > 0"};
+    "CREATE OR REPLACE VIEW cv1 AS SELECT c1, c2, c3, c4 FROM t1",
+    "CREATE OR REPLACE VIEW cv2 AS SELECT c1, c2 FROM t3 WHERE c1 > 0"};
 constexpr size_t kSetupCount = sizeof(kSetupSql) / sizeof(kSetupSql[0]);
 
 // A statement holding any of these is derived again instead. Each one either ends
@@ -803,9 +803,12 @@ class Generator {
 
   void probe_rule(const std::string &head) { probe_id_ = g_.symbol_id(head); }
 
-  // One cursor per symbol, shared by every thread, so keyword pools sweep once.
-  void share_pool_cursor(std::vector<std::atomic<unsigned long>> *c) {
-    pool_cursor_ = c;
+  // Keyword pools sweep from this thread's offset in steps of the thread
+  // count, so the threads' picks interleave across the whole pool without
+  // shared state: a fixed seed and thread count repeats byte-exactly.
+  void stride_pool(unsigned long base, unsigned long step) {
+    pool_base_ = base;
+    pool_step_ = step ? step : 1;
   }
 
   // Rules no derivation can complete: pruning took the last production of a rule,
@@ -928,6 +931,11 @@ class Generator {
     for (const char *n : {"ident_sysvar_name", "keyword_sysvar_name"})
       role_of_[n] = Role::SysVar;
     role_of_["opt_format_json"] = Role::ExplainFormat;
+    // A window is named where it is defined (WINDOW w1 AS ...) and where it is
+    // used (OVER w1); both go through window_name. A CTE's name is the one
+    // identifier under with_element_head.
+    role_of_["window_name"] = Role::Window;
+    role_of_["with_element_head"] = Role::Cte;
   }
 
   // Identifier leaves: emit one generic name for the active role, no descent.
@@ -982,7 +990,9 @@ class Generator {
   }
 
   // Prefix and pool size per Role, same order as the enum. Tables and columns
-  // get four names so a multi-table statement can name two different ones.
+  // get four names so a multi-table statement can name two different ones. The
+  // prefixes are generatorcpp's, so in a mixed run each generator's statements
+  // resolve against the other's objects.
   struct NameKind { const char *prefix; int count; };
   static constexpr NameKind kNameKinds[] = {
       {"i", 2},    // Generic - no more specific slot known
@@ -990,23 +1000,25 @@ class Generator {
       {"c", 4},    // Column
       {"sp", 2},   // Proc - stored procedure
       {"f", 2},    // Func
-      {"v", 2},    // View
+      {"cv", 2},   // View
       {"tr", 2},   // Trigger
       {"ev", 2},   // Event
-      {"sq", 2},   // Sequence
-      {"idx", 2},  // Index
-      {"cn", 2},   // Constraint
+      {"cs", 2},   // Sequence
+      {"ci", 2},   // Index
+      {"chk", 2},  // Constraint
       {"p", 2},    // Partition
-      {"s", 2},    // Savepoint
+      {"sp", 2},   // Savepoint - own server namespace, distinct from Proc
       {"u", 2},    // User
       {"r", 2},    // RoleName
-      {"var", 2},  // Var
+      {"", 0},     // Var - fixed vocabulary, see id_for
       {"d", 2},    // Db
       {"srv", 2},  // Server
       {"cur", 2},  // Cursor
       {"a", 8},    // Alias
-      {"st", 2},   // Stmt - prepared statement name
+      {"s", 2},    // Stmt - prepared statement name
       {"c", 4},    // ColumnSeq - column in a position that must not repeat
+      {"w", 2},    // Window
+      {"cte", 2},  // Cte
       {"", 0},     // SysVar - fixed vocabulary, see id_for
       {"", 0},     // ExplainFormat - fixed vocabulary, see id_for
   };
@@ -1019,8 +1031,13 @@ class Generator {
   }
 
   std::string id_for(Role r) {
-    // Two slots take a name from a fixed vocabulary: a system variable and an
-    // EXPLAIN format both have to be one the server knows.
+    // Three slots take a name from a fixed vocabulary: a system variable and
+    // an EXPLAIN format have to be ones the server knows, and a user variable
+    // carries generatorcpp's digit-less names so mixed runs share state.
+    if (r == Role::Var) {
+      static const char *v[] = {"a", "b", "c"};
+      return v[rng_() % 3];
+    }
     if (r == Role::SysVar) {
       static const char *v[] = {"sort_buffer_size",   "join_buffer_size",
                                 "tmp_table_size",     "max_heap_table_size",
@@ -1152,6 +1169,7 @@ class Generator {
     const Role saved_sticky = sticky_role_;
     if (in.sticky) sticky_role_ = in.role;
     bool granted = false;
+    const Role entry_pending = pending_;
     const Production &p = prods[choose(in, s.id, prods, depth, chain, grants,
                                        &granted)];
     // Unit productions pass through free, matching prod_height(). A grammar can
@@ -1170,6 +1188,11 @@ class Generator {
              (!c.char_lit && c.id == s.id) ? chain + 1 : 0, child_free,
              child_grants);
     }
+    // A keyword types identifiers only inside the production it appears in: a
+    // role set here that no identifier consumed must not leak into whatever
+    // clause the walk emits next.
+    if (pending_ != Role::Generic && pending_ != entry_pending)
+      pending_ = Role::Generic;
     sticky_role_ = saved_sticky;
   }
 
@@ -1184,6 +1207,7 @@ class Generator {
   struct SymInfo {
     const std::vector<Production> *prods = nullptr;  // null for a terminal
     bool pool = false;          // flat list of interchangeable keywords
+    unsigned long pool_pos = 0; // this thread's sweep position in the pool
     bool leaf = false;          // identifier leaf: emits a generated name
     bool sticky = false;        // role covers the whole subtree
     bool has_role = false;
@@ -1229,16 +1253,14 @@ class Generator {
   int pick(SymInfo &st, int id, const std::vector<Production> &prods,
            int depth, int chain, int grants, bool *granted) {
     if (stats_) ++stats_->choices;
-    // A keyword pool is swept, not sampled. Balance leans toward the least-used
-    // alternative, but its counts are per thread, so twelve threads ran twelve
-    // independent partial sweeps that landed on the same words: the 224-keyword
-    // type-name pool was entered about 300 times per 500000 statements and still
-    // emitted only 130 distinct keywords. One cursor shared by every thread turns
-    // that into 224 entries covering 224 words. The pool is only reached a few
-    // hundred times in a run, so the shared counter costs nothing.
-    if (st.pool && pool_cursor_) {
+    // A keyword pool is swept, not sampled: a pool as large as the 224-word
+    // type-name list is reached only a few hundred times per run, and random
+    // picks repeat words while leaving others unemitted. Each thread sweeps
+    // from its own offset in steps of the thread count, covering the pool
+    // jointly while staying deterministic for a fixed seed and thread count.
+    if (st.pool) {
       const size_t n = prods.size();
-      return (int)((*pool_cursor_)[(size_t)id].fetch_add(1) % n);
+      return (int)((pool_base_ + st.pool_pos++ * pool_step_) % n);
     }
     // A rule reached deep in the tree has almost no depth left, so only its
     // cheapest alternatives fit and the interesting ones are never offered:
@@ -1460,7 +1482,8 @@ class Generator {
   std::unordered_set<std::string> leaves_;
   std::unordered_map<std::string, int> min_h_;
   std::vector<SymInfo> sym_;
-  std::vector<std::atomic<unsigned long>> *pool_cursor_ = nullptr;
+  unsigned long pool_base_ = 0;  // keyword-pool sweep offset (thread index)
+  unsigned long pool_step_ = 1;  // keyword-pool sweep step (thread count)
   std::vector<std::string> tokens_;
   std::unordered_set<std::string> sticky_;  // rules whose role covers the subtree
   Role sticky_role_ = Role::Generic;
@@ -2128,8 +2151,6 @@ int main(int argc, char **argv) {
       a_skip{0}, a_cut{0}, a_skipped{0}, a_emitted{0};
   Coverage all_cov;
   GenStats all_stats;
-  // Shared by every thread so a keyword pool is swept once, not once per thread.
-  std::vector<std::atomic<unsigned long>> pool_cursor(g.symbol_count());
   std::mutex cov_mu;
 
   auto t0 = std::chrono::steady_clock::now();
@@ -2140,7 +2161,7 @@ int main(int argc, char **argv) {
     ts.emplace_back([&, i, n]() {
       Generator gen(g, kw, base + i * 0x9E3779B97F4A7C15ULL, max_chain,
                     chain_share, grants);
-      gen.share_pool_cursor(&pool_cursor);
+      gen.stride_pool(i, threads);
       Coverage my_cov;
       GenStats my_stats;
       if (coverage) gen.count_coverage(&my_cov, &my_stats);

@@ -29,3 +29,4 @@ key_cache_segments
 SLEEP.*[0-9][0-9]
 SLEEP.*[3-9]
 SELECT.*UNION.*SELECT.*ORDER.*BY.*OVER
+SHOW.*PLUGINS 

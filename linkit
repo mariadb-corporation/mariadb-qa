@@ -104,18 +104,16 @@ if [ -d "${HOME}/.claude" ]; then
   for SL in "${HOME}"/.claude/skills/*; do [ -L "$SL" ] && [ ! -e "$SL" ] && rm "$SL"; done
 fi
 
-# Framework cheatsheet: @-include it from the global memory index, so every Claude Code session loads it
-# Adds the line only when absent; an engineer who removes it keeps it removed until they rerun linkit
+# Framework cheatsheet: @-include it from the global memory index, and make sure that index reaches a session
+# Each line is added only when absent, so existing wording and layout are left alone
 if [ -d "${HOME}/.claude" ] && [ -f "${HOME}/mariadb-qa/cheatsheet.md" ]; then
   GLOBAL_MEMORY="${HOME}/.claude/global-memory/MEMORY.md"
   if ! grep -qsF '@~/mariadb-qa/cheatsheet.md' "${GLOBAL_MEMORY}"; then
     mkdir -p "$(dirname "${GLOBAL_MEMORY}")"
     printf '\n# Framework cheatsheet (linkit maintains this include)\n@~/mariadb-qa/cheatsheet.md\n' >> "${GLOBAL_MEMORY}"
-    echo "Added the cheatsheet include to ${GLOBAL_MEMORY}"
   fi
-  # The include only reaches a session if the global memory index is itself pulled into CLAUDE.md
-  if [ -f "${HOME}/.claude/CLAUDE.md" ] && ! grep -qsF '@~/.claude/global-memory/MEMORY.md' "${HOME}/.claude/CLAUDE.md"; then
-    echo "Note: add the line '@~/.claude/global-memory/MEMORY.md' to ${HOME}/.claude/CLAUDE.md to load it"
+  if ! grep -qsF '@~/.claude/global-memory/MEMORY.md' "${HOME}/.claude/CLAUDE.md"; then
+    printf '\n@~/.claude/global-memory/MEMORY.md\n' >> "${HOME}/.claude/CLAUDE.md"
   fi
 fi
 

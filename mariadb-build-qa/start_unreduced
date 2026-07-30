@@ -3,24 +3,26 @@
 SRU_REDUCED_LINES=13  # A trial whose latest _out file is this short is reduced already, so no new reducer is started for it
 
 for SRU_TRIALS in $(${HOME}/pr | grep --binary-files=text -o ': reducers [0-9,]\+' | sed 's|: reducers ||'); do  # One comma-separated trial list per UniqueID
+  SRU_HANDLED=
   for SRU_TRIAL in ${SRU_TRIALS//,/ }; do
     SRU_OUT="$(ls -t ${SRU_TRIAL}/*_out 2>/dev/null | head -n1)"  # The latest reduced testcase, found the same way as ${HOME}/o does
     if [ -n "${SRU_OUT}" ]; then
       SRU_LINES="$(wc -l < "${SRU_OUT}")"
       if [ "${SRU_LINES}" -le "${SRU_REDUCED_LINES}" ]; then
         echo "Trial ${SRU_TRIAL} is reduced already (${SRU_LINES} lines), skipped"
-        break  # This UniqueID is done; no sibling trial needs a reducer
+        SRU_HANDLED=1; break  # This UniqueID is done; no sibling trial needs a reducer
       fi
     fi
     if [ -n "$(ls ${SRU_TRIAL}/[1-2][0-9]*_start 2>/dev/null)" ]; then  # An EPOCH bundle is present, so reduction was attempted already
       if pgrep -f "^${PWD}/reducer${SRU_TRIAL}\.sh" >/dev/null 2>&1; then
         echo "Trial ${SRU_TRIAL}: reducer${SRU_TRIAL}.sh is running, skipped"
-        break  # This UniqueID is being reduced; sr would refuse any sibling trial
+        SRU_HANDLED=1; break  # This UniqueID is being reduced; sr would refuse any sibling trial
       fi
       continue  # Reduction was attempted but is not running; try the next trial with this UniqueID
     fi
     if ${HOME}/sr ${SRU_TRIAL}; then echo "Started reducer for trial ${SRU_TRIAL}"; fi
-    break  # One reducer per UniqueID; sr itself refuses when this UniqueID is already being reduced
+    SRU_HANDLED=1; break  # One reducer per UniqueID; sr itself refuses when this UniqueID is already being reduced
   done
+  if [ -z "${SRU_HANDLED}" ]; then echo "Trial(s) ${SRU_TRIALS}: all attempted without any resulting reduction; trial viability exhausted"; fi
 done
-unset SRU_REDUCED_LINES SRU_TRIALS SRU_TRIAL SRU_OUT SRU_LINES  # This script is sourced by 'sru', so leave no variables behind
+unset SRU_REDUCED_LINES SRU_TRIALS SRU_TRIAL SRU_OUT SRU_LINES SRU_HANDLED  # This script is sourced by 'sru', so leave no variables behind

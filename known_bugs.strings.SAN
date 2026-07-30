@@ -22,6 +22,7 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|get_new_start_alter_info|Query_log_event::handle_split_alter_query_log_event                                               ## MDEV-37770 (needs testcase)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|use-after-poison|sql/sql_select.cc|setup_copy_fields|JOIN::make_aggr_tables_info|JOIN::optimize_stage2|JOIN::optimize_inner                                               ## MDEV-40560
 ASAN|stack-buffer-overflow|strings/strxmov.c|strxmov|archive_discover|discover_handlerton|plugin_foreach_with_mask                                                             ## MDEV-37154
 UBSAN|load of value X, which is not a valid value for type 'wkbByteOrder'|sql/spatial.cc|Gis_point::init_from_wkb|Gis_multi_point::init_from_wkb|Geometry::create_from_wkb|Item_func_geometry_from_wkb::val_str ## MDEV-40552
 MSAN|use-of-uninitialized-value|sql/mysqld.cc|temp_file_size_cb_func|_ma_update_tmp_file_size|_ma_set_share_data_file_length|write_block_record                                ## MDEV-40569
