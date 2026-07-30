@@ -181,7 +181,8 @@ using Coverage = std::map<std::string, std::vector<long>>;
 // How the walk spent its choices. exits are the choices where nothing fitted the
 // remaining depth, so a shortest alternative was forced; a high share of those
 // means the depth budget, not the weighting, is picking the SQL. lends are the
-// choices that borrowed depth to take an alternative that overshot the budget.
+// choices the depth had left with a single alternative, where the budget was
+// widened so the rule had something to choose between.
 struct GenStats {
   long choices = 0, exits = 0, lends = 0;
   // For --probe RULE: how much depth was left each time that rule was entered,
@@ -197,6 +198,14 @@ struct GenStats {
     for (const auto &kv : o.probe_afford) probe_afford[kv.first] += kv.second;
   }
 };
+
+// Rules the walk does not derive: it emits a generated name of the right kind
+// instead. Everything reachable only through one of them is grammar the walk never
+// chooses from, so it is left out of the coverage denominator too.
+const char *kIdentLeaves[] = {"ident",         "ident_cli",
+                              "ident_sys",     "IDENT_sys",
+                              "ident_or_text", "ident_directly_assignable",
+                              "label_ident",   "sp_name"};
 
 struct Sym {
   bool char_lit = false;  // true: emit text verbatim; false: named symbol
@@ -540,6 +549,9 @@ class Grammar {
   // Called once, after the grammar is final and before any thread starts, so the
   // ids the walk reads are fixed and shared read-only.
   void intern() {
+    ids_.clear();
+    names_.clear();
+    prods_.clear();
     auto id_for = [&](const std::string &name) {
       auto it = ids_.find(name);
       if (it != ids_.end()) return it->second;
@@ -555,6 +567,32 @@ class Grammar {
     prods_.assign(names_.size(), nullptr);
     for (const std::string &h : heads_) prods_[ids_.at(h)] = &rules_.at(h);
   }
+  // Remove rules and alternatives no derivation can complete. They are grammar the
+  // walk can never take - the ORACLE-only statement forms, productions whose action
+  // only raises a parse error, rules left empty by pruning - and counting them makes
+  // coverage look worse than the walk is.
+  void drop(const std::vector<std::string> &rules,
+            const std::vector<std::pair<std::string, size_t>> &alts) {
+    // Erase by index, highest first, so the remaining indices stay valid. An empty
+    // production is legitimate grammar, so it cannot be used as a marker.
+    std::unordered_map<std::string, std::vector<size_t>> by_head;
+    for (const auto &ha : alts) by_head[ha.first].push_back(ha.second);
+    for (auto &kv : by_head) {
+      auto it = rules_.find(kv.first);
+      if (it == rules_.end()) continue;
+      std::sort(kv.second.rbegin(), kv.second.rend());
+      for (size_t i : kv.second)
+        if (i < it->second.size()) it->second.erase(it->second.begin() + (long)i);
+    }
+    for (const std::string &h : rules) rules_.erase(h);
+    for (auto it = rules_.begin(); it != rules_.end();)
+      if (it->second.empty()) it = rules_.erase(it); else ++it;
+    std::vector<std::string> keep;
+    for (const std::string &h : heads_)
+      if (rules_.count(h)) keep.push_back(h);
+    heads_.swap(keep);
+  }
+
   int symbol_id(const std::string &n) const {
     auto it = ids_.find(n);
     return it == ids_.end() ? -1 : it->second;
@@ -684,6 +722,18 @@ std::unordered_map<std::string, std::string> load_keywords(
   return map;
 }
 
+// A rule whose every alternative is one bare terminal is a keyword pool - the
+// grammar's lists of keywords usable as an identifier, a label or a type name. They
+// hold no structure, only interchangeable words, and the biggest has 224 of them.
+bool keyword_pool(const Grammar &g, const std::vector<Production> &prods) {
+  if (prods.size() < 8) return false;
+  for (const Production &p : prods) {
+    if (p.size() != 1 || p[0].char_lit) return false;
+    if (g.is_nonterminal(p[0].text)) return false;
+  }
+  return true;
+}
+
 // ---- generator -----------------------------------------------------------
 
 class Generator {
@@ -753,10 +803,27 @@ class Generator {
 
   void probe_rule(const std::string &head) { probe_id_ = g_.symbol_id(head); }
 
+  // One cursor per symbol, shared by every thread, so keyword pools sweep once.
+  void share_pool_cursor(std::vector<std::atomic<unsigned long>> *c) {
+    pool_cursor_ = c;
+  }
+
   // Rules no derivation can complete: pruning took the last production of a rule,
   // or of everything a rule could reach. Harmless where the parent has an empty
   // alternative, a silently lost statement class where it does not, so --info
   // names them rather than leaving it to be noticed in the output.
+  // Alternatives no derivation can complete, as (head, index) pairs.
+  std::vector<std::pair<std::string, size_t>> dead_alternatives() const {
+    std::vector<std::pair<std::string, size_t>> out;
+    for (const std::string &h : g_.heads()) {
+      if (is_leaf(h)) continue;
+      const std::vector<Production> &prods = g_.productions(h);
+      for (size_t i = 0; i < prods.size(); ++i)
+        if (prod_height(prods[i]) >= kInf) out.push_back({h, i});
+    }
+    return out;
+  }
+
   std::vector<std::string> unreachable_rules() const {
     std::vector<std::string> out;
     for (const std::string &h : g_.heads()) {
@@ -865,10 +932,7 @@ class Generator {
 
   // Identifier leaves: emit one generic name for the active role, no descent.
   void build_leaves() {
-    for (const char *n : {"ident", "ident_cli", "ident_sys", "IDENT_sys",
-                          "ident_or_text", "ident_directly_assignable",
-                          "label_ident", "sp_name"})
-      leaves_.insert(n);
+    for (const char *n : kIdentLeaves) leaves_.insert(n);
   }
 
   bool is_leaf(const std::string &n) const { return leaves_.count(n) != 0; }
@@ -1119,6 +1183,7 @@ class Generator {
   // before the walk starts, so nothing in the hot path hashes a string.
   struct SymInfo {
     const std::vector<Production> *prods = nullptr;  // null for a terminal
+    bool pool = false;          // flat list of interchangeable keywords
     bool leaf = false;          // identifier leaf: emits a generated name
     bool sticky = false;        // role covers the whole subtree
     bool has_role = false;
@@ -1164,6 +1229,17 @@ class Generator {
   int pick(SymInfo &st, int id, const std::vector<Production> &prods,
            int depth, int chain, int grants, bool *granted) {
     if (stats_) ++stats_->choices;
+    // A keyword pool is swept, not sampled. Balance leans toward the least-used
+    // alternative, but its counts are per thread, so twelve threads ran twelve
+    // independent partial sweeps that landed on the same words: the 224-keyword
+    // type-name pool was entered about 300 times per 500000 statements and still
+    // emitted only 130 distinct keywords. One cursor shared by every thread turns
+    // that into 224 entries covering 224 words. The pool is only reached a few
+    // hundred times in a run, so the shared counter costs nothing.
+    if (st.pool && pool_cursor_) {
+      const size_t n = prods.size();
+      return (int)((*pool_cursor_)[(size_t)id].fetch_add(1) % n);
+    }
     // A rule reached deep in the tree has almost no depth left, so only its
     // cheapest alternatives fit and the interesting ones are never offered:
     // sum_expr costs 1 for COUNT(*) and 2 for AVG(expr), and by the time the
@@ -1218,6 +1294,7 @@ class Generator {
       if (wider_.size() > 1) {
         feasible.swap(wider_);
         *granted = true;
+        if (stats_) ++stats_->lends;
       }
     }
     if (feasible.empty() && best == kInf) {  // every alternative chains
@@ -1306,6 +1383,7 @@ class Generator {
           "LONG_NUM", "ULONGLONG_NUM", "DECIMAL_NUM", "FLOAT_NUM", "HEX_NUM",
           "BIN_NUM", "HEX_STRING", "UNDERSCORE_CHARSET"};
       in.varies = kFresh.count(name) != 0;
+      in.pool = in.prods && keyword_pool(g_, *in.prods);
       if (!in.prods && !in.leaf && !in.varies)
         in.text = terminal_value(name, Role::Generic);
       if (!in.prods || in.prods->empty()) continue;
@@ -1382,6 +1460,7 @@ class Generator {
   std::unordered_set<std::string> leaves_;
   std::unordered_map<std::string, int> min_h_;
   std::vector<SymInfo> sym_;
+  std::vector<std::atomic<unsigned long>> *pool_cursor_ = nullptr;
   std::vector<std::string> tokens_;
   std::unordered_set<std::string> sticky_;  // rules whose role covers the subtree
   Role sticky_role_ = Role::Generic;
@@ -1401,20 +1480,13 @@ class Generator {
 // grammar's lists of keywords usable as an identifier or a label. They hold
 // nearly a thousand alternatives between them, all interchangeable, so counting
 // them buries the structural gaps that are worth acting on.
-bool keyword_pool(const Grammar &g, const std::vector<Production> &prods) {
-  if (prods.size() < 8) return false;
-  for (const Production &p : prods) {
-    if (p.size() != 1 || p[0].char_lit) return false;
-    if (g.is_nonterminal(p[0].text)) return false;
-  }
-  return true;
-}
-
 // The nonterminals a derivation from start can reach. Only these belong in the
 // coverage denominator: counting the whole grammar against a narrow --start
 // reports a fraction of a percent for a run that covered everything it could.
 std::unordered_set<std::string> reachable_from(const Grammar &g,
                                                const std::string &start) {
+  std::unordered_set<std::string> leaf(std::begin(kIdentLeaves),
+                                      std::end(kIdentLeaves));
   std::unordered_set<std::string> seen;
   std::vector<std::string> todo{start};
   seen.insert(start);
@@ -1422,9 +1494,13 @@ std::unordered_set<std::string> reachable_from(const Grammar &g,
     std::string h = todo.back();
     todo.pop_back();
     if (!g.is_nonterminal(h)) continue;
+    // The walk stops here and emits a name, so neither this rule's own
+    // alternatives nor anything below it is ever chosen.
+    if (h != start && leaf.count(h)) continue;
     for (const Production &p : g.productions(h))
       for (const Sym &s : p)
-        if (!s.char_lit && g.is_nonterminal(s.text) && seen.insert(s.text).second)
+        if (!s.char_lit && g.is_nonterminal(s.text) && !leaf.count(s.text) &&
+            seen.insert(s.text).second)
           todo.push_back(s.text);
   }
   return seen;
@@ -1440,7 +1516,7 @@ std::unordered_set<std::string> reachable_from(const Grammar &g,
 void report_coverage(const Grammar &g, const Coverage &cov, const GenStats &st,
                      const std::string &start, long limit) {
   size_t total = 0, hit = 0, s_total = 0, s_hit = 0, rules_entered = 0;
-  std::vector<std::pair<size_t, std::string>> partial;  // unhit count, head
+  std::vector<std::pair<size_t, std::string>> partial, pools;  // unhit count, head
   std::vector<std::string> untouched;
   const std::unordered_set<std::string> live = reachable_from(g, start);
   for (const std::string &h : g.heads()) {
@@ -1461,9 +1537,10 @@ void report_coverage(const Grammar &g, const Coverage &cov, const GenStats &st,
         ++unhit;
       }
     }
-    if (unhit && !pool) partial.push_back({unhit, h});
+    if (unhit) (pool ? pools : partial).push_back({unhit, h});
   }
   std::sort(partial.rbegin(), partial.rend());
+  std::sort(pools.rbegin(), pools.rend());
   auto pct = [](size_t a, size_t b) { return b ? 100.0 * (double)a / (double)b : 0.0; };
   std::cerr << "coverage from " << start << ": " << hit << "/" << total
             << " productions (" << pct(hit, total) << "%), structural "
@@ -1475,7 +1552,7 @@ void report_coverage(const Grammar &g, const Coverage &cov, const GenStats &st,
   if (st.choices)
     std::cerr << "choices: " << st.choices << ", " << st.exits << " forced to a"
               << " shortest exit (" << pct((size_t)st.exits, (size_t)st.choices)
-              << "%), " << st.lends << " borrowed depth ("
+              << "%), " << st.lends << " widened ("
               << pct((size_t)st.lends, (size_t)st.choices) << "%)\n";
   if (st.probe_hits) {
     std::cerr << "probe: entered " << st.probe_hits << " times, "
@@ -1485,6 +1562,15 @@ void report_coverage(const Grammar &g, const Coverage &cov, const GenStats &st,
     std::cerr << "\n  alternatives affordable:";
     for (const auto &kv : st.probe_afford)
       std::cerr << " " << kv.first << ":" << kv.second;
+    std::cerr << "\n";
+  }
+  if (!pools.empty()) {
+    size_t pool_unhit = 0;
+    for (const auto &pr : pools) pool_unhit += pr.first;
+    std::cerr << "keyword pools: " << pools.size() << " with " << pool_unhit
+              << " keyword(s) not emitted -";
+    for (const auto &pr : pools)
+      std::cerr << " " << pr.second << ":" << pr.first;
     std::cerr << "\n";
   }
   std::cerr << "\nrules never entered (" << untouched.size()
@@ -1936,8 +2022,20 @@ int main(int argc, char **argv) {
               << "' not found in grammar\n";
     return 2;
   }
-  g.intern();  // grammar is final from here; the walk reads symbols by id
   auto kw = load_keywords(read_file(lex));
+
+  // Drop what no derivation can complete, repeatedly: removing an alternative can
+  // leave its rule empty, and removing a rule can strand the alternatives that
+  // referenced it.
+  for (int round = 0; round < 20; ++round) {
+    g.intern();
+    Generator probe(g, kw, 1);
+    const std::vector<std::string> dead = probe.unreachable_rules();
+    const std::vector<std::pair<std::string, size_t>> alts = probe.dead_alternatives();
+    if (dead.empty() && alts.empty()) break;
+    g.drop(dead, alts);
+  }
+  g.intern();  // grammar is final from here; the walk reads symbols by id
 
   if (info) {
     Generator gen(g, kw, 1, max_chain, chain_share, grants);
@@ -2030,6 +2128,8 @@ int main(int argc, char **argv) {
       a_skip{0}, a_cut{0}, a_skipped{0}, a_emitted{0};
   Coverage all_cov;
   GenStats all_stats;
+  // Shared by every thread so a keyword pool is swept once, not once per thread.
+  std::vector<std::atomic<unsigned long>> pool_cursor(g.symbol_count());
   std::mutex cov_mu;
 
   auto t0 = std::chrono::steady_clock::now();
@@ -2040,6 +2140,7 @@ int main(int argc, char **argv) {
     ts.emplace_back([&, i, n]() {
       Generator gen(g, kw, base + i * 0x9E3779B97F4A7C15ULL, max_chain,
                     chain_share, grants);
+      gen.share_pool_cursor(&pool_cursor);
       Coverage my_cov;
       GenStats my_stats;
       if (coverage) gen.count_coverage(&my_cov, &my_stats);

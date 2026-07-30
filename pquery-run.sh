@@ -1786,7 +1786,7 @@ pquery_test(){
         REV_VALIDATE="--validate-sql --socket ${REVGEN_VALIDATE_SOCKET}"
       fi
       for REV_RUN_TRY in 1 2 3; do
-        ./revgen --threads ${GENERATION_THREADS} --filter none --yacc "${REVGEN_YACC}" ${REVGEN_OPTIONS:-} ${REV_VALIDATE} --output outrev${RANDOMD}.sql --queries ${QUERIES_PER_REVGEN_RUN} > /dev/null
+        ./revgen --threads ${GENERATION_THREADS} --yacc "${REVGEN_YACC}" ${REVGEN_OPTIONS:-} ${REV_VALIDATE} --output outrev${RANDOMD}.sql --queries ${QUERIES_PER_REVGEN_RUN} > /dev/null
         if [ -r outrev${RANDOMD}.sql ]; then break; fi
         echoit "Note: outrev${RANDOMD}.sql not present in ${PWD} after revgen execution (attempt ${REV_RUN_TRY}/3); pausing 30s and retrying..."
         sleep 30
