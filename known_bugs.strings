@@ -314,6 +314,7 @@ SIGSEGV|SEL_ARG::store_min|SEL_ARG::store_min_max|step_down_to|sel_arg_range_seq
 SIGSEGV|my_uca_strnxfrm_onelevel_internal_utf8mb4|my_uca_strnxfrm_nopad_onelevel_utf8mb4|my_uca_strnxfrm_nopad_utf8mb4|charset_info_st::strnxfrm                               ## MDEV-40339
 SIGSEGV|Sql_path::from_text|Sys_var_path::from_item|Sys_var_path::do_check|sys_var::check                                                                                      ## MDEV-40009
 SIGSEGV|Item_func::Item_func|Item_real_func::Item_real_func|Item_xpath_cast_number::Item_xpath_cast_number|create_func_number                                                  ## MDEV-39593
+SIGSEGV|Used_tables_and_const_cache::used_tables_and_const_cache_join|Item_func::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields                                   ## MDEV-39593
 SIGSEGV|ha_partition::return_top_record|ha_partition::handle_ordered_prev|handler::ha_index_prev|mysql_ha_read                                                                 ## MDEV-39923
 SIGSEGV|row_sel_field_store_in_mysql_format_func|row_sel_store_mysql_field|row_sel_store_mysql_rec|row_search_mvcc                                                             ## MDEV-39923
 SIGSEGV|row_sel_store_mysql_field|row_sel_store_mysql_rec|row_search_mvcc|ha_innobase::general_fetch                                                                           ## MDEV-39923
