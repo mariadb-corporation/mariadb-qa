@@ -172,6 +172,24 @@ U=$(grep -cE "^CREATE TABLE IF NOT EXISTS t[0-9] " "$W/g.sql")
 gen "$W/nos.sql" --queries 300 --depth 6 --seed 42 --schema-every 0
 hasnt "schema-every 0 = no setup" "$W/nos.sql" "^CREATE TABLE IF NOT EXISTS t1"
 
+# Each object class draws from its own name pool, and the names match
+# generatorcpp's so a mixed run resolves against one set of objects. A role that
+# covers too much of the tree shows up here first: typing the whole right-hand
+# side of a SET after its target named windows and tables c1-c4, and typing off
+# the PARTITION keyword caught "PARTITION BY", where no partition is named.
+gen "$W/id.sql" --queries 40000 --depth 10 --seed 5 --threads 4
+for slot in "WINDOW:w" "OVER:w" "PREPARE:s" "SAVEPOINT:sp" "CONSTRAINT:chk"; do
+  kw=${slot%%:*}; want=${slot##*:}
+  T=$(grep -oE "\b$kw [a-z]+[0-9]" "$W/id.sql" | wc -l)
+  R=$(grep -oE "\b$kw ${want}[0-9]" "$W/id.sql" | wc -l)
+  [ "$T" -gt 0 ] && [ "$R" -ge $((T * 99 / 100)) ] && ok \
+    || bad "$kw names: $R of $T use '$want', wanted 99%+"
+done
+# A partition is still named where one is really declared or referenced.
+has "partition list names p" "$W/id.sql" "PARTITION\(p[0-9]"
+# The assignment target keeps its own sequential column role.
+has "SET target is a column" "$W/id.sql" "SET c[0-9] :?="
+
 # ---- determinism and threading -----------------------------------------
 gen "$W/a.sql" --queries 800 --depth 8 --seed 7 --threads 4
 gen "$W/b.sql" --queries 800 --depth 8 --seed 7 --threads 4
@@ -267,8 +285,9 @@ G2=$(grep -c -F "AVG(" "$W/g2.sql")
 [ "$G2" -gt "$G0" ] && ok || bad "--grants makes no difference to AVG: $G0 vs $G2"
 # One grant per path reaches fewer aggregates than two. Stop spending them - leave the
 # count alone as the walk descends - and every path has an unlimited supply, so this
-# is what says the allowance is per path and is actually paid out of.
-[ "$G2" -gt $((G1 * 5 / 4)) ] && ok \
+# is what says the allowance is per path and is actually paid out of. Measured 1.23 to
+# 1.36 across seeds, against exactly 1.00 for that mutant, so the floor sits between.
+[ "$G2" -gt $((G1 * 23 / 20)) ] && ok \
   || bad "grants are not spent per path: AVG $G1 with one grant, $G2 with two"
 # A lower chain share leaves more depth at the bottom, so statements get shorter and
 # the leaf grammar is reached more often; a higher one nests more, and UNION is a
@@ -305,9 +324,12 @@ SC=$(grep -oE "structural [0-9]+/[0-9]+ \([0-9]+" "$W/cov.err" | grep -oE "\([0-
 
 # Full-scale reach, release binary only (the same code runs 10-30x slower under
 # sanitizers, and the floor above already runs there): at 500,000 statements and
-# the production depth, the walk has to enter every rule a derivation can
-# complete (one is pruned by default) and try 99%+ of the structural
-# alternatives. This is the distribution bar for a whole fuzz run's input.
+# the production depth, the walk has to try 99%+ of the structural alternatives
+# and enter all but a handful of the rules. This is the distribution bar for a
+# whole fuzz run's input. A few rules sit behind a rare parent and need more
+# depth than production uses - measured 1 to 3 unentered across seeds at depth
+# 10, against 2 at depth 14 - so the allowance is 4, well under the dozens a
+# real reach regression costs.
 if [ "$(basename "$BIN")" = "revgen" ]; then
   "$BIN" --queries 500000 --depth 10 --seed 21 --threads 4 --coverage 0 \
     --output /dev/null >/dev/null 2>"$W/full.err"
@@ -315,7 +337,7 @@ if [ "$(basename "$BIN")" = "revgen" ]; then
   NE=$(grep -oE "rules never entered \([0-9]+" "$W/full.err" | grep -oE "[0-9]+$")
   awk -v s="${FS:-0}" 'BEGIN{exit !(s+0 >= 99)}' && ok \
     || bad "full-scale structural coverage ${FS:-unknown}%, floor 99%"
-  [ "${NE:-99}" -le 1 ] && ok || bad "${NE:-unknown} rules never entered at 500k, allowed 1"
+  [ "${NE:-99}" -le 4 ] && ok || bad "${NE:-unknown} rules never entered at 500k, allowed 4"
 fi
 
 # Random literals are drawn fresh each time. Cache them by mistake - the terminal

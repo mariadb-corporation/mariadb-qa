@@ -78,7 +78,8 @@ struct Xoshiro256pp {
 enum class Role {
   Generic, Table, Column, Proc, Func, View, Trigger, Event, Sequence,
   Index, Constraint, Partition, Savepoint, User, RoleName, Var, Db, Server,
-  Cursor, Alias, Stmt, ColumnSeq, Window, Cte, SysVar, ExplainFormat
+  Cursor, Alias, Stmt, ColumnSeq, Window, Cte, SysVar, ExplainFormat,
+  Collation, Charset, DateLit, TimeLit, DateTimeLit, SqlState
 };
 
 // A keyword appearing in a production types the identifiers that come after it
@@ -91,14 +92,20 @@ const std::unordered_map<std::string, Role> kKeywordRoles = {
     {"TRIGGER_SYM", Role::Trigger},    {"EVENT_SYM", Role::Event},
     {"SEQUENCE_SYM", Role::Sequence},  {"INDEX_SYM", Role::Index},
     {"CONSTRAINT", Role::Constraint},
-    {"PARTITION_SYM", Role::Partition},
-    {"SUBPARTITION_SYM", Role::Partition},
     {"SAVEPOINT_SYM", Role::Savepoint}, {"ROLE_SYM", Role::RoleName},
     {"DATABASE", Role::Db},            {"SCHEMA_NAME_SYM", Role::Db},
     {"SERVER_SYM", Role::Server},   {"PRECEDES_SYM", Role::Trigger},
     {"FOLLOWS_SYM", Role::Trigger}, {"NEXTVAL_SYM", Role::Sequence},
     {"LASTVAL_SYM", Role::Sequence}, {"SETVAL_SYM", Role::Sequence},
-    {"PREVIOUS_SYM", Role::Sequence}, {"NEXT_SYM", Role::Sequence}};
+    {"PREVIOUS_SYM", Role::Sequence}, {"NEXT_SYM", Role::Sequence},
+    {"PREPARE_SYM", Role::Stmt},
+    // Slots that take a value from a fixed vocabulary rather than a name. The
+    // temporal literals (DATE 'x', TIME 'x', TIMESTAMP 'x') were the single
+    // largest source of statements the server accepted grammatically and then
+    // refused, at a third of them: random text is not a date.
+    {"DATE_SYM", Role::DateLit},      {"TIME_SYM", Role::TimeLit},
+    {"TIMESTAMP", Role::DateTimeLit}, {"DATETIME", Role::DateTimeLit},
+    {"SQLSTATE_SYM", Role::SqlState}};
 
 // Relative weights for the verb_clause alternatives (the statement classes).
 // An unweighted walk picks one of the 48 alternatives uniformly, which puts
@@ -919,13 +926,22 @@ class Generator {
       role_of_[n] = Role::Partition;
       sticky_.insert(n);
     }
+    // The two slots that declare a partition. Typing off the PARTITION keyword
+    // instead caught "PARTITION BY", where the name that follows is a grouping
+    // expression, not a partition - a window's "OVER p2" came from that.
+    for (const char *n : {"part_name", "sub_name"}) role_of_[n] = Role::Partition;
+    role_of_["collation_name"] = Role::Collation;
+    role_of_["charset_name"] = Role::Charset;
     role_of_["sp_name"] = Role::Proc;
     role_of_["user_name"] = Role::User;
     role_of_["select_alias"] = Role::Alias;
     role_of_["ident_table_alias"] = Role::Alias;
+    // In "SET c1 = <expr>" only the assignment target is the column; the
+    // expression is an ordinary one. Typing the whole subtree instead named
+    // everything in it after a column, down to "FROM c2" and "WINDOW c4".
     for (const char *n : {"update_elem", "ident_eq_value"}) {
       role_of_[n] = Role::ColumnSeq;
-      sticky_.insert(n);
+      types_next_.insert(n);
     }
     role_of_["sql_statement_name"] = Role::Stmt;
     for (const char *n : {"ident_sysvar_name", "keyword_sysvar_name"})
@@ -1021,7 +1037,19 @@ class Generator {
       {"cte", 2},  // Cte
       {"", 0},     // SysVar - fixed vocabulary, see id_for
       {"", 0},     // ExplainFormat - fixed vocabulary, see id_for
+      {"", 0},     // Collation - fixed vocabulary, see id_for
+      {"", 0},     // Charset - fixed vocabulary, see id_for
+      {"", 0},     // DateLit - a literal, see terminal_value
+      {"", 0},     // TimeLit - a literal, see terminal_value
+      {"", 0},     // DateTimeLit - a literal, see terminal_value
+      {"", 0},     // SqlState - a literal, see terminal_value
   };
+  // Same order as the Role enum, so a role added to one and not the other is a
+  // build error rather than a name drawn from the wrong pool. seq_ is indexed
+  // by role, so it has to hold every one of them.
+  static constexpr size_t kRoleCount = (size_t)Role::SqlState + 1;
+  static_assert(sizeof(kNameKinds) / sizeof(kNameKinds[0]) == kRoleCount,
+                "kNameKinds must have one entry per Role");
 
   // Roles handed out in order within one statement rather than at random, so a
   // list of them (aliases, assignment targets) does not name the same thing
@@ -1049,10 +1077,60 @@ class Generator {
       static const char *v[] = {"TRADITIONAL", "JSON"};
       return v[rng_() % 2];
     }
-    const NameKind &k = kNameKinds[(int)r];
+    // A collation or character set the server does not know is refused before
+    // the statement runs, so both come from what the server ships.
+    // Names the lexer has a keyword for are absent from both on purpose
+    // (BINARY, ASCII): it returns the keyword, so the identifier slot never
+    // matches. The grammar offers those as their own alternatives where they
+    // are allowed. Check a new name against lex.h before adding it.
+    if (r == Role::Collation) {
+      static const char *v[] = {"utf8mb4_general_ci", "utf8mb4_bin",
+                                "utf8mb4_unicode_ci", "latin1_swedish_ci",
+                                "latin1_bin", "utf8mb3_general_ci",
+                                "utf8mb4_nopad_bin", "utf8mb4_uca1400_ai_ci"};
+      return v[rng_() % 8];
+    }
+    if (r == Role::Charset) {
+      static const char *v[] = {"utf8mb4", "latin1", "utf8mb3", "cp1250",
+                                "ucs2", "utf16", "koi8r", "cp1251"};
+      return v[rng_() % 8];
+    }
+    // The roles above name nothing - their value is a literal or a fixed word.
+    // A keyword can still type an identifier slot with one (DATE names a column
+    // in DATE(c1)), so those fall back to the generic pool rather than indexing
+    // an empty one.
+    const NameKind &k = kNameKinds[kNameKinds[(int)r].count ? (int)r
+                                                            : (int)Role::Generic];
     int n = sequential(r) ? (int)(seq_[(int)r]++ % k.count)
                           : (int)(rng_() % k.count);
     return std::string(k.prefix) + std::to_string(1 + n);
+  }
+
+  // A date the server accepts, with a time where the slot takes one, and every
+  // fourth one a boundary value so the temporal edge cases are still covered.
+  std::string temporal_literal(bool with_time) {
+    static const char *edge_date[] = {"'0000-00-00'", "'9999-12-31'",
+                                      "'1970-01-01'", "'2038-01-19'",
+                                      "'0001-01-01'", "'2024-02-29'"};
+    static const char *edge_dt[] = {"'0000-00-00 00:00:00'",
+                                    "'9999-12-31 23:59:59'",
+                                    "'1970-01-01 00:00:01'",
+                                    "'2038-01-19 03:14:07'",
+                                    "'0001-01-01 00:00:00'",
+                                    "'2024-02-29 12:00:00'"};
+    if (rng_() % 4 == 0)
+      return with_time ? edge_dt[rng_() % 6] : edge_date[rng_() % 6];
+    char buf[32];
+    if (with_time)
+      std::snprintf(buf, sizeof buf, "'%04u-%02u-%02u %02u:%02u:%02u'",
+                    (unsigned)(1970 + rng_() % 60), (unsigned)(1 + rng_() % 12),
+                    (unsigned)(1 + rng_() % 28), (unsigned)(rng_() % 24),
+                    (unsigned)(rng_() % 60), (unsigned)(rng_() % 60));
+    else
+      std::snprintf(buf, sizeof buf, "'%04u-%02u-%02u'",
+                    (unsigned)(1970 + rng_() % 60), (unsigned)(1 + rng_() % 12),
+                    (unsigned)(1 + rng_() % 28));
+    return buf;
   }
 
   // Random string literal: 1-100 printable chars, SQL-escaped and quoted.
@@ -1070,7 +1148,24 @@ class Generator {
 
   std::string terminal_value(const std::string &name, Role r) {
     if (name == "IDENT" || name == "IDENT_QUOTED") return id_for(r);
-    if (name == "TEXT_STRING") return rand_text();
+    if (name == "TEXT_STRING") {
+      // Each temporal literal keeps to its own type: DATE 'x' refuses a time
+      // of day and TIME 'x' refuses a date, both before the statement runs.
+      if (r == Role::DateLit) return temporal_literal(false);
+      if (r == Role::DateTimeLit) return temporal_literal(true);
+      if (r == Role::TimeLit) {
+        char buf[24];
+        std::snprintf(buf, sizeof buf, "'%02u:%02u:%02u'",
+                      (unsigned)(rng_() % 32), (unsigned)(rng_() % 60),
+                      (unsigned)(rng_() % 60));
+        return buf;
+      }
+      if (r == Role::SqlState) {
+        static const char *v[] = {"45000", "23000", "HY000", "22003", "42S02"};
+        return std::string("'") + v[rng_() % 5] + "'";
+      }
+      return rand_text();
+    }
     if (name == "NCHAR_STRING") return "N" + rand_text();
     if (name == "NUM" || name == "LONG_NUM" || name == "ULONGLONG_NUM")
       return std::to_string(rng_() % 301);  // 0-300 (NUM is unsigned; sign is
@@ -1156,7 +1251,16 @@ class Generator {
     }
     if (!in.prods) {                      // a terminal: emits its own text
       if (in.varies) {
-        const std::string v = terminal_value(s.text, role);
+        // A keyword types the string literal that follows it as well as the
+        // name: DATE and SQLSTATE both take one, and only the keyword says so.
+        // Only a string can be one, so a number in between must not consume
+        // the role and leave the name that follows it untyped.
+        Role tr = role;
+        if (pending_ != Role::Generic && s.text == "TEXT_STRING") {
+          tr = pending_;
+          pending_ = Role::Generic;
+        }
+        const std::string v = terminal_value(s.text, tr);
         if (!v.empty()) push(v);
       } else if (!in.text.empty()) {
         push(in.text);
@@ -1169,6 +1273,7 @@ class Generator {
     const Role saved_sticky = sticky_role_;
     if (in.sticky) sticky_role_ = in.role;
     bool granted = false;
+    if (in.types_next) pending_ = in.role;
     const Role entry_pending = pending_;
     const Production &p = prods[choose(in, s.id, prods, depth, chain, grants,
                                        &granted)];
@@ -1210,6 +1315,7 @@ class Generator {
     unsigned long pool_pos = 0; // this thread's sweep position in the pool
     bool leaf = false;          // identifier leaf: emits a generated name
     bool sticky = false;        // role covers the whole subtree
+    bool types_next = false;    // role covers the next name only
     bool has_role = false;
     bool has_kw_role = false;
     bool varies = false;        // terminal whose text depends on the role
@@ -1394,6 +1500,7 @@ class Generator {
       in.prods = g_.productions_by_id((int)id);
       in.leaf = is_leaf(name);
       in.sticky = sticky_.count(name) != 0;
+      in.types_next = types_next_.count(name) != 0;
       auto r = role_of_.find(name);
       if (r != role_of_.end()) { in.has_role = true; in.role = r->second; }
       auto k = kKeywordRoles.find(name);
@@ -1486,9 +1593,10 @@ class Generator {
   unsigned long pool_step_ = 1;  // keyword-pool sweep step (thread count)
   std::vector<std::string> tokens_;
   std::unordered_set<std::string> sticky_;  // rules whose role covers the subtree
+  std::unordered_set<std::string> types_next_;  // rules that type the next name
   Role sticky_role_ = Role::Generic;
   Role pending_ = Role::Generic;  // keyword-set role awaiting the next identifier
-  unsigned seq_[32] = {};         // per-statement counters for sequential roles
+  unsigned seq_[kRoleCount] = {};  // per-statement counters, indexed by role
   long steps_ = 0;
   bool truncated_ = false;
   std::vector<int> scratch_, wider_;  // reused per choice, not reallocated
@@ -1671,6 +1779,11 @@ struct Validator {
   std::FILE *fails = nullptr;
   std::mutex *fails_mu = nullptr;
   uint64_t total = 0, dropped = 0, lost = 0, other = 0, skipped = 0;
+  // Statements that parse but the server still refuses: unknown column, wrong
+  // argument count, and so on. They cost a fuzz run as much as a parse error
+  // does, and only the error code says which kind, so each code is counted and
+  // keeps one example.
+  std::map<unsigned, std::pair<uint64_t, std::string>> other_by_err;
 
   bool reconnect() {
     if (stmt) { mysql_stmt_close(stmt); stmt = nullptr; }
@@ -1710,6 +1823,9 @@ struct Validator {
     }
     if (err == 2006 || err == 2013) { ++lost; reconnect(); return true; }
     ++other;
+    auto &slot = other_by_err[err];
+    ++slot.first;
+    if (slot.second.empty()) slot.second = mysql_stmt_error(stmt);
     return true;
   }
   ~Validator() {
@@ -2039,6 +2155,9 @@ int main(int argc, char **argv) {
     // gets is decided in a different rule, so the walk cannot pair them. It was
     // 458 of the 677 statements the server rejected as a syntax error.
     g.prune_production("opt_cycle", {"CYCLE_SYM"});
+    // The grammar accepts WITH CUBE and the server then answers "doesn't yet
+    // support 'CUBE'", so every one of them is a lost statement.
+    g.prune_production("olap_opt", {"WITH_CUBE_SYM"});
   }
   if (!g.is_nonterminal(start)) {
     std::cerr << "revgen: start symbol '" << start
@@ -2151,6 +2270,7 @@ int main(int argc, char **argv) {
       a_skip{0}, a_cut{0}, a_skipped{0}, a_emitted{0};
   Coverage all_cov;
   GenStats all_stats;
+  std::map<unsigned, std::pair<uint64_t, std::string>> all_other_err;
   std::mutex cov_mu;
 
   auto t0 = std::chrono::steady_clock::now();
@@ -2228,6 +2348,12 @@ int main(int argc, char **argv) {
         }
       }
       if (val) {
+        std::lock_guard<std::mutex> lk(fails_mu);
+        for (const auto &kv : v.other_by_err) {
+          auto &slot = all_other_err[kv.first];
+          slot.first += kv.second.first;
+          if (slot.second.empty()) slot.second = kv.second.second;
+        }
         a_total += v.total; a_drop += v.dropped; a_lost += v.lost;
         a_other += v.other; a_skip += v.skipped;
       }
@@ -2270,6 +2396,20 @@ int main(int argc, char **argv) {
       std::cerr << "[validate] parse-valid rate="
                 << (100.0 * (judged - a_drop) / judged) << "% (of preparable); "
                 << "1064 logged to " << fails_path << "\n";
+    // What the server rejects for a reason other than syntax, worst first. A
+    // fuzz run loses these statements as surely as the unparseable ones, so
+    // this is the list to work down.
+    if (!all_other_err.empty()) {
+      std::vector<std::pair<unsigned, std::pair<uint64_t, std::string>>> top(
+          all_other_err.begin(), all_other_err.end());
+      std::sort(top.begin(), top.end(), [](const auto &a, const auto &b) {
+        return a.second.first > b.second.first;
+      });
+      std::cerr << "[validate] rejected for other reasons, worst first:\n";
+      for (size_t i = 0; i < top.size() && i < 15; ++i)
+        std::cerr << "  " << top[i].second.first << "  errno " << top[i].first
+                  << ": " << top[i].second.second.substr(0, 110) << "\n";
+    }
     if (fails) std::fclose(fails);
     mysql_library_end();
   }

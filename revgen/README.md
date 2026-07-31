@@ -219,8 +219,21 @@ semantic; the syntax is fine, so the statement is kept. Statements that cannot
 be prepared at all (SET, USE, transaction control, ...) skip the PREPARE and are
 kept.
 
-Measured parse-valid rate: 99.0% at depth 6, 98.9% at depth 9, 98.7% at depth 11,
-98.6% at depth 13. Deeper derivations reach more of the grammar and get more of it
+After the rate, the run prints those other rejections clustered by error code,
+worst first, with one example message each. A statement the server refuses for a
+bad date is as lost to a fuzz run as an unparseable one, and only the code says
+which kind, so this is the list to work down. Two things it shows that the rate
+alone hides. A value the server does not know masks whatever is wrong further
+along: with `COLLATE i1` the statement stops at "Unknown collation", and with a
+real collation name the same statement reaches a genuine syntax error, so the
+parse rate falls while nothing has got worse. And removing one whole class of
+rejection moves the total very little, because the freed statements fail on
+their next fault - the four classes worth 11,398 of 20,294 rejections that the
+fixed vocabularies removed bought 415 more accepted statements. Semantic
+acceptance is around 60% and barely moves with depth (62% at 6, 59% at 12).
+
+Measured parse-valid rate: 98.3% at depth 6, 97.7% at depth 9, 97.0% at depth 11,
+96.7% at depth 13. Deeper derivations reach more of the grammar and get more of it
 wrong, so the two have to be measured together - `--coverage` for reach,
 `--validate-sql` for correctness. Depth 9 reaches 93% of the structural grammar
 alternatives at 20000 statements, and more with a longer run: coverage is a
