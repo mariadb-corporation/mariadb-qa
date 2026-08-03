@@ -249,6 +249,11 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|TABDEF::GetElemt|TDBDOS::MakeBlockValues|CntReadNext|ha_connect::rnd_next                                                                                              ## MDEV-40599
+SIGSEGV|TDBDOS::EstimatedLength|EvalColumns|CntReadNext|ha_connect::rnd_next                                                                                                   ## MDEV-40599
+SIGSEGV|TDBDOS::SaveBlockValues|CntReadNext|ha_connect::rnd_next|handler::ha_rnd_next                                                                                          ## MDEV-40599
+SIGSEGV|TDBDOS::SaveBlockValues|EvalColumns|CntReadNext|ha_connect::rnd_next                                                                                                   ## MDEV-40599
+SIGSEGV|TXTFAM::SetNrec|TDBDOS::RestoreNrec|CntReadNext|ha_connect::rnd_next                                                                                                   ## MDEV-40599
 escape != -1000|SIGABRT|Item_func_like::val_bool|Item::eval_const_cond|Item_cond::eval_not_null_tables|Item_cond::fix_fields                                                   ## MDEV-40594
 SIGSEGV|my_mb_wc_utf16_quick|my_utf16_uni|get_first_nonspace|json_scan_next                                                                                                    ## MDEV-40572
 SIGSEGV|my_mb_wc_ucs2_quick|my_ucs2_uni|get_first_nonspace|json_scan_next                                                                                                      ## MDEV-40572
