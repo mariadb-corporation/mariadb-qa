@@ -249,6 +249,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|CntReadNext|ha_connect::rnd_next|handler::ha_rnd_next|ha_partition::rnd_next                                                                                           ## MDEV-40599
 SIGSEGV|TABDEF::GetElemt|TDBDOS::MakeBlockValues|CntReadNext|ha_connect::rnd_next                                                                                              ## MDEV-40599
 SIGSEGV|TDBDOS::EstimatedLength|EvalColumns|CntReadNext|ha_connect::rnd_next                                                                                                   ## MDEV-40599
 SIGSEGV|TDBDOS::SaveBlockValues|CntReadNext|ha_connect::rnd_next|handler::ha_rnd_next                                                                                          ## MDEV-40599
