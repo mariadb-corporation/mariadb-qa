@@ -251,6 +251,15 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ##### CURRENT BUGS (Search key: Mac) #####
 SIGSEGV|copy_funcs|multi_delete::send_data|select_result_sink::send_data_with_check|end_send                                                                                   ## MDEV-40573
 del_table == table_being_deleted|SIGABRT|multi_delete::send_data|select_result_sink::send_data_with_check|end_send|evaluate_join_record                                        ## MDEV-40573
+SIGSEGV|CntReadNext|ha_connect::rnd_next|handler::ha_rnd_next|ha_partition::rnd_next                                                                                           ## MDEV-40599
+SIGSEGV|TABDEF::GetElemt|TDBDOS::MakeBlockValues|CntReadNext|ha_connect::rnd_next                                                                                              ## MDEV-40599
+SIGSEGV|TDBDOS::EstimatedLength|EvalColumns|CntReadNext|ha_connect::rnd_next                                                                                                   ## MDEV-40599
+SIGSEGV|TDBDOS::SaveBlockValues|CntReadNext|ha_connect::rnd_next|handler::ha_rnd_next                                                                                          ## MDEV-40599
+SIGSEGV|TDBDOS::SaveBlockValues|EvalColumns|CntReadNext|ha_connect::rnd_next                                                                                                   ## MDEV-40599
+SIGSEGV|TXTFAM::SetNrec|TDBDOS::RestoreNrec|CntReadNext|ha_connect::rnd_next                                                                                                   ## MDEV-40599
+escape != -1000|SIGABRT|Item_func_like::val_bool|Item::eval_const_cond|Item_cond::eval_not_null_tables|Item_cond::fix_fields                                                   ## MDEV-40594
+SIGSEGV|my_mb_wc_utf16_quick|my_utf16_uni|get_first_nonspace|json_scan_next                                                                                                    ## MDEV-40572
+SIGSEGV|my_mb_wc_ucs2_quick|my_ucs2_uni|get_first_nonspace|json_scan_next                                                                                                      ## MDEV-40572
 prebuilt->template_type == ROW_MYSQL_WHOLE_ROW|SIGABRT|ut_dbg_assertion_failed|row_update_for_mysql|ha_innobase::delete_row|handler::ha_delete_row                             ## MDEV-24808
 n < m_size|SIGABRT|Bounds_checked_array<Item*>::operator[]|Item::split_sum_func2|Item_cond::split_sum_func|JOIN::prepare                                                       ## MDEV-40560
 n < m_size|SIGABRT|Bounds_checked_array<Item*>::operator[]|Item::split_sum_func2|Item_func::split_sum_func|Item::split_sum_func2                                               ## MDEV-40560
@@ -316,6 +325,7 @@ SIGSEGV|SEL_ARG::store_min|SEL_ARG::store_min_max|step_down_to|sel_arg_range_seq
 SIGSEGV|my_uca_strnxfrm_onelevel_internal_utf8mb4|my_uca_strnxfrm_nopad_onelevel_utf8mb4|my_uca_strnxfrm_nopad_utf8mb4|charset_info_st::strnxfrm                               ## MDEV-40339
 SIGSEGV|Sql_path::from_text|Sys_var_path::from_item|Sys_var_path::do_check|sys_var::check                                                                                      ## MDEV-40009
 SIGSEGV|Item_func::Item_func|Item_real_func::Item_real_func|Item_xpath_cast_number::Item_xpath_cast_number|create_func_number                                                  ## MDEV-39593
+SIGSEGV|Used_tables_and_const_cache::used_tables_and_const_cache_join|Item_func::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields                                   ## MDEV-39593
 SIGSEGV|ha_partition::return_top_record|ha_partition::handle_ordered_prev|handler::ha_index_prev|mysql_ha_read                                                                 ## MDEV-39923
 SIGSEGV|row_sel_field_store_in_mysql_format_func|row_sel_store_mysql_field|row_sel_store_mysql_rec|row_search_mvcc                                                             ## MDEV-39923
 SIGSEGV|row_sel_store_mysql_field|row_sel_store_mysql_rec|row_search_mvcc|ha_innobase::general_fetch                                                                           ## MDEV-39923
