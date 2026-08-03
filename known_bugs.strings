@@ -249,6 +249,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|copy_funcs|multi_delete::send_data|select_result_sink::send_data_with_check|end_send                                                                                   ## MDEV-40573
+del_table == table_being_deleted|SIGABRT|multi_delete::send_data|select_result_sink::send_data_with_check|end_send|evaluate_join_record                                        ## MDEV-40573
 prebuilt->template_type == ROW_MYSQL_WHOLE_ROW|SIGABRT|ut_dbg_assertion_failed|row_update_for_mysql|ha_innobase::delete_row|handler::ha_delete_row                             ## MDEV-24808
 n < m_size|SIGABRT|Bounds_checked_array<Item*>::operator[]|Item::split_sum_func2|Item_cond::split_sum_func|JOIN::prepare                                                       ## MDEV-40560
 n < m_size|SIGABRT|Bounds_checked_array<Item*>::operator[]|Item::split_sum_func2|Item_func::split_sum_func|Item::split_sum_func2                                               ## MDEV-40560

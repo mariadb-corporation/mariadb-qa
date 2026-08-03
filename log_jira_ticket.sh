@@ -46,8 +46,8 @@ Modes:
   --createmeta       List required fields for --project / --type
   --comment KEY      Add a comment to issue KEY (body via -d / --description-file)
   --link KEY         Link KEY to related issues: --link KEY --relates OTHER [--relates …] [--link-type Relates] [--reverse]
-                       Default reads "KEY <type-inward> OTHER" (e.g. PartOf: "KEY is part of OTHER");
-                       --reverse flips to "KEY <type-outward> OTHER" (e.g. PartOf: "KEY includes OTHER").
+                       Default reads "OTHER <type-inward> KEY" (e.g. PartOf: "OTHER is part of KEY");
+                       --reverse flips to "OTHER <type-outward> KEY" (e.g. PartOf: "OTHER includes KEY").
   --edit KEY         Add versions and/or labels to an EXISTING issue (additive, never replaces):
                        --edit KEY --affects-version 13.0 [--affects-version 13.1] [--fix-version 13.0] [--es-version 13.0]
                        --edit KEY --label corruption [--label security]
@@ -251,7 +251,7 @@ case "$MODE" in
     [ -n "$OUT_DESC" ] || OUT_DESC="$LINK_TYPE"
     if [ "$LINK_REVERSE" = 1 ]; then REL_DESC="$OUT_DESC"; else REL_DESC="$IN_DESC"; fi
     echo "=== Link on $JIRA_URL/browse/$LINK_KEY  (type: $LINK_TYPE, as $WHOAMI) ===" >&2
-    for r in "${RELATES[@]}"; do echo "  $LINK_KEY $REL_DESC $r" >&2; done
+    for r in "${RELATES[@]}"; do echo "  $r $REL_DESC $LINK_KEY" >&2; done
     if [ "$DRY_RUN" = 1 ]; then echo "[dry-run] links not created." >&2; exit 0; fi
     if [ "$ASSUME_YES" != 1 ]; then
       echo "Confirm creating these links. Press Enter 3x (Ctrl-C to abort)." >&2
@@ -268,7 +268,7 @@ case "$MODE" in
       fi
       resp="$(jira_curl -X POST -H 'Content-Type: application/json' -H 'Accept: application/json' --data-binary "$payload" -w $'\n%{http_code}' "$JIRA_URL/rest/api/2/issueLink")"
       code="${resp##*$'\n'}"; lbody="${resp%$'\n'*}"
-      if [ "$code" = "201" ]; then echo "Linked: $LINK_KEY $REL_DESC $r"
+      if [ "$code" = "201" ]; then echo "Linked: $r $REL_DESC $LINK_KEY"
       else echo "Link failed ($LINK_KEY -> $r, HTTP $code):" >&2; printf '%s' "$lbody" | jq . >&2 2>/dev/null || printf '%s\n' "$lbody" >&2; rc=1; fi
     done
     exit $rc ;;

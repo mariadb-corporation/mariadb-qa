@@ -93,6 +93,11 @@ if [ -L "/home/${USER}/u" ]; then rm "/home/${USER}/u"; fi
 if [ -L "/home/${USER}/usage" ]; then rm "/home/${USER}/usage"; fi
 # ln -fs /home/${USER}/mariadb-qa/claude_usage.sh /home/${USER}/u 2>&1      # Claude usage meter (short)
 # ln -fs /home/${USER}/mariadb-qa/claude_usage.sh /home/${USER}/usage 2>&1  # Claude usage meter (long)
+rm -f ${HOME}/ts+ ${HOME}/tsm ${HOME}/tsm+  # ts is gone; use t or tt instead
+# Remove ${HOME} symlinks into mariadb-qa whose target no longer exists. The
+# blanket homedir_scripts link above cannot prune, so a renamed or deleted
+# script otherwise leaves a dangling symlink behind.
+find /home/${USER}/ -maxdepth 1 -xtype l -lname '*/mariadb-qa/*' -delete 2>/dev/null
 
 # Claude Code skills: link shared skills from mariadb-qa/skills into ${HOME}/.claude/skills
 # Bare invocation is preserved; only manages its own links, never touches unmanaged skill dirs
