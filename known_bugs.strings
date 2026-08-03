@@ -249,6 +249,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+escape != -1000|SIGABRT|Item_func_like::val_bool|Item::eval_const_cond|Item_cond::eval_not_null_tables|Item_cond::fix_fields                                                   ## MDEV-40594
 SIGSEGV|my_mb_wc_utf16_quick|my_utf16_uni|get_first_nonspace|json_scan_next                                                                                                    ## MDEV-40572
 SIGSEGV|my_mb_wc_ucs2_quick|my_ucs2_uni|get_first_nonspace|json_scan_next                                                                                                      ## MDEV-40572
 prebuilt->template_type == ROW_MYSQL_WHOLE_ROW|SIGABRT|ut_dbg_assertion_failed|row_update_for_mysql|ha_innobase::delete_row|handler::ha_delete_row                             ## MDEV-24808
