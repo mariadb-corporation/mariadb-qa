@@ -1,0 +1,3 @@
+CREATE TABLE t1 (c2 INT,KEY(c2));
+SET optimizer_trace=1;
+SELECT 1 FROM t1 WHERE c2=RAND(1) GROUP BY c2 LIMIT 1;
