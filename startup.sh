@@ -10,6 +10,12 @@ RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
 if [[ "${PWD}" == *"/mariadb-test" ]]; then cd ..; fi
 if [[ "${PWD}" == *"/mysql-test" ]]; then cd ..; fi
 
+# This script writes into, and deletes files from, the current directory, so it only runs in a basedir
+if [ ! -r ${PWD}/bin/mariadbd ] && [ ! -r ${PWD}/bin/mysqld ] && [ ! -r ${PWD}/bin/mysqld-debug ]; then
+  echo "Assert: ${PWD} is not a basedir. Nothing written or deleted. Run this from a basedir."
+  exit 1
+fi
+
 # Filter the following text (regex aware) from INIT_TOOL startup
 FILTER_INIT_TEXT='^[ \t]*$|Installing.*system tables|OK|To start mysqld at boot time|To start mariadbd at boot time|to the right place for your system|PLEASE REMEMBER TO SET A PASSWORD|then issue the following command|bin/mysql_secure_installation|which will also give you the option|databases and anonymous user created by default|strongly recommended for production servers|See the MariaDB Knowledgebase at|You can start the MariaDB daemon|mysqld_safe --datadir|You can test the MariaDB daemon|perl mysql-test-run.pl|Please report any problems at|The latest information about MariaDB|strong and vibrant community|mariadb.org/get-involved|^[2-9][0-9][0-9][0-9][0-9][0-9] [0-2][0-9]:|^20[2-9][0-9]|See the manual|start the MySQL daemon|bin/mysqld_safe|test the MySQL daemon with|latest information about|http://|https://|by buying support/|Found existing config file|Because this file might be in use|but was used in bootstrap|when you later start the server|new default config file was created|compare it with your file|root.*new.*password|Alternatively you can run|will be used by default|You may edit this file to change|Filling help tables|TIMESTAMP with implicit DEFAULT value|You can find the latest source|the maria-discuss email list|Please check all of the above|Optimizer switch:|perl mariadb|^cd |bin/mariadb-secure-installation|secure-file-priv value as server is running with|starting as process|Using unique option prefix core|Deprecated program name|Corporation subscription customer|consultative guidance on questions|how to tune for performance|manual for more instructions|additional information about the'
 
@@ -124,10 +130,6 @@ if [ "$(uname -v | grep 'Ubuntu')" != "" ]; then
 fi
 
 # Delete any .cnf files. Whilst the framework takes care of not accidentally reading .cnf files (generally by using --no-defaults --loose-innodb-buffer-pool-in-core-dump=0 everwhere), it is best to delete these unnecessary files. Also cleanup some other non-used files
-if [ ! -r ${PWD}/bin/mariadbd ] && [ ! -r ${PWD}/bin/mysqld ] && [ ! -r ${PWD}/bin/mysqld-debug ]; then
-  echo "Assert: ${PWD} is not a basedir. Nothing deleted. Run this from a basedir."
-  exit 1
-fi
 rm -f *.cnf COPYING CREDITS README-wsrep THIRDPARTY README* LICENSE*
 
 CLIENT_TO_USE=

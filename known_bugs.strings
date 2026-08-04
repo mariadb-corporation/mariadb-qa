@@ -14,13 +14,10 @@ MARIADB_ERROR_CODE|MariaDB error code: 1399  ## MDEV-36859
 
 ### Temp Search Key: Ma2
 ##### MDEV-35915 testing v12 #####
-table->get_ref_count() == 0|SIGABRT|ut_dbg_assertion_failed|dict_sys_t::remove|dict_sys_t::close|innodb_shutdown                                                               ## MDEV-39149>MDEV-37968
-table->s->table_category == TABLE_CATEGORY_SYSTEM || table->s->table_category == TABLE_CATEGORY_STATISTICS|SIGABRT|open_system_tables_for_read|mysqld_help_internal|mysqld_help|mysql_execute_command ## MDEV-37968
-open_tables == 0 && temporary_tables == 0 && derived_tables == 0 && lock == 0 && locked_tables_mode == LTM_NONE && m_reprepare_observer == __null|SIGABRT|THD::restore_backup_open_tables_state|start_new_trans::restore_old_transaction|start_new_trans::destroy|start_new_trans::~start_new_trans ## MDEV-37968
-
-SIGSEGV|wait_while_table_is_used|wait_while_table_is_used|mysql_rm_table_no_locks|mysql_create_table_no_lock ## MDEV-38467 (i.e. MDEV-26805)
-
-
+#table->get_ref_count() == 0|SIGABRT|ut_dbg_assertion_failed|dict_sys_t::remove|dict_sys_t::close|innodb_shutdown                                                               ## MDEV-39149>MDEV-37968
+#table->s->table_category == TABLE_CATEGORY_SYSTEM || table->s->table_category == TABLE_CATEGORY_STATISTICS|SIGABRT|open_system_tables_for_read|mysqld_help_internal|mysqld_help|mysql_execute_command ## MDEV-37968
+#open_tables == 0 && temporary_tables == 0 && derived_tables == 0 && lock == 0 && locked_tables_mode == LTM_NONE && m_reprepare_observer == __null|SIGABRT|THD::restore_backup_open_tables_state|start_new_trans::restore_old_transaction|start_new_trans::destroy|start_new_trans::~start_new_trans ## MDEV-37968
+#SIGSEGV|wait_while_table_is_used|wait_while_table_is_used|mysql_rm_table_no_locks|mysql_create_table_no_lock ## MDEV-38467 (i.e. MDEV-26805)
 
 # Temporary: older CS versions like 10.6 still show these instead of the new init_slave generic error 4226
 # These are all the direct result of using init_slave in various ways, for example with an unparsable SQL statement

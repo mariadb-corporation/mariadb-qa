@@ -29,8 +29,9 @@ if [ -f "$LOCAL_DENYLIST" ]; then
   while IFS= read -r line; do
     case "$line" in
       ''|\#*) continue ;;
-      PATH:*) PATH_DENY="$PATH_DENY|${line#PATH:}" ;;
-      *)      CONTENT_DENY="$CONTENT_DENY|$line" ;;
+      PATH:*)  PATH_DENY="$PATH_DENY|${line#PATH:}" ;;
+      ALLOW:*) CONTENT_ALLOW="$CONTENT_ALLOW|${line#ALLOW:}" ;;
+      *)       CONTENT_DENY="$CONTENT_DENY|$line" ;;
     esac
   done < "$LOCAL_DENYLIST"
   # An invalid denylist regex must fail closed, not silently disable the scan
