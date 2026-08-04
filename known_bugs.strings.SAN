@@ -22,6 +22,7 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|get_new_start_alter_info|Query_log_event::handle_split_alter_query_log_event                                               ## MDEV-37770 (needs testcase)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+MSAN|use-of-uninitialized-value|sql/item_timefunc.cc|extract_date_time|Item_func_str_to_date::get_date_common|Type_handler_temporal_with_date::Item_update_null_value|Item_func::is_null  ## MDEV-40616
 UBSAN|member call on null pointer of type 'Item'|sql/filesort.cc|sortlength|filesort|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner                    ## MDEV-33121
 MSAN|use-of-uninitialized-value|sql/opt_range_mrr.cc|sel_arg_range_seq_next|trace_ranges|get_best_group_min_max|SQL_SELECT::test_quick_select                                  ## MDEV-40607
 UBSAN|load of null pointer of type 'Item *'|sql/sql_select.cc|copy_funcs|multi_delete::send_data|select_result_sink::send_data_with_check|end_send                             ## MDEV-40573
