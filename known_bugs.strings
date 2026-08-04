@@ -246,6 +246,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+lsn == first_lsn + os_file_get_size(log.m_file) - START_OFFSET|SIGABRT|log_t::archive_create|buf_flush_archive_create|buf_flush_page_cleaner|std::__invoke_impl<void, void     ## MDEV-40080
 SIGSEGV|sortlength|filesort|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner                                                                             ## MDEV-33121
 pos->field != __null || pos->item != __null|SIGABRT|Filesort::make_sortorder|filesort|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner                   ## MDEV-33121
 !order->item[0]->with_sum_func()|SIGABRT|simple_remove_const|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner|Sql_cmd_dml::execute                       ## MDEV-33121
