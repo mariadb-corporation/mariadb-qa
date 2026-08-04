@@ -124,6 +124,10 @@ if [ "$(uname -v | grep 'Ubuntu')" != "" ]; then
 fi
 
 # Delete any .cnf files. Whilst the framework takes care of not accidentally reading .cnf files (generally by using --no-defaults --loose-innodb-buffer-pool-in-core-dump=0 everwhere), it is best to delete these unnecessary files. Also cleanup some other non-used files
+if [ ! -r ${PWD}/bin/mariadbd ] && [ ! -r ${PWD}/bin/mysqld ] && [ ! -r ${PWD}/bin/mysqld-debug ]; then
+  echo "Assert: ${PWD} is not a basedir. Nothing deleted. Run this from a basedir."
+  exit 1
+fi
 rm -f *.cnf COPYING CREDITS README-wsrep THIRDPARTY README* LICENSE*
 
 CLIENT_TO_USE=

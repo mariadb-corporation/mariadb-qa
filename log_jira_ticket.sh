@@ -1,7 +1,7 @@
 #!/bin/bash
-# Create a public bug ticket on jira.mariadb.org via the REST API.
-# Scope: public generic bugs (crash / assert / UB / ASAN). Security-level
-# tickets are filed manually and are out of scope here.
+# Create a bug ticket on jira.mariadb.org via the REST API.
+# Scope: public generic bugs (crash / assert / UB / ASAN), and with
+# --security-bug a developer-only ticket whose comments are developer-only too.
 # No credentials live in this script or the repo. A Personal Access Token is
 # read from $JIRA_PAT, else from a chmod-600 file under ~/.config. On first use
 # the script guides token creation and stores it securely.
@@ -30,8 +30,13 @@ ASSUME_YES=0
 MODE="create"
 WHOAMI=""
 PAT=""
+SEC_BUG=0
+DEV_ONLY=0
+SEC_LEVEL_ID="${JIRA_SEC_LEVEL_ID:-10400}"
+SEC_LEVEL_NAME="${JIRA_SEC_LEVEL_NAME:-Developers}"
+SEC_ROLE="${JIRA_SEC_ROLE:-Developers}"
 
-declare -a AFFECTS=() FIXINS=() COMPONENTS=() LABELS=() RELATES=() ESVERS=()
+declare -a AFFECTS=() FIXINS=() COMPONENTS=() LABELS=() RELATES=() ESVERS=() SEC_COMMENTS=()
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 
@@ -45,6 +50,7 @@ Modes:
   --whoami           Print the authenticated Jira account
   --createmeta       List required fields for --project / --type
   --comment KEY      Add a comment to issue KEY (body via -d / --description-file)
+                       Add --dev-only to restrict it to the $SEC_ROLE role
   --link KEY         Link KEY to related issues: --link KEY --relates OTHER [--relates …] [--link-type Relates] [--reverse]
                        Default reads "OTHER <type-inward> KEY" (e.g. PartOf: "OTHER is part of KEY");
                        --reverse flips to "OTHER <type-outward> KEY" (e.g. PartOf: "OTHER includes KEY").
@@ -72,6 +78,20 @@ Create options:
       --dry-run            Print the payload, do not POST (no auth needed)
   -y, --yes                Skip the 3x confirmation (for automation)
   -h, --help               This help
+
+Security bug options:
+      --security-bug       File a developer-only security ticket: security level
+                           $SEC_LEVEL_NAME (id $SEC_LEVEL_ID), and the description defaults
+                           to the summary, so nothing but the title is public.
+      --sec-comment FILE   Comment file to post after create, visible to the
+                           $SEC_ROLE role only (repeatable, posted in order).
+                           Needs --security-bug. Typical order:
+                             --sec-comment comment_1.txt
+                             --sec-comment comment_2.txt
+                             --sec-comment comment_3.txt
+                           After posting, the level and every comment's
+                           visibility are read back and checked.
+      --dev-only           With --comment KEY: restrict that comment to $SEC_ROLE
 
 Auth:
   Token order: \$JIRA_PAT, then $CRED_FILE
@@ -104,6 +124,9 @@ while [ $# -gt 0 ]; do
     --assignee) ASSIGNEE="$2"; shift ;;
     --environment) ENVIRONMENT="$2"; shift ;;
     --json-extra) EXTRA_FILE="$2"; shift ;;
+    --security-bug) SEC_BUG=1 ;;
+    --sec-comment) SEC_COMMENTS+=("$2"); shift ;;
+    --dev-only) DEV_ONLY=1 ;;
     --dry-run) DRY_RUN=1 ;;
     -y|--yes) ASSUME_YES=1 ;;
     -h|--help) usage; exit 0 ;;
@@ -166,6 +189,46 @@ require_auth() {
   whoami_check || { echo "Stored token invalid or expired; re-authenticating." >&2; prompt_and_store_pat; }
 }
 
+# Post one comment file, visible to the $SEC_ROLE role only.
+post_dev_comment() {
+  local key="$1" file="$2" payload resp code cbody
+  payload="$(jq -n --rawfile b "$file" --arg r "$SEC_ROLE" \
+    '{body: $b, visibility: {type: "role", value: $r}}')"
+  resp="$(jira_curl -X POST -H 'Content-Type: application/json' -H 'Accept: application/json' \
+    --data-binary "$payload" -w $'\n%{http_code}' "$JIRA_URL/rest/api/2/issue/$key/comment")"
+  code="${resp##*$'\n'}"; cbody="${resp%$'\n'*}"
+  if [ "$code" = "201" ]; then
+    echo "Comment added ($SEC_ROLE only): $file"
+    return 0
+  fi
+  echo "Comment failed for $file (HTTP $code):" >&2
+  printf '%s' "$cbody" | jq . >&2 2>/dev/null || printf '%s\n' "$cbody" >&2
+  return 1
+}
+
+# Read back the security level and every comment's visibility.
+verify_security() {
+  local key="$1" json lvl open bad=0
+  json="$(jira_curl -H 'Accept: application/json' \
+    "$JIRA_URL/rest/api/2/issue/$key?fields=security,comment")"
+  lvl="$(printf '%s' "$json" | jq -r '.fields.security.name // "NONE"')"
+  if [ "$lvl" = "$SEC_LEVEL_NAME" ]; then
+    echo "Verified: security level $lvl"
+  else
+    echo "VERIFY FAILED: $key is at level '$lvl', not '$SEC_LEVEL_NAME'. It is public." >&2
+    bad=1
+  fi
+  open="$(printf '%s' "$json" | jq -r --arg r "$SEC_ROLE" \
+    '[.fields.comment.comments[]? | select((.visibility.value // "") != $r)] | length')"
+  if [ "$open" = "0" ]; then
+    echo "Verified: every comment restricted to $SEC_ROLE"
+  else
+    echo "VERIFY FAILED: $open comment(s) on $key are not restricted to $SEC_ROLE." >&2
+    bad=1
+  fi
+  return $bad
+}
+
 # name-array of strings -> JSON [{"name": ...}]
 arr_named() {
   local -n _a="$1"
@@ -217,8 +280,14 @@ case "$MODE" in
     fi
     [ -n "$DESCRIPTION" ] || die "comment body required (-d or --description-file)"
     require_auth
-    payload="$(jq -n --arg b "$DESCRIPTION" '{body: $b}')"
+    if [ "$DEV_ONLY" = 1 ]; then
+      payload="$(jq -n --arg b "$DESCRIPTION" --arg r "$SEC_ROLE" \
+        '{body: $b, visibility: {type: "role", value: $r}}')"
+    else
+      payload="$(jq -n --arg b "$DESCRIPTION" '{body: $b}')"
+    fi
     echo "=== Comment on: $JIRA_URL/browse/$COMMENT_KEY  (as $WHOAMI) ===" >&2
+    if [ "$DEV_ONLY" = 1 ]; then echo "=== Visible to: role $SEC_ROLE ===" >&2; fi
     echo "=== Body ===" >&2
     printf '%s\n' "$DESCRIPTION" >&2
     if [ "$DRY_RUN" = 1 ]; then echo "[dry-run] comment not posted." >&2; exit 0; fi
@@ -311,10 +380,19 @@ esac
 
 # --- create ---
 [ -n "$SUMMARY" ] || die "--summary is required"
+if [ "${#SEC_COMMENTS[@]}" -gt 0 ] && [ "$SEC_BUG" != 1 ]; then
+  die "--sec-comment needs --security-bug"
+fi
+if [ "${#SEC_COMMENTS[@]}" -gt 0 ]; then
+  for f in "${SEC_COMMENTS[@]}"; do
+    [ -f "$f" ] || die "sec-comment file not found: $f"
+  done
+fi
 if [ -n "$DESC_FILE" ]; then
   [ -f "$DESC_FILE" ] || die "description file not found: $DESC_FILE"
   DESCRIPTION="$(< "$DESC_FILE")"
 fi
+if [ -z "$DESCRIPTION" ] && [ "$SEC_BUG" = 1 ]; then DESCRIPTION="$SUMMARY"; fi
 [ -n "$DESCRIPTION" ] || die "--description or --description-file is required"
 
 versions_json="$(arr_named AFFECTS)"
@@ -352,6 +430,10 @@ if [ -n "$EXTRA_FILE" ]; then
   fields="$(jq -n --argjson a "$fields" --argjson b "$(cat "$EXTRA_FILE")" '$a + $b')"
 fi
 
+if [ "$SEC_BUG" = 1 ]; then
+  fields="$(jq -n --argjson a "$fields" --arg id "$SEC_LEVEL_ID" '$a + {security: {id: $id}}')"
+fi
+
 payload="$(jq -n --argjson f "$fields" '{fields: $f}')"
 
 echo "=== Target : POST $JIRA_URL/rest/api/2/issue ===" >&2
@@ -360,6 +442,10 @@ printf '%s\n' "$payload" | jq . >&2
 
 if [ "$DRY_RUN" = 1 ]; then
   echo "[dry-run] payload not posted." >&2
+  if [ "${#SEC_COMMENTS[@]}" -gt 0 ]; then
+    echo "[dry-run] would post as $SEC_ROLE-only comments, in order:" >&2
+    printf '  %s\n' "${SEC_COMMENTS[@]}" >&2
+  fi
   exit 0
 fi
 
@@ -367,7 +453,11 @@ require_auth
 echo "=== As : $WHOAMI ===" >&2
 
 if [ "$ASSUME_YES" != 1 ]; then
-  echo "Confirm creation of this PUBLIC ticket. Press Enter 3x (Ctrl-C to abort)." >&2
+  if [ "$SEC_BUG" = 1 ]; then
+    echo "Confirm creation of this $SEC_LEVEL_NAME-only security ticket. Press Enter 3x (Ctrl-C to abort)." >&2
+  else
+    echo "Confirm creation of this PUBLIC ticket. Press Enter 3x (Ctrl-C to abort)." >&2
+  fi
   read -rp "1x... " _ < /dev/tty
   read -rp "2x... " _ < /dev/tty
   read -rp "3x... " _ < /dev/tty
@@ -386,4 +476,15 @@ else
   echo "Create failed (HTTP $code):" >&2
   printf '%s' "$body" | jq . >&2 2>/dev/null || printf '%s\n' "$body" >&2
   exit 1
+fi
+
+if [ "$SEC_BUG" = 1 ]; then
+  rc=0
+  if [ "${#SEC_COMMENTS[@]}" -gt 0 ]; then
+    for f in "${SEC_COMMENTS[@]}"; do
+      post_dev_comment "$key" "$f" || rc=1
+    done
+  fi
+  verify_security "$key" || rc=1
+  [ "$rc" = 0 ] || die "$key needs attention: see the failures above."
 fi

@@ -104,7 +104,6 @@ USE_INFILE=${USE_INFILE:-0}
 REVGEN_OPTIONS=${REVGEN_OPTIONS:-"--depth 10"}  # Measured best balance of parse-valid SQL against grammar reach; see pquery-run-MD-revgen.conf
 REVGEN_YACC=${REVGEN_YACC:-${SCRIPT_PWD}/yacc/13.1_sql_yacc.yy}
 REVGEN_VALIDATE_SOCKET=${REVGEN_VALIDATE_SOCKET:-}  # Optional: socket of a separate server revgen PREPARE-tests its output against, dropping unparseable statements. Ignored when unset or absent
-REVGEN_MIX_PERCENTAGE=${REVGEN_MIX_PERCENTAGE:-49}
 QUERIES_PER_REVGEN_RUN=${QUERIES_PER_REVGEN_RUN:-25000}
 REVGEN_NEW_QUERIES_EVERY_X_TRIALS=${REVGEN_NEW_QUERIES_EVERY_X_TRIALS:-10}
 GENERATION_THREADS=${GENERATION_THREADS:-0}  # Threads for the generator and revgen per trial; 0 = auto (CPU cores / 4)
@@ -240,58 +239,14 @@ fi
 # Try and raise ulimit for user processes (see setup_server.sh for how to set correct soft/hard nproc settings in limits.conf)
 #ulimit -u 7000
 
-# PRE_SHUFFLE_SQL 3-8 are mix modes. The odd modes (3/5/7) take their remainder from the single
-# INFILE (PS=1-style); the even modes (4/6/8) from all SQL found on disk (PS=2-style):
-#   3/4: GENERATOR_MIX_PERCENTAGE% generator + remainder
-#   5/6: REVGEN_MIX_PERCENTAGE%    revgen    + remainder
-#   7/8: generator + revgen + remainder (GENERATOR_MIX_PERCENTAGE% + REVGEN_MIX_PERCENTAGE% <= 99)
-# Auto-enable the required source(s), validate the mix percentage(s), and raise each source's
-# QUERIES_PER_*_RUN so it emits at least its share of PRE_SHUFFLE_MIN_SQL_LINES (sampled via shuf -n).
-case "${PRE_SHUFFLE_SQL}" in
-  3|4|7|8)
-    if [ "${USE_GENERATOR}" -ne 1 ]; then
-      echoit "Note: PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL} is a generator-mix mode; auto-setting USE_GENERATOR=1"
-      USE_GENERATOR=1
-    fi
-    if [ -z "${GENERATOR_MIX_PERCENTAGE}" ]; then GENERATOR_MIX_PERCENTAGE=49; fi
-    if ! [[ "${GENERATOR_MIX_PERCENTAGE}" =~ ^[0-9]+$ ]] || [ "${GENERATOR_MIX_PERCENTAGE}" -lt 1 ] || [ "${GENERATOR_MIX_PERCENTAGE}" -gt 99 ]; then
-      echoit "Assert: PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL} requires GENERATOR_MIX_PERCENTAGE to be an integer in the range 1-99 (current value: '${GENERATOR_MIX_PERCENTAGE}')"
-      exit 1
-    fi
-    if [ -z "${QUERIES_PER_GENERATOR_RUN}" ]; then QUERIES_PER_GENERATOR_RUN=0; fi
-    PS_GEN_LINES_TARGET=$(( PRE_SHUFFLE_MIN_SQL_LINES * GENERATOR_MIX_PERCENTAGE / 100 ))
-    if [ "${QUERIES_PER_GENERATOR_RUN}" -lt "${PS_GEN_LINES_TARGET}" ]; then
-      echoit "Note: PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL} targets ${GENERATOR_MIX_PERCENTAGE}% generator SQL (~${PS_GEN_LINES_TARGET} of ${PRE_SHUFFLE_MIN_SQL_LINES} lines); raising QUERIES_PER_GENERATOR_RUN from ${QUERIES_PER_GENERATOR_RUN} to ${PS_GEN_LINES_TARGET}"
-      QUERIES_PER_GENERATOR_RUN=${PS_GEN_LINES_TARGET}
-    fi
-    PS_GEN_LINES_TARGET=
-    ;;
-esac
-case "${PRE_SHUFFLE_SQL}" in
-  5|6|7|8)
-    if [ "${USE_REVGEN}" -ne 1 ]; then
-      echoit "Note: PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL} is a revgen-mix mode; auto-setting USE_REVGEN=1"
-      USE_REVGEN=1
-    fi
-    if [ -z "${REVGEN_MIX_PERCENTAGE}" ]; then REVGEN_MIX_PERCENTAGE=49; fi
-    if ! [[ "${REVGEN_MIX_PERCENTAGE}" =~ ^[0-9]+$ ]] || [ "${REVGEN_MIX_PERCENTAGE}" -lt 1 ] || [ "${REVGEN_MIX_PERCENTAGE}" -gt 99 ]; then
-      echoit "Assert: PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL} requires REVGEN_MIX_PERCENTAGE to be an integer in the range 1-99 (current value: '${REVGEN_MIX_PERCENTAGE}')"
-      exit 1
-    fi
-    if [ -z "${QUERIES_PER_REVGEN_RUN}" ]; then QUERIES_PER_REVGEN_RUN=0; fi
-    PS_REV_LINES_TARGET=$(( PRE_SHUFFLE_MIN_SQL_LINES * REVGEN_MIX_PERCENTAGE / 100 ))
-    if [ "${QUERIES_PER_REVGEN_RUN}" -lt "${PS_REV_LINES_TARGET}" ]; then
-      echoit "Note: PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL} targets ${REVGEN_MIX_PERCENTAGE}% revgen SQL (~${PS_REV_LINES_TARGET} of ${PRE_SHUFFLE_MIN_SQL_LINES} lines); raising QUERIES_PER_REVGEN_RUN from ${QUERIES_PER_REVGEN_RUN} to ${PS_REV_LINES_TARGET}"
-      QUERIES_PER_REVGEN_RUN=${PS_REV_LINES_TARGET}
-    fi
-    PS_REV_LINES_TARGET=
-    ;;
-esac
-if [ "${PRE_SHUFFLE_SQL}" == "7" -o "${PRE_SHUFFLE_SQL}" == "8" ]; then
-  if [ $(( GENERATOR_MIX_PERCENTAGE + REVGEN_MIX_PERCENTAGE )) -gt 99 ]; then
-    echoit "Assert: PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL} requires GENERATOR_MIX_PERCENTAGE + REVGEN_MIX_PERCENTAGE <= 99 (currently ${GENERATOR_MIX_PERCENTAGE} + ${REVGEN_MIX_PERCENTAGE}), leaving room for the remainder"
-    exit 1
-  fi
+# PRE_SHUFFLE_SQL controls HOW the SQL is shuffled, not WHICH sources are used:
+#   0 = no pre-shuffle (pquery shuffles the active sources)
+#   1 = pre-shuffle / sample the active sources into a randomized pool (handles large inputs)
+#   2 = pre-shuffle all SQL found on disk (standalone; ignores the source toggles)
+# The sources are chosen by USE_GENERATOR / USE_REVGEN / USE_INFILE, independent of PRE_SHUFFLE_SQL.
+if ! [[ "${PRE_SHUFFLE_SQL}" =~ ^[0-2]$ ]]; then
+  echoit "Assert: PRE_SHUFFLE_SQL must be 0, 1 or 2 (current value: '${PRE_SHUFFLE_SQL}')"
+  exit 1
 fi
 
 # When revgen is in use, its yacc grammar (REVGEN_YACC) must exist before we start: revgen walks it to
@@ -304,12 +259,12 @@ if [ "${USE_REVGEN}" -eq 1 ]; then
   echoit "revgen grammar (REVGEN_YACC): ${REVGEN_YACC}"
 fi
 
-# Input file compressed? preflight check. Needed when neither the generator nor revgen is in use, and
-# also for the odd mix modes PRE_SHUFFLE_SQL=3/5/7 (which mix in the original single INFILE remainder).
-# PRE_SHUFFLE_SQL=2/4/6/8 source their SQL from all files found on disk, so the single INFILE is not required for those.
-# Do not filter PRE_SHUFFLE_SQL=2 (mix all sql files) from extracting the tar here, as the main tar may still need extracting for example when mariadb-qa was just cloned, and it will also need extracting for multi-threaded runs
-if { [ "${USE_GENERATOR}" -ne 1 ] && [ "${USE_REVGEN}" -ne 1 ]; } || [ "${PRE_SHUFFLE_SQL}" == "3" ] || [ "${PRE_SHUFFLE_SQL}" == "5" ] || [ "${PRE_SHUFFLE_SQL}" == "7" ]; then
-  if [ "${PRE_SHUFFLE_SQL}" -ne 2 ] && [ "${PRE_SHUFFLE_SQL}" -ne 4 ] && [ "${PRE_SHUFFLE_SQL}" -ne 6 ] && [ "${PRE_SHUFFLE_SQL}" -ne 8 ]; then  # PRE_SHUFFLE_SQL=2/4/6/8 source all SQL on disk, so no single INFILE is needed
+# Input file (INFILE) tarball preflight. The single INFILE is needed whenever it is a source: no
+# generator active (INFILE is the input) or USE_INFILE=1 (its full content is appended). It is not
+# needed for PRE_SHUFFLE_SQL=2 (all SQL on disk). Extract it here if it is a .tar.* archive (the tar
+# may also need extracting on a fresh clone or for multi-threaded runs).
+if { [ "${USE_GENERATOR}" -ne 1 ] && [ "${USE_REVGEN}" -ne 1 ]; } || [ "${USE_INFILE}" -eq 1 ]; then
+  if [ "${PRE_SHUFFLE_SQL}" -ne 2 ]; then
     if [ ! -r ${INFILE} ]; then
       echo "Assert! \$INFILE (${INFILE}) cannot be read? Check file existence and privileges!"
       exit 1
@@ -327,12 +282,6 @@ if { [ "${USE_GENERATOR}" -ne 1 ] && [ "${USE_REVGEN}" -ne 1 ]; } || [ "${PRE_SH
       fi
       ORIGINAL_INFILE=
     fi
-  fi
-  if [ "${PRE_SHUFFLE_SQL}" == "3" -o "${PRE_SHUFFLE_SQL}" == "5" -o "${PRE_SHUFFLE_SQL}" == "7" ]; then ORIG_INFILE="${INFILE}"; fi  # odd mix modes (3/5/7) mix in the original single INFILE remainder; preserve its path as the generator/revgen blocks may overwrite INFILE
-else
-  if [ "${PRE_SHUFFLE_SQL}" -gt 0 ] && [ "${PRE_SHUFFLE_SQL}" -lt 3 ]; then  # mix modes 3-8 use the generator/revgen; only PS=1/2 conflict with them
-    echoit "Note: USE_GENERATOR=1 and/or USE_REVGEN=1 is set with PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL}. These are mutually exclusive: the generator(s) produce a fresh input file every trial, so pre-shuffling it adds no value: Auto-disabling PRE_SHUFFLE_SQL"
-    PRE_SHUFFLE_SQL=0
   fi
 fi
 
@@ -561,77 +510,8 @@ pre_shuffle_setup(){
     fi
     PRE_SHUFFLE_RES_FIN_LINES=
     PRE_SHUFFLE_RES_FIN_LINES_BEFORE_FILTER=
-  elif [ "${PRE_SHUFFLE_SQL}" -ge 3 ] && [ "${PRE_SHUFFLE_SQL}" -le 8 ]; then
-    # Mix modes: assemble PRE_SHUFFLE_MIN_SQL_LINES from up to three sources - a GENERATOR_MIX_PERCENTAGE%
-    # generator share (GEN_OUTFILE), a REVGEN_MIX_PERCENTAGE% revgen share (REVGEN_OUTFILE), and the
-    # remainder from the original single INFILE (odd modes 3/5/7, PS=1-style) or all SQL found on disk
-    # (even modes 4/6/8, PS=2-style). Each generated share is capped by its file's actual size (shuf -n),
-    # so raise QUERIES_PER_GENERATOR_RUN / QUERIES_PER_REVGEN_RUN for a high ratio. Sources are
-    # concatenated then re-shuffled so they interleave rather than sit in separate blocks.
-    #   3/4 generator only    5/6 revgen only    7/8 generator + revgen
-    GEN_PCT=0; REV_PCT=0
-    case "${PRE_SHUFFLE_SQL}" in
-      3|4) GEN_PCT=${GENERATOR_MIX_PERCENTAGE} ;;
-      5|6) REV_PCT=${REVGEN_MIX_PERCENTAGE} ;;
-      7|8) GEN_PCT=${GENERATOR_MIX_PERCENTAGE}; REV_PCT=${REVGEN_MIX_PERCENTAGE} ;;
-    esac
-    GEN_LINES=$(( PRE_SHUFFLE_MIN_SQL_LINES * GEN_PCT / 100 ))
-    REV_LINES=$(( PRE_SHUFFLE_MIN_SQL_LINES * REV_PCT / 100 ))
-    OTHER_LINES=$(( PRE_SHUFFLE_MIN_SQL_LINES - GEN_LINES - REV_LINES ))
-    if [ "${OTHER_LINES}" -lt 0 ]; then OTHER_LINES=0; fi
-    > ${INFILE_SHUFFLED}
-    if [ "${GEN_LINES}" -gt 0 ]; then
-      shuf --random-source=/dev/urandom -n ${GEN_LINES} ${GEN_OUTFILE} | grep --binary-files=text -hivE "${ADV_FILTER_LIST}" | sed 's|/data/[^:]\+\.sql:||g;s|/test/[^:]\+\.sql:||g;s|;#NOERROR$|;|;s|;#NOERROR[#:].*$|;|;s|;#ERROR: .*$|;|;s|\r#NOERROR.*$|;|;' >> ${INFILE_SHUFFLED}
-    fi
-    if [ "${REV_LINES}" -gt 0 ]; then
-      shuf --random-source=/dev/urandom -n ${REV_LINES} ${REVGEN_OUTFILE} | grep --binary-files=text -hivE "${ADV_FILTER_LIST}" | sed 's|/data/[^:]\+\.sql:||g;s|/test/[^:]\+\.sql:||g;s|;#NOERROR$|;|;s|;#NOERROR[#:].*$|;|;s|;#ERROR: .*$|;|;s|\r#NOERROR.*$|;|;' >> ${INFILE_SHUFFLED}
-    fi
-    if [ "${OTHER_LINES}" -gt 0 ]; then
-      if [ $(( PRE_SHUFFLE_SQL % 2 )) -eq 1 ]; then  # odd modes 3/5/7: remainder from the original single INFILE
-        if [ -z "${ORIG_INFILE}" -o ! -r "${ORIG_INFILE}" ]; then
-          echoit "Assert: PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL} requires the original INFILE (ORIG_INFILE='${ORIG_INFILE}') to be readable for its ${OTHER_LINES}-line remainder"
-          exit 1
-        fi
-        shuf --random-source=/dev/urandom -n ${OTHER_LINES} ${ORIG_INFILE} | grep --binary-files=text -hivE "${ADV_FILTER_LIST}" | sed 's|/data/[^:]\+\.sql:||g;s|/test/[^:]\+\.sql:||g;s|;#NOERROR$|;|;s|;#NOERROR[#:].*$|;|;s|;#ERROR: .*$|;|;s|\r#NOERROR.*$|;|;' > ${INFILE_SHUFFLED}.other
-      else  # even modes 4/6/8: remainder from all SQL found on disk
-        pre_shuffle_collect_all_sql "${INFILE_SHUFFLED}.other" "${OTHER_LINES}" 1
-        # The all-SQL collector appends whole per-file samples and stops only once it crosses its target,
-        # so it can overshoot by up to one (potentially large) file's worth. Cap the remainder to
-        # OTHER_LINES (shuffled first for fair file representation) so the generated shares are not diluted.
-        if [ "$(wc -l < ${INFILE_SHUFFLED}.other)" -gt "${OTHER_LINES}" ]; then
-          shuf --random-source=/dev/urandom ${INFILE_SHUFFLED}.other | head -n ${OTHER_LINES} > ${INFILE_SHUFFLED}.other.cap
-          mv ${INFILE_SHUFFLED}.other.cap ${INFILE_SHUFFLED}.other
-        fi
-      fi
-      cat ${INFILE_SHUFFLED}.other >> ${INFILE_SHUFFLED}
-      rm -f ${INFILE_SHUFFLED}.other
-    fi
-    shuf --random-source=/dev/urandom ${INFILE_SHUFFLED} -o ${INFILE_SHUFFLED}  # Interleave the generator, revgen and remainder shares
-    PRE_SHUFFLE_RES_FIN_LINES_BEFORE_FILTER="$(wc -l ${INFILE_SHUFFLED} | awk '{print $1}')"
-    if [ "${FILTER_SQL}" == "1" ]; then
-      echoit "SQL filter is enabled, filtering all SQL lines in ${SCRIPT_PWD}/filter.sql from the input file"
-      mv ${INFILE_SHUFFLED} ${INFILE_SHUFFLED}.temp
-      grep --binary-files=text -hvif ${SCRIPT_PWD}/filter.sql ${INFILE_SHUFFLED}.temp > ${INFILE_SHUFFLED}
-      rm -f ${INFILE_SHUFFLED}.temp
-    fi
-    sed -i 's|/data/[^:]\+\.sql:||g;s|/test/[^:]\+\.sql:||g;s|;#NOERROR$|;|;s|;#NOERROR[#:].*$|;|;s|;#ERROR: .*$|;|;s|\r#NOERROR.*$|;|;' ${INFILE_SHUFFLED}
-    PRE_SHUFFLE_RES_FIN_LINES="$(wc -l ${INFILE_SHUFFLED} | awk '{print $1}')"
-    if [ "${PRE_SHUFFLE_RES_FIN_LINES}" -eq 0 ]; then
-      echoit "Assert: obtaining the PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL} SQL failed: the resulting outfile, (${INFILE_SHUFFLED}) contains 0 lines"
-      exit 1
-    else
-      if [ $(( PRE_SHUFFLE_SQL % 2 )) -eq 1 ]; then PS_REM_LABEL="the rest from the INFILE"; else PS_REM_LABEL="the rest from all SQL found"; fi
-      PS_MIX=""
-      [ "${GEN_PCT:-0}" -gt 0 ] 2>/dev/null && PS_MIX="${GEN_PCT}% generator"
-      [ "${REV_PCT:-0}" -gt 0 ] 2>/dev/null && PS_MIX="${PS_MIX:+${PS_MIX} + }${REV_PCT}% revgen"
-      echoit "Obtaining the PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL} SQL (${PS_MIX:+${PS_MIX}, }${PS_REM_LABEL}) took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds. The final file (${INFILE_SHUFFLED}) contains ${PRE_SHUFFLE_RES_FIN_LINES} lines"
-      PS_REM_LABEL=; PS_MIX=
-    fi
-    PRE_SHUFFLE_RES_FIN_LINES=
-    PRE_SHUFFLE_RES_FIN_LINES_BEFORE_FILTER=
-    GEN_PCT=; REV_PCT=; GEN_LINES=; REV_LINES=; OTHER_LINES=
   else
-    echoit "Assert: PRE_SHUFFLE_SQL not in 1-8: PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL}"
+    echoit "Assert: pre_shuffle_setup reached with PRE_SHUFFLE_SQL not 1 or 2: PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL}"
     exit 1
   fi
   PRE_SHUFFLE_DUR_START=
@@ -798,42 +678,22 @@ elif [ "${QUERY_CORRECTNESS_TESTING}" -ne 1 ]; then
     fi
   fi
 fi
-if [ "${PRE_SHUFFLE_SQL}" -ge 3 ] && [ "${PRE_SHUFFLE_SQL}" -le 8 ]; then
-  if [ $(( PRE_SHUFFLE_SQL % 2 )) -eq 1 ]; then PS_REM_SRC="the INFILE"; else PS_REM_SRC="all SQL found"; fi
-  case ${PRE_SHUFFLE_SQL} in
-    3|4) PS_MIX="${GENERATOR_MIX_PERCENTAGE}% generator" ;;
-    5|6) PS_MIX="${REVGEN_MIX_PERCENTAGE}% revgen" ;;
-    7|8) PS_MIX="${GENERATOR_MIX_PERCENTAGE}% generator + ${REVGEN_MIX_PERCENTAGE}% revgen" ;;
-  esac
-  echoit "PRE_SHUFFLE_SQL Active: YES, MODE ${PRE_SHUFFLE_SQL} (${PS_MIX}, the rest from ${PS_REM_SRC})"
-  PS_REM_SRC=; PS_MIX=
-elif [ "${USE_GENERATOR}" -eq 1 -a "${USE_REVGEN}" -eq 1 ]; then
-  echoit "PRE_SHUFFLE_SQL Active: NO (USE_GENERATOR=1 + USE_REVGEN=1: combined generator + revgen SQL produced fresh each trial)"
-elif [ "${USE_GENERATOR}" -eq 1 ]; then
-  echoit "PRE_SHUFFLE_SQL Active: NO (USE_GENERATOR=1 takes precedence)"
-  if [ "${USE_INFILE}" -eq 1 ]; then
-    echoit "INFILE: ${INFILE} (appended to generator output per trial via USE_INFILE=1)"
-  else
-    echoit "INFILE: Using SQL Generator (INFILE will be produced fresh each trial)"
-  fi
-elif [ "${USE_REVGEN}" -eq 1 ]; then
-  echoit "PRE_SHUFFLE_SQL Active: NO (USE_REVGEN=1 takes precedence)"
-  if [ "${USE_INFILE}" -eq 1 ]; then
-    echoit "INFILE: ${INFILE} (appended to revgen output per trial via USE_INFILE=1)"
-  else
-    echoit "INFILE: Using revgen (INFILE will be produced fresh each trial)"
-  fi
-elif [ "${PRE_SHUFFLE_SQL}" -eq 0 ]; then
-  echoit "PRE_SHUFFLE_SQL Active: NO"
-  echoit "INFILE: ${INFILE}"
-elif [ "${PRE_SHUFFLE_SQL}" -eq 1 ]; then
-  echoit "PRE_SHUFFLE_SQL Active: YES, MODE 1 (Pre-shuffle the INFILE SQL per trial)"
-  echoit "INFILE: ${INFILE}"
-elif [ "${PRE_SHUFFLE_SQL}" -eq 2 ]; then
-  echoit "PRE_SHUFFLE_SQL Active: YES, MODE 2 (Pre-shuffle all SQL wherever found)"
+SRC_DESC=""
+[ "${USE_GENERATOR}" -eq 1 ] && SRC_DESC="generator"
+[ "${USE_REVGEN}" -eq 1 ] && SRC_DESC="${SRC_DESC:+${SRC_DESC} + }revgen"
+[ "${USE_INFILE}" -eq 1 ] && SRC_DESC="${SRC_DESC:+${SRC_DESC} + }INFILE (full)"
+if [ "${PRE_SHUFFLE_SQL}" -eq 2 ]; then
+  echoit "Sources: all SQL found on disk (PRE_SHUFFLE_SQL=2)"
 else
-  echoit "PRE_SHUFFLE_SQL Active: YES, MODE ${PRE_SHUFFLE_SQL}"
+  if [ -z "${SRC_DESC}" ]; then SRC_DESC="INFILE"; fi
+  echoit "Sources: ${SRC_DESC}"
+  case "${PRE_SHUFFLE_SQL}" in
+    0) echoit "PRE_SHUFFLE_SQL=0: no pre-shuffle (pquery shuffles the input)" ;;
+    1) echoit "PRE_SHUFFLE_SQL=1: pre-shuffle/sample up to ${PRE_SHUFFLE_MIN_SQL_LINES} lines per shuffle" ;;
+  esac
+  echoit "INFILE: ${INFILE}"
 fi
+SRC_DESC=
 if [ ! -z "${STORAGE_ENGINE_SWAP}" ]; then
   echoit "STORAGE_ENGINE_SWAP Active: changing all storage engine references to ${STORAGE_ENGINE_SWAP}"
 fi
@@ -1684,13 +1544,9 @@ pquery_test(){
   if [ ${USE_GENERATOR} -eq 1 ]; then
     SAVEDIR=${PWD}
     cd ${SCRIPT_PWD}/generatorcpp/ || exit 1
-    # Mix modes (PRE_SHUFFLE_SQL 3-8): regenerate the pool exactly when the mix reshuffles (this trial has
-    # PRE_SHUFFLE_TRIAL_ROUND=0), so one cadence (PRE_SHUFFLE_TRIALS_PER_SHUFFLE) governs. Pure modes use
-    # GENERATE_NEW_QUERIES_EVERY_X_TRIALS.
+    # Regenerate the generated pool every GENERATE_NEW_QUERIES_EVERY_X_TRIALS trials; reuse it in between.
     GEN_REGEN=0
-    if [ "${PRE_SHUFFLE_SQL}" -ge 3 ]; then
-      [ "${PRE_SHUFFLE_TRIAL_ROUND}" -eq 0 ] && GEN_REGEN=1
-    elif [ ${TRIAL} -eq 1 ] || [ $((TRIAL % GENERATE_NEW_QUERIES_EVERY_X_TRIALS)) -eq 0 ]; then
+    if [ ${TRIAL} -eq 1 ] || [ $((TRIAL % GENERATE_NEW_QUERIES_EVERY_X_TRIALS)) -eq 0 ]; then
       GEN_REGEN=1
     fi
     if [ ${GEN_REGEN} -eq 1 ]; then
@@ -1728,9 +1584,6 @@ pquery_test(){
       if [[ "${MYEXTRA^^}" != *"HA_TOKUDB"* ]]; then # If this is not a TokuDB enabled run, exclude TokuDB SE
         sed -i "s|TokuDB|InnoDB|" out${RANDOMD}.sql
       fi
-      if [ ${USE_INFILE} -eq 1 ]; then
-        cat ${INFILE} >> out${RANDOMD}.sql
-      fi
       if [ ${FILTER_SQL} -eq 1 ]; then
         echoit "SQL filter is enabled, filtering all SQL lines in ${SCRIPT_PWD}/filter.sql from the generator output"
         BEFORE_FILTER_LINES_NR="$(wc -l out${RANDOMD}.sql | awk '{print $1}')"
@@ -1742,13 +1595,9 @@ pquery_test(){
         AFTER_FILTER_LINES_NR=
       fi
     else
-      if [ "${PRE_SHUFFLE_SQL}" -ge 3 ]; then
-        echoit "Re-using generated SQL out${RANDOMD}.sql (regenerated each reshuffle)"
-      else
-        GEN_LAST_REGEN_TRIAL=$(( (TRIAL / GENERATE_NEW_QUERIES_EVERY_X_TRIALS) * GENERATE_NEW_QUERIES_EVERY_X_TRIALS ))
-        if [ ${GEN_LAST_REGEN_TRIAL} -eq 0 ]; then GEN_LAST_REGEN_TRIAL=1; fi
-        echoit "Re-using generated SQL out${RANDOMD}.sql for Trial $((TRIAL - GEN_LAST_REGEN_TRIAL + 1))/${GENERATE_NEW_QUERIES_EVERY_X_TRIALS}"
-      fi
+      GEN_LAST_REGEN_TRIAL=$(( (TRIAL / GENERATE_NEW_QUERIES_EVERY_X_TRIALS) * GENERATE_NEW_QUERIES_EVERY_X_TRIALS ))
+      if [ ${GEN_LAST_REGEN_TRIAL} -eq 0 ]; then GEN_LAST_REGEN_TRIAL=1; fi
+      echoit "Re-using generated SQL out${RANDOMD}.sql for Trial $((TRIAL - GEN_LAST_REGEN_TRIAL + 1))/${GENERATE_NEW_QUERIES_EVERY_X_TRIALS}"
     fi
     GEN_OUTFILE=${PWD}/out${RANDOMD}.sql
     cd ${SAVEDIR} || exit 1
@@ -1756,11 +1605,9 @@ pquery_test(){
   if [ ${USE_REVGEN} -eq 1 ]; then
     SAVEDIR=${PWD}
     cd ${SCRIPT_PWD}/revgen/ || exit 1
-    # Same single-cadence rule as the generator: in mix modes regenerate when the mix reshuffles.
+    # Regenerate the revgen pool every REVGEN_NEW_QUERIES_EVERY_X_TRIALS trials; reuse it in between.
     REV_REGEN=0
-    if [ "${PRE_SHUFFLE_SQL}" -ge 3 ]; then
-      [ "${PRE_SHUFFLE_TRIAL_ROUND}" -eq 0 ] && REV_REGEN=1
-    elif [ ${TRIAL} -eq 1 ] || [ $((TRIAL % REVGEN_NEW_QUERIES_EVERY_X_TRIALS)) -eq 0 ]; then
+    if [ ${TRIAL} -eq 1 ] || [ $((TRIAL % REVGEN_NEW_QUERIES_EVERY_X_TRIALS)) -eq 0 ]; then
       REV_REGEN=1
     fi
     if [ ${REV_REGEN} -eq 1 ]; then
@@ -1803,9 +1650,6 @@ pquery_test(){
       if [[ "${MYEXTRA^^}" != *"HA_TOKUDB"* ]]; then # If this is not a TokuDB enabled run, exclude TokuDB SE
         sed -i "s|TokuDB|InnoDB|" outrev${RANDOMD}.sql
       fi
-      if [ ${USE_INFILE} -eq 1 ] && [ ${USE_GENERATOR} -ne 1 ]; then  # revgen-only: append INFILE here (combined runs append it once via the generator output)
-        cat ${INFILE} >> outrev${RANDOMD}.sql
-      fi
       if [ ${FILTER_SQL} -eq 1 ]; then
         echoit "SQL filter is enabled, filtering all SQL lines in ${SCRIPT_PWD}/filter.sql from the revgen output"
         BEFORE_FILTER_LINES_NR="$(wc -l outrev${RANDOMD}.sql | awk '{print $1}')"
@@ -1817,28 +1661,24 @@ pquery_test(){
         AFTER_FILTER_LINES_NR=
       fi
     else
-      if [ "${PRE_SHUFFLE_SQL}" -ge 3 ]; then
-        echoit "Re-using revgen SQL outrev${RANDOMD}.sql (regenerated each reshuffle)"
-      else
-        REV_LAST_REGEN_TRIAL=$(( (TRIAL / REVGEN_NEW_QUERIES_EVERY_X_TRIALS) * REVGEN_NEW_QUERIES_EVERY_X_TRIALS ))
-        if [ ${REV_LAST_REGEN_TRIAL} -eq 0 ]; then REV_LAST_REGEN_TRIAL=1; fi
-        echoit "Re-using revgen SQL outrev${RANDOMD}.sql for Trial $((TRIAL - REV_LAST_REGEN_TRIAL + 1))/${REVGEN_NEW_QUERIES_EVERY_X_TRIALS}"
-      fi
+      REV_LAST_REGEN_TRIAL=$(( (TRIAL / REVGEN_NEW_QUERIES_EVERY_X_TRIALS) * REVGEN_NEW_QUERIES_EVERY_X_TRIALS ))
+      if [ ${REV_LAST_REGEN_TRIAL} -eq 0 ]; then REV_LAST_REGEN_TRIAL=1; fi
+      echoit "Re-using revgen SQL outrev${RANDOMD}.sql for Trial $((TRIAL - REV_LAST_REGEN_TRIAL + 1))/${REVGEN_NEW_QUERIES_EVERY_X_TRIALS}"
     fi
     REVGEN_OUTFILE=${PWD}/outrev${RANDOMD}.sql
     cd ${SAVEDIR} || exit 1
   fi
-  # For pure (non-mix) generator/revgen runs point INFILE at the generated SQL. Mix modes (PS 3-8)
-  # build INFILE_SHUFFLED from GEN_OUTFILE/REVGEN_OUTFILE/remainder in the pre-shuffle block instead.
-  if [ "${PRE_SHUFFLE_SQL}" -lt 3 ]; then
-    if [ ${USE_GENERATOR} -eq 1 ] && [ ${USE_REVGEN} -eq 1 ]; then
-      cat "${GEN_OUTFILE}" "${REVGEN_OUTFILE}" > "${GEN_OUTFILE}.combined"  # rebuilt each trial from the two persistent sources (no unbounded growth)
-      INFILE="${GEN_OUTFILE}.combined"
-    elif [ ${USE_GENERATOR} -eq 1 ]; then
-      INFILE="${GEN_OUTFILE}"
-    elif [ ${USE_REVGEN} -eq 1 ]; then
-      INFILE="${REVGEN_OUTFILE}"
-    fi
+  # Assemble the trial input from the active generated sources plus the full INFILE (USE_INFILE=1),
+  # rebuilt every trial so it never grows unbounded. PRE_SHUFFLE_SQL=2 (all SQL on disk) ignores this;
+  # with no generator active the conf INFILE is used as-is (USE_INFILE is moot - INFILE IS the input).
+  if [ "${PRE_SHUFFLE_SQL}" -ne 2 ] && { [ ${USE_GENERATOR} -eq 1 ] || [ ${USE_REVGEN} -eq 1 ]; }; then
+    COMBINED_SQL="${REVGEN_OUTFILE:-${GEN_OUTFILE}}.combined"
+    > "${COMBINED_SQL}"
+    [ ${USE_GENERATOR} -eq 1 ] && cat "${GEN_OUTFILE}" >> "${COMBINED_SQL}"
+    [ ${USE_REVGEN} -eq 1 ] && cat "${REVGEN_OUTFILE}" >> "${COMBINED_SQL}"
+    [ ${USE_INFILE} -eq 1 ] && cat "${INFILE}" >> "${COMBINED_SQL}"  # full INFILE appended, for every PS
+    INFILE="${COMBINED_SQL}"
+    COMBINED_SQL=
   fi
   echoit "Generating new trial workdir ${RUNDIR}/${TRIAL}..."
   ISSTARTED=0
@@ -3006,6 +2846,11 @@ EOF
       if [ $? -eq 137 ]; then
         if [ "${MARIADB_BINLOG_RECOVERY_TESTING}" -eq 1 ]; then
           echoit "mysqld/mariadbd failed to shutdown within 35 seconds for this trial. In regular runs this trial would be saved as a SHUTDOWN_TIMEOUT_ISSUE. However, as MariaDB binlog recovery testing is active (MARIADB_BINLOG_RECOVERY_TESTING=1), this trial is not saved here and instead kept for binlog recovery & table checksum compare instead. Initate a regular run to capture SHUTDOWN issues."
+        elif [ -n "$(ls ${RUNDIR}/${TRIAL}/*/*core* 2>/dev/null)" ]; then
+          echoit "mysqld/mariadbd did not shut down within 35 seconds AND a coredump is present: crash during shutdown (saved for Valgrind analysis)"
+          # Note we are not checking for RR tracing here, as it is unlikely that Valgrind tracing + RR tracing is used at the same time
+          savetrial
+          TRIAL_SAVED=1
         else
           echoit "mysqld/mariadbd failed to shutdown within 35 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
           touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
@@ -3107,11 +2952,24 @@ EOF
         if [[ ${REPLICATION} -eq 1 ]]; then
           timeout --signal=9 35s ${BASEDIR}/bin/mysqladmin -uroot -S${SLAVE_SOCKET} shutdown > /dev/null 2>&1 # Proper/clean shutdown attempt (up to 35 sec wait), necessary to get full Valgrind output in error log + see NOTE** above
           if [ $? -eq 137 ]; then
-            if [ "${MARIADB_BINLOG_RECOVERY_TESTING}" -eq 1 ]; then
-              echoit "mysqld/mariadbd failed to shutdown within 35 seconds for this trial. In regular runs this trial would be saved as a SHUTDOWN_TIMEOUT_ISSUE. However, as MariaDB binlog recovery testing is active (MARIADB_BINLOG_RECOVERY_TESTING=1), this trial is not saved here and instead kept for binlog recovery & table checksum compare instead. Initate a regular run to capture SHUTDOWN issues."
+            # Same hang-vs-crash rule as the master path above: a core present means the slave crashed during
+            # shutdown; leave it for the main detection block to classify rather than saving as a shutdown timeout.
+            for _CW in 1 2 3 4 5; do
+              [ -n "$(ls ${RUNDIR}/${TRIAL}/*/*core* 2>/dev/null)" ] && break
+              kill -0 ${SLAVE_MPID} 2>/dev/null || { sleep 1; break; }
+              sleep 1
+            done
+            SHUTDOWN_CORE_PRESENT=0
+            [ -n "$(ls ${RUNDIR}/${TRIAL}/*/*core* 2>/dev/null)" ] && SHUTDOWN_CORE_PRESENT=1
+            if [ ${SHUTDOWN_CORE_PRESENT} -eq 0 ]; then
+              if [ "${MARIADB_BINLOG_RECOVERY_TESTING}" -eq 1 ]; then
+                echoit "mysqld/mariadbd failed to shutdown within 35 seconds for this trial. In regular runs this trial would be saved as a SHUTDOWN_TIMEOUT_ISSUE. However, as MariaDB binlog recovery testing is active (MARIADB_BINLOG_RECOVERY_TESTING=1), this trial is not saved here and instead kept for binlog recovery & table checksum compare instead. Initate a regular run to capture SHUTDOWN issues."
+              else
+                echoit "mysqld/mariadbd failed to shutdown within 35 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
+                touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
+              fi
             else
-              echoit "mysqld/mariadbd failed to shutdown within 35 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
-              touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
+              echoit "slave mysqld/mariadbd did not shut down within 35 seconds AND a coredump is present: treating this as a crash (classified below), not a shutdown timeout"
             fi
             if [ "${RR_TRACING}" == "1" ]; then
               # If the rr trace is saved at this point, it would be marked as incomplete (./incomplete in mysqld-0 or mariadbd-0)
@@ -3133,9 +2991,12 @@ EOF
                 echoit "RR completed successfully and the trace was saved in the rr/mysqld-0 or rr/mariadbd-0 directory inside the trial directory"
               fi
             fi
-            sleep 1
-            savetrial
-            TRIAL_SAVED=1
+            if [ ${SHUTDOWN_CORE_PRESENT} -eq 0 ]; then  # genuine shutdown hang: save here. A crash (core present) falls through to the main detection block for classification + filtering
+              sleep 1
+              savetrial
+              TRIAL_SAVED=1
+            fi
+            SHUTDOWN_CORE_PRESENT=
           fi
         fi
         sleep 2
@@ -3192,8 +3053,12 @@ EOF
       # Proper/clean shutdown attempt (up to 20 sec wait), necessary to get full Valgrind output in error log
       timeout --signal=9 35s ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET3} shutdown > /dev/null 2>&1
       if [ $? -eq 137 ]; then
-        echoit "mysqld/mariadbd for node3 failed to shutdown within 35 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
-        touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
+        if [ -n "$(ls ${RUNDIR}/${TRIAL}/node3/*core* 2>/dev/null)" ]; then
+          echoit "mysqld/mariadbd for node3 did not shut down within 35 seconds AND a coredump is present: crash during shutdown (saved for Valgrind analysis)"
+        else
+          echoit "mysqld/mariadbd for node3 failed to shutdown within 35 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
+          touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
+        fi
         # Minor TODO: add RR provision for SHUTDOWN_TIMEOUT_ISSUEs seen under Valgrind (search for 'incomplete')
         sleep 1
         savetrial
@@ -3201,16 +3066,24 @@ EOF
       fi
       timeout --signal=9 35s ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET2} shutdown > /dev/null 2>&1
       if [ $? -eq 137 ]; then
-        echoit "mysqld/mariadbd for node2 failed to shutdown within 35 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
+        if [ -n "$(ls ${RUNDIR}/${TRIAL}/node2/*core* 2>/dev/null)" ]; then
+          echoit "mysqld/mariadbd for node2 did not shut down within 35 seconds AND a coredump is present: crash during shutdown (saved for Valgrind analysis)"
+        else
+          echoit "mysqld/mariadbd for node2 failed to shutdown within 35 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
+          touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
+        fi
         sleep 1
-        touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
         savetrial
         TRIAL_SAVED=1
       fi
       timeout --signal=9 35s ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET1} shutdown > /dev/null 2>&1
       if [ $? -eq 137 ]; then
-        echoit "mysqld/mariadbd for node1 failed to shutdown within 35 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
-        touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
+        if [ -n "$(ls ${RUNDIR}/${TRIAL}/node1/*core* 2>/dev/null)" ]; then
+          echoit "mysqld/mariadbd for node1 did not shut down within 35 seconds AND a coredump is present: crash during shutdown (saved for Valgrind analysis)"
+        else
+          echoit "mysqld/mariadbd for node1 failed to shutdown within 35 seconds for this trial, saving it (pquery-results.sh will show these trials seperately)..."
+          touch ${RUNDIR}/${TRIAL}/SHUTDOWN_TIMEOUT_ISSUE
+        fi
         sleep 1
         savetrial
         TRIAL_SAVED=1
@@ -3832,19 +3705,7 @@ if [[ ${FILTER_SQL} -eq 1 ]]; then
 fi
 
 SQL_INPUT_TEXT=
-if [ "${PRE_SHUFFLE_SQL}" == "3" ]; then
-  SQL_INPUT_TEXT="PRE_SHUFFLE_SQL: 3 (mix: ${GENERATOR_MIX_PERCENTAGE}% SQL Generator + remainder pre-shuffled from ${ORIG_INFILE})"
-elif [ "${PRE_SHUFFLE_SQL}" == "4" ]; then
-  SQL_INPUT_TEXT="PRE_SHUFFLE_SQL: 4 (mix: ${GENERATOR_MIX_PERCENTAGE}% SQL Generator + remainder pre-shuffled from all available SQL)"
-elif [ "${PRE_SHUFFLE_SQL}" == "5" ]; then
-  SQL_INPUT_TEXT="PRE_SHUFFLE_SQL: 5 (mix: ${REVGEN_MIX_PERCENTAGE}% revgen + remainder pre-shuffled from ${ORIG_INFILE})"
-elif [ "${PRE_SHUFFLE_SQL}" == "6" ]; then
-  SQL_INPUT_TEXT="PRE_SHUFFLE_SQL: 6 (mix: ${REVGEN_MIX_PERCENTAGE}% revgen + remainder pre-shuffled from all available SQL)"
-elif [ "${PRE_SHUFFLE_SQL}" == "7" ]; then
-  SQL_INPUT_TEXT="PRE_SHUFFLE_SQL: 7 (mix: ${GENERATOR_MIX_PERCENTAGE}% SQL Generator + ${REVGEN_MIX_PERCENTAGE}% revgen + remainder pre-shuffled from ${ORIG_INFILE})"
-elif [ "${PRE_SHUFFLE_SQL}" == "8" ]; then
-  SQL_INPUT_TEXT="PRE_SHUFFLE_SQL: 8 (mix: ${GENERATOR_MIX_PERCENTAGE}% SQL Generator + ${REVGEN_MIX_PERCENTAGE}% revgen + remainder pre-shuffled from all available SQL)"
-elif [ ${USE_GENERATOR} -eq 1 -a ${USE_REVGEN} -eq 1 ]; then
+if [ ${USE_GENERATOR} -eq 1 -a ${USE_REVGEN} -eq 1 ]; then
   SQL_INPUT_TEXT="Using SQL Generator + revgen (combined fresh each trial)"
 elif [ ${USE_GENERATOR} -eq 1 ]; then
   if [ ${USE_INFILE} -eq 0 ]; then

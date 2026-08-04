@@ -12,12 +12,12 @@ mkdir build
 DATE=$(date +'%d%m%y')
 PREFIX="${CURPATH}_dbg/build"
 
-${CURPATH}_dbg/configure --enable-debug --prefix=$PREFIX | tee ${CURPATH}_dbg/debug_build_configure.log
-if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for ./configure!"; exit 1; fi
-make | tee ${CURPATH}_dbg/debug_build_gmake.log
-if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for gmake!"; exit 1; fi
-make install | tee ${CURPATH}_dbg/debug_build_gmake_install.log
-if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for gmake install!"; exit 1; fi
+${CURPATH}_dbg/configure --enable-debug --prefix=$PREFIX 2>&1 | tee ${CURPATH}_dbg/debug_build_configure.log
+if [ "${PIPESTATUS[0]}" -ne 0 ]; then echo "Assert: non-0 exit status detected for ./configure!"; exit 1; fi
+make 2>&1 | tee ${CURPATH}_dbg/debug_build_gmake.log
+if [ "${PIPESTATUS[0]}" -ne 0 ]; then echo "Assert: non-0 exit status detected for gmake!"; exit 1; fi
+make install 2>&1 | tee ${CURPATH}_dbg/debug_build_gmake_install.log
+if [ "${PIPESTATUS[0]}" -ne 0 ]; then echo "Assert: non-0 exit status detected for gmake install!"; exit 1; fi
 
 VERSION=`$PREFIX/bin/postgres --version | awk '{print $3}'`
 BASEDIR="${DATE}-PostgreSQL-${VERSION}-debug"

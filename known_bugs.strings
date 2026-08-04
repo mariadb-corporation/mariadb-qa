@@ -249,6 +249,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|sortlength|filesort|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner                                                                             ## MDEV-33121
+pos->field != __null || pos->item != __null|SIGABRT|Filesort::make_sortorder|filesort|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner                   ## MDEV-33121
+!order->item[0]->with_sum_func()|SIGABRT|simple_remove_const|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner|Sql_cmd_dml::execute                       ## MDEV-33121
+pos->field != __null || pos->item != __null|SIGABRT|Filesort::make_sortorder|filesort|Sql_cmd_update::update_single_table|Sql_cmd_update::execute_inner                        ## MDEV-33177
 SIGSEGV|copy_funcs|multi_delete::send_data|select_result_sink::send_data_with_check|end_send                                                                                   ## MDEV-40573
 del_table == table_being_deleted|SIGABRT|multi_delete::send_data|select_result_sink::send_data_with_check|end_send|evaluate_join_record                                        ## MDEV-40573
 SIGSEGV|CntReadNext|ha_connect::rnd_next|handler::ha_rnd_next|ha_partition::rnd_next                                                                                           ## MDEV-40599

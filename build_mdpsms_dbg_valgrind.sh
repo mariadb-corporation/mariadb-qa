@@ -273,26 +273,26 @@ if [ $FB -eq 0 ]; then
   echo "Build command used:"
   echo $CMD
   eval "$CMD" 2>&1 | tee /tmp/psms_dbg_build_${RANDOMD}
-  if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for make!"; exit 1; fi
+  if [ "${PIPESTATUS[0]}" -ne 0 ]; then echo "Assert: non-0 exit status detected for make!"; exit 1; fi
 else
   # FB build
   CMD="cmake . $CLANG $AFL $SSL -DCMAKE_BUILD_TYPE=Debug -DBUILD_CONFIG=mysql_release ${EXTRA_AUTO_OPTIONS} -DWITH_JEMALLOC=no -DFEATURE_SET=community -DDEBUG_EXTNAME=OFF -DWITH_EMBEDDED_SERVER=${WITH_EMBEDDED_SERVER} -DWITH_DEBUG_SYNC=ON -DENABLE_DOWNLOADS=1 ${BOOST} -DENABLED_LOCAL_INFILE=${WITH_LOCAL_INFILE} -DENABLE_DTRACE=0 -DWITH_SAFEMALLOC=OFF -DPLUGIN_PERFSCHEMA=${PERFSCHEMA} ${DBUG} ${ZLIB} ${FLAGS} -DWITH_VALGRIND=ON"
   echo "Build command used:"
   echo $CMD
   eval "$CMD" 2>&1 | tee /tmp/psms_dbg_build_${RANDOMD}
-  if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for make!"; exit 1; fi
+  if [ "${PIPESTATUS[0]}" -ne 0 ]; then echo "Assert: non-0 exit status detected for make!"; exit 1; fi
 fi
 
-make -j${MAKE_THREADS} | tee -a /tmp/psms_dbg_build_${RANDOMD}
-if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for make!"; exit 1; fi
+make -j${MAKE_THREADS} 2>&1 | tee -a /tmp/psms_dbg_build_${RANDOMD}
+if [ "${PIPESTATUS[0]}" -ne 0 ]; then echo "Assert: non-0 exit status detected for make!"; exit 1; fi
 
 echo $CMD > BUILD_CMD_CMAKE
 if [ ! -r ./scripts/make_binary_distribution ]; then  # Note: ./scripts/binary_distribution is created on-the-fly during the make compile
   echo "Assert: ./scripts/make_binary_distribution was not found. Terminating."
   exit 1
 else
-  ./scripts/make_binary_distribution | tee -a /tmp/psms_dbg_build_${RANDOMD}
-  if [ $? -ne 0 ]; then echo "Assert: non-0 exit status detected for ./scripts/make_binary_distribution!"; exit 1; fi
+  ./scripts/make_binary_distribution 2>&1 | tee -a /tmp/psms_dbg_build_${RANDOMD}
+  if [ "${PIPESTATUS[0]}" -ne 0 ]; then echo "Assert: non-0 exit status detected for ./scripts/make_binary_distribution!"; exit 1; fi
 fi
 
 TAR_dbg=`ls -1 *.tar.gz | grep -v "boost" | head -n1`

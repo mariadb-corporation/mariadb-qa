@@ -627,11 +627,11 @@ static void diskspace(std::string check_path = "", long long min_mb = 500) {
 // SAVE_RR_TRACE — mirror reducer.sh:661..671
 // ============================================================================
 static void save_rr_trace(const std::string& dest) {
-  fs::remove_all(dest);
+  { std::error_code ra_ec; fs::remove_all(dest, ra_ec); }
   util::mkdir_p(dest);
   diskspace(dest);
   util::sh("cp -r " + state::WORKD + "/rr/* " + dest + "/");
-  fs::remove_all(state::WORKD + "/rr");
+  { std::error_code ra_ec; fs::remove_all(state::WORKD + "/rr", ra_ec); }
   util::sh("chmod -R 777 " + dest + "/");
   util::sh("chmod -R +rX " + dest + "/");
 }
@@ -1590,7 +1590,7 @@ static int multi_reducer_impl() {
     }
     state::SKIPV = 1;
   }
-  fs::remove_all(state::WORKD + "/subreducer/");
+  { std::error_code ra_ec; fs::remove_all(state::WORKD + "/subreducer/", ra_ec); }
   util::sh("sync");
   std::this_thread::sleep_for(std::chrono::milliseconds(500));
   util::mkdir_p(state::WORKD + "/subreducer/");
@@ -1860,7 +1860,7 @@ static void multi_reducer_decide_input() {
     }
   }
   echoit(state::ATLEASTONCE + " [Stage " + state::STAGE + "] [" + state::RUNMODE + "] Removing verify stage subreducer directory");
-  fs::remove_all(state::WORKD + "/subreducer/");
+  { std::error_code ra_ec; fs::remove_all(state::WORKD + "/subreducer/", ra_ec); }
 }
 
 // TS_init_all_sql_files — mirror reducer.sh:1706..1754
@@ -2366,7 +2366,9 @@ static void init_workdir_and_files() {
         std::cerr << "Terminating now.\n"; std::exit(1);
       } else {
         if (!util::dir_exists(state::WORKD)) abort_reducer();
-        fs::rename(state::WORKD + "/data", state::WORKD + "/data.init");
+        std::error_code mv_ec;
+        fs::rename(state::WORKD + "/data", state::WORKD + "/data.init", mv_ec);
+        if (mv_ec) abort_reducer();
         util::mkdir_p(state::WORKD + "/data");
         util::sh("cp -a " + state::WORKD + "/data.init/* " + state::WORKD + "/data/");
         if (cfg::REPLICATION == 1) {
@@ -3920,7 +3922,7 @@ static bool mode11_do_dump(const std::string& sock, const std::string& dest) {
 }
 
 static bool mode11_capture_binlogs(const std::string& sock, const std::string& datadir, const std::string& dest) {
-  fs::remove_all(dest);
+  { std::error_code ra_ec; fs::remove_all(dest, ra_ec); }
   util::mkdir_p(dest);
   util::sh(cfg::BASEDIR + "/bin/mariadb -uroot -S\"" + sock + "\" -Nse \"FLUSH LOGS\" >/dev/null 2>&1");
   std::string files = util::sh_capture(cfg::BASEDIR + "/bin/mariadb -uroot -S\"" + sock + "\" -Nse \"SHOW BINARY LOGS\" 2>/dev/null | awk '{print $1}'");
@@ -4078,8 +4080,11 @@ static int process_outcome_impl() {
       output_text = "NewTextString";
       fs::remove(state::WORKD + "/MYBUG.FOUND");
       util::write_file(state::WORKD + "/MYBUG.FOUND", "");
-      std::string savepath = fs::current_path().string();
-      fs::current_path(state::WORKD);
+      // Non-throwing chdir forms: the workdir can disappear mid-run (trial cleanup racing a live reducer); a thrown filesystem_error would terminate with SIGABRT + core instead of the clean abort_reducer() path
+      std::error_code cp_ec;
+      std::string savepath = fs::current_path(cp_ec).string();
+      fs::current_path(state::WORKD, cp_ec);
+      if (cp_ec) abort_reducer();
       if (cfg::MDG == 1) {
         setenv("GALERA_ERROR_LOG", (state::WORKD + "/node" + std::to_string(cfg::GALERA_NODE) + "/node" + std::to_string(cfg::GALERA_NODE) + ".err").c_str(), 1);
         setenv("GALERA_CORE_LOC", (state::WORKD + "/node" + std::to_string(cfg::GALERA_NODE) + "/*core*").c_str(), 1);
@@ -4144,7 +4149,8 @@ static int process_outcome_impl() {
           std::exit(1);
         }
       }
-      fs::current_path(savepath);
+      fs::current_path(savepath, cp_ec);
+      if (cp_ec) abort_reducer();
       // Match TEXT against MYBUG.FOUND
       std::string findbug;
       if (cfg::MODE3_ANY_SIG != 1) {
@@ -4479,7 +4485,7 @@ static int process_outcome_impl() {
     std::string bl_dir      = state::WORKD + "/mode11_binlogs";
     std::string sock        = state::WORKD + "/socket.sock";
     fs::remove(snap_before); fs::remove(snap_after); fs::remove(dumpf);
-    fs::remove_all(bl_dir);
+    { std::error_code ra_ec; fs::remove_all(bl_dir, ra_ec); }
     util::sh(cfg::BASEDIR + "/bin/mariadb -uroot -S\"" + sock + "\" --force -Nse \"COMMIT\" >/dev/null 2>&1");
     if (!mode11_take_snapshot(sock, snap_before)) {
       echoit(state::ATLEASTONCE + " [Stage " + state::STAGE + "] [Trial " + std::to_string(state::TRIAL) + "] [MODE11-InfraErr] pre-roundtrip snapshot failed; skipping trial");
@@ -4808,7 +4814,7 @@ static void copy_workdir_to_tmp() {
     WORKDIR_COPY_SUCCESS = 1;
     echoit("[Cleanup] Saved copy of work directory in /tmp/" + state::EPOCH);
     echoit("[Cleanup] Now deleting temporary work directory " + state::WORKD);
-    fs::remove_all(state::WORKD);
+    { std::error_code ra_ec; fs::remove_all(state::WORKD, ra_ec); }
   } else {
     echoit("[Non-fatal Error] Reducer tried saving a copy, but differences were found. The diff output was:");
     echoit(diff);
@@ -5238,8 +5244,11 @@ static void run_stage_trials(int stage) {
     } else {
       state::TRIAL++; trial_repeat = 0;
     }
-    sizef = util::file_readable(state::WORKF)
-      ? static_cast<long long>(fs::file_size(state::WORKF)) : 0;
+    sizef = 0;
+    if (util::file_readable(state::WORKF)) {
+      std::error_code fs_ec; auto fsz = fs::file_size(state::WORKF, fs_ec);
+      if (!fs_ec) sizef = static_cast<long long>(fsz);
+    }
     state::LINECOUNTF = util::count_lines(state::WORKF);
     // next_stage_flag is informational only (mirrors bash's `; NEXTACTION="&
     // progress to the next stage"` log-message hint on the final elif row);
