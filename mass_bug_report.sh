@@ -44,8 +44,7 @@ if [ ! -d "${TESTCASES_DIR}" ]; then
 fi
 
 SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
-RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')  # Random entropy init
-RANDFL=$(echo $RANDOM$RANDOM$RANDOM$RANDOM | sed 's|.\(..........\).*|\1|')  # Random 10 digits filenr
+RANDFL=$(${SCRIPT_PWD}/random --digits 10)  # Random 10 digits filenr
 
 LIST="/tmp/list_of_testcases.${RANDFL}"
 ls ${TESTCASES_DIR}/*.sql 2>/dev/null > ${LIST}

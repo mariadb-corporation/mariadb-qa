@@ -17,7 +17,7 @@ fi
 
 
 ADDR="127.0.0.1"
-RPORT=$(( RANDOM%21 + 10 ))
+RPORT=$(${HOME}/mariadb-qa/random 10 30)
 RBASE1="$(( RPORT*1000 ))"
 RADDR1="$ADDR:$(( RBASE1 + 7 ))"
 LADDR1="$ADDR:$(( RBASE1 + 8 ))"

@@ -10,8 +10,7 @@ if [ ! -r "${1}" ]; then
   exit 1
 fi
 
-RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')  # Random entropy init
-OUT="/tmp/out.${RANDOM}"
+OUT="/tmp/out.$(${HOME}/mariadb-qa/random --digits 5)"
 
 rm -f "${OUT}"
 if [ -r "${OUT}" ]; then

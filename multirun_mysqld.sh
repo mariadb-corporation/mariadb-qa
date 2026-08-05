@@ -38,7 +38,7 @@ echo "Using MYEXTRA options: ${MYEXTRA}"
 
 # Internal variables
 MYUSER=$(whoami)
-MYPORT=$[20000 + $RANDOM % 9999 + 1]
+MYPORT=$(${HOME}/mariadb-qa/random 20001 29999)
 DATADIR=`date +'%s'`
 
 # Reference functions

@@ -16,10 +16,9 @@ touch /tmp/newsql.sql
 for FILE in $(find . | grep "\.yy$"); do
   echo "Processing ${FILE}..."
   for LOOP in $(seq 0 ${RANDOM_RUNS_PER_GRAMMAR}); do
-     RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')  # RANDOM: Random entropy pool init
-     SEED=$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(......\).*/\1/')  # Random number generator (6 digits)
-     MASK=$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(......\).*/\1/')  # Random number generator (6 digits)
-     MASK_LEVEL=$(echo $[ $RANDOM % 3 ])
+     SEED=$(${HOME}/mariadb-qa/random --digits 6)  # Random seed (6 digits)
+     MASK=$(${HOME}/mariadb-qa/random --digits 6)  # Random mask (6 digits)
+     MASK_LEVEL=$(${HOME}/mariadb-qa/random 3)
      if [ ${LOOP} -eq 0 ]; then  # Only show errors for the first run, much less screen filling
        ./gensql.pl --dsn=${DSN} --grammar=${FILE} --seed=${SEED} --queries=${QUERIES_PER_GRAMMAR} --mask-level=${MASK_LEVEL} --mask=${MASK} >> /tmp/newsql.sql
      else

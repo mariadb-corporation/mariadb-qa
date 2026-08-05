@@ -39,8 +39,7 @@ CLI_TEXT=""                                                         # The string
 # Note that TEXT and CLI_TEXT are regex-capable and case-sensitive
 
 # Script variables, do not change
-RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
-SEED="${RANDOM}${RANDOM}"
+SEED=$(${HOME}/mariadb-qa/random --digits 10)
 MAINLOG="/test/git-bisect/bisect.log"
 TMPLOG1="/tmp/git-bisect-${SEED}.out"
 TMPLOG2="/tmp/git-bisect-build_${SEED}.exitcode"

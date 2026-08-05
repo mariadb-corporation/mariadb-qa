@@ -52,7 +52,7 @@ framework conventions shared by the daemons and any AI session that
 helps drain the queue (reference_framework_overview.md,
 reference_reducer.md, reference_bug_detection.md,
 reference_homedir_helpers.md, reference_directory_conventions.md,
-reference_pquery_run_config.md, reference_pre_shuffle.md,
+reference_pquery_run_config.md, reference_sql_input_sources.md,
 reference_claude_loop.md).
 
 MTR templates: ~/mariadb-qa/claude_mtr_templates/ (see README there).

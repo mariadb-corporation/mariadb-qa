@@ -25,7 +25,7 @@ USE_AFL=0               # 0 or 1 # Use the American Fuzzy Lop gcc/g++ wrapper in
 AFL_LOCATION="$(cd `dirname $0` && pwd)/fuzzer/afl-2.52b"
 IGNORE_WARNINGS=1       # 0 or 1 # Ignore warnings by using -DMYSQL_MAINTAINER_MODE=OFF. When ignoring warnings, regularly check that existing bugs are fixed. This option additionally sets -DWARNING_AS_ERROR empty so warnings will never be treated as errors. #TODO: consider implementing -DMYSQL_MAINTAINER_MODE=WARN (also disables -Werror, just like, presumably, =OFF, though it will likely not work to avoid for example the lib https://jira.mariadb.org/browse/MDEV-32483 compile error wheras -DWARNING_AS_ERROR='' does)
 
-RANDOMD=$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(......\).*/\1/')  # Random 6 digit for tmp directory name
+RANDOMD=$(${HOME}/mariadb-qa/random --digits 6)  # Random 6 digit for tmp directory name
 
 SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 

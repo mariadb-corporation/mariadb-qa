@@ -15,8 +15,8 @@ if [ -z "$SYSBENCH_DURATION" ]; then
 fi
 
 # Internal settings
-MTR_BT=$[$RANDOM % 300 + 1]
-PORT=$[20000 + $RANDOM % 9999 + 1]
+MTR_BT=$(${HOME}/mariadb-qa/random 1 300)
+PORT=$(${HOME}/mariadb-qa/random 20001 29999)
 MULTI_THREAD_COUNT=400
 # The first option is the relative workdir
 # The second option is the relative basedir

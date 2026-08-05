@@ -11,8 +11,6 @@ APPEND_TO_OUTPUT=1
 # Output function
 echoit(){ echo "[$(date +'%T')] $1"; }
 
-# RANDOM: Random entropy pool init
-RANDOM=$(date +%s%N | cut -b14-19)
 
 # Work directory setup & check main SQL input is available
 rm -Rf ${WORKDIR}; mkdir ${WORKDIR}
@@ -95,26 +93,42 @@ done
 
 generate(){
   PID_OF_SUBSHELL=$BASHPID  # Hack makes variables subshell-dependent, with thanks, http://askubuntu.com/questions/305858/how-to-know-process-pid-of-bash-function-running-as-child
+  # A round that finds nothing to recombine is skipped. Give up after this many in a row, so an
+  # input set where no file pairs up, or holds only one-word queries, stops instead of spinning.
+  local SKIPPED=0 SKIP_MAX=100
   while true; do
     #COUNTER=$[ ${COUNTER} + 1 ]
-    FILE1[${PID_OF_SUBSHELL}]=$(ls ?.sql1 ??.sql1 | sort -R | head -n1)
+    if [ ${SKIPPED} -ge ${SKIP_MAX} ]; then
+      echo "Gave up: ${SKIP_MAX} rounds in a row found no usable pair of SQL files in ${PWD}"
+      break
+    fi
+    FILE1[${PID_OF_SUBSHELL}]=$(ls ?.sql1 ??.sql1 2>/dev/null | sort -R | head -n1)
     #FILE2[${PID_OF_SUBSHELL}]=$(ls ?.sql2 ??.sql2 | sort -R | head -n1)  # Creates many non-sensical queries
     FILE2[${PID_OF_SUBSHELL}]=$(echo ${FILE1[${PID_OF_SUBSHELL}]} | sed 's|sql1|sql2|')
-    LENGHT1[${PID_OF_SUBSHELL}]=$(wc -l ${FILE1[${PID_OF_SUBSHELL}]} | awk '{print $1}')
-    LENGHT2[${PID_OF_SUBSHELL}]=$(wc -l ${FILE2[${PID_OF_SUBSHELL}]} | awk '{print $1}')
-    LINE1[${PID_OF_SUBSHELL}]=$(cat ${FILE1[${PID_OF_SUBSHELL}]} | head -n$[$RANDOM % ${LENGHT1[${PID_OF_SUBSHELL}]} + 1] | tail -n1 | sed 's|;||;s|[ \t][ \t]\+| |')
-    LINE2[${PID_OF_SUBSHELL}]=$(cat ${FILE2[${PID_OF_SUBSHELL}]} | head -n$[$RANDOM % ${LENGHT2[${PID_OF_SUBSHELL}]} + 1] | tail -n1 | sed 's|;||;s|[ \t][ \t]\+| |')
+    # No input files at all: nothing to recombine, so stop rather than spin
+    if [ -z "${FILE1[${PID_OF_SUBSHELL}]}" ]; then echo "No *.sql1 input files present in ${PWD}"; break; fi
+    # Both files have to exist and hold at least one line, otherwise the line pick below has no
+    # range to draw from and the round would build a query out of nothing
+    if [ ! -r "${FILE1[${PID_OF_SUBSHELL}]}" -o ! -r "${FILE2[${PID_OF_SUBSHELL}]}" ]; then SKIPPED=$((SKIPPED+1)); continue; fi
+    LENGHT1[${PID_OF_SUBSHELL}]=$(wc -l < ${FILE1[${PID_OF_SUBSHELL}]})
+    LENGHT2[${PID_OF_SUBSHELL}]=$(wc -l < ${FILE2[${PID_OF_SUBSHELL}]})
+    if [ "${LENGHT1[${PID_OF_SUBSHELL}]:-0}" -lt 1 -o "${LENGHT2[${PID_OF_SUBSHELL}]:-0}" -lt 1 ]; then SKIPPED=$((SKIPPED+1)); continue; fi
+    LINE1[${PID_OF_SUBSHELL}]=$(cat ${FILE1[${PID_OF_SUBSHELL}]} | head -n$(${HOME}/mariadb-qa/random 1 ${LENGHT1[${PID_OF_SUBSHELL}]}) | tail -n1 | sed 's|;||;s|[ \t][ \t]\+| |')
+    LINE2[${PID_OF_SUBSHELL}]=$(cat ${FILE2[${PID_OF_SUBSHELL}]} | head -n$(${HOME}/mariadb-qa/random 1 ${LENGHT2[${PID_OF_SUBSHELL}]}) | tail -n1 | sed 's|;||;s|[ \t][ \t]\+| |')
     #echo "LINE1: ${LINE1[${PID_OF_SUBSHELL}]}"; echo "LINE2: ${LINE2[${PID_OF_SUBSHELL}]}"  # Debug
     COUNT1[${PID_OF_SUBSHELL}]=$(echo "${LINE1[${PID_OF_SUBSHELL}]}" | tr ' ' '\n' | wc -l)
     COUNT2[${PID_OF_SUBSHELL}]=$(echo "${LINE2[${PID_OF_SUBSHELL}]}" | tr ' ' '\n' | wc -l)
     if [ ${COUNT2[${PID_OF_SUBSHELL}]} -lt ${COUNT1[${PID_OF_SUBSHELL}]} ]; then 
       COUNT1[${PID_OF_SUBSHELL}]=${COUNT2[${PID_OF_SUBSHELL}]};  # Ensure that the capture lenght is less then either query's lenght
     fi
-    CLAUSES1[${PID_OF_SUBSHELL}]=$[$RANDOM % $[${COUNT1[${PID_OF_SUBSHELL}]} -1] +1]  # COUNT-1: Ensure that we do not capture the full query (i.e. -1 clause)
+    # A one-word query leaves no clause to take from it, so there is nothing to recombine
+    if [ "${COUNT1[${PID_OF_SUBSHELL}]}" -lt 2 ]; then SKIPPED=$((SKIPPED+1)); continue; fi
+    CLAUSES1[${PID_OF_SUBSHELL}]=$(${HOME}/mariadb-qa/random 1 $[${COUNT1[${PID_OF_SUBSHELL}]} -1])  # COUNT-1: Ensure that we do not capture the full query (i.e. -1 clause)
     CLAUSES2[${PID_OF_SUBSHELL}]=$[${COUNT2[${PID_OF_SUBSHELL}]} - ${CLAUSES1[${PID_OF_SUBSHELL}]}]
     SUBS1[${PID_OF_SUBSHELL}]="$(echo "${LINE1[${PID_OF_SUBSHELL}]}" | tr ' ' '\n' | head -n${CLAUSES1[${PID_OF_SUBSHELL}]})"
     SUBS2[${PID_OF_SUBSHELL}]="$(echo "${LINE2[${PID_OF_SUBSHELL}]}" | tr ' ' '\n' | tail -n${CLAUSES2[${PID_OF_SUBSHELL}]})"
     echo "$(echo "${SUBS1[${PID_OF_SUBSHELL}]} ${SUBS2[${PID_OF_SUBSHELL}]};" | tr '\n' ' ' | sed 's|[ \t][ \t]\+| |')" >> ${OUTPUT}
+    SKIPPED=0
   done
 }
 

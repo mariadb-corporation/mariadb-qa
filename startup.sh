@@ -4,7 +4,6 @@
 # Updated by Ramesh Sivaraman, MariaDB
 
 # Random entropy init
-RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
 
 # Run from test directory: cd ..
 if [[ "${PWD}" == *"/mariadb-test" ]]; then cd ..; fi
@@ -67,7 +66,7 @@ fi
 PORT=$NEWPORT
 SOCKET=${PWD}/socket.sock
 SLAVE_SOCKET=${PWD}/socket_slave.sock
-MTRT=$((${RANDOM} % 100 + 700))
+MTRT=$(${HOME}/mariadb-qa/random 700 799)
 BUILD=$(pwd | sed 's|^.*/||')
 SCRIPT_PWD="$(dirname "$(readlink -f "${0}")")"
 source $SCRIPT_PWD/init_empty_port.sh
@@ -242,7 +241,7 @@ if [[ $GRP_RPL -eq 1 ]]; then
   echo -e "#!/bin/bash" >./start_group_replication
   echo -e "NODES=\$1" >>./start_group_replication
   echo -e "ADDR=\"127.0.0.1\"" >>./start_group_replication
-  echo -e "RPORT=$((RANDOM % 21 + 10))" >>./start_group_replication
+  echo -e "RPORT=$(${HOME}/mariadb-qa/random 10 30)" >>./start_group_replication
   echo -e "RBASE=\"\$(( RPORT*1000 ))\"" >>./start_group_replication
   echo -e "MYEXTRA=\"\"" >>./start_group_replication
   echo -e "GR_START_TIMEOUT=300" >>./start_group_replication

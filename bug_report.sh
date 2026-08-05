@@ -196,8 +196,7 @@ echo '----------------------------------------------------------------'
 cat in.sql | grep -v --binary-files=text '^$'
 echo '----------------------------------------------------------------'
 
-RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')  # Random entropy init
-RANDF=$(echo $RANDOM$RANDOM$RANDOM$RANDOM | sed 's|.\(..........\).*|\1|')  # Random 10 digits filenr
+RANDF=$(${SCRIPT_PWD}/random --digits 10)  # Random 10 digits filenr
 
 if [ ! -r bin/mysqld ]; then
   echo "Assert: bin/mysqld not found!"

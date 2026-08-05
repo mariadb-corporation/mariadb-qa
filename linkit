@@ -61,6 +61,12 @@ if [ ! -d /home/${USER}/fuzzing/fuzzing_root/init_lib ]; then
   cp /home/${USER}/mariadb-qa/squirrel/MariaDB/docker/safe_generate_type_mysql /home/${USER}/fuzzing/fuzzing_root/safe_generate_type_mysql
 fi
 
+# The random utility is the entropy source for pquery-run.sh and the other framework scripts,
+# so build it when it is missing or older than its source
+if [ ! -x /home/${USER}/mariadb-qa/random ] || [ /home/${USER}/mariadb-qa/random.cpp -nt /home/${USER}/mariadb-qa/random ]; then
+  /home/${USER}/mariadb-qa/build_random.sh
+fi
+
 # Homedir scripts
 rm -f ${HOME}/tcp ${HOME}/pge ${HOME}/pg ${HOME}/tr ${HOME}/tc ${HOME}/t ${HOME}/fc ${HOME}/mcl ${HOME}/s ${HOME}/st ${HOME}/sts ${HOME}/li ${HOME}/crc ${HOME}/cto ${HOME}/mmtr ${HOME}/stack
 ln -fs /home/${USER}/mariadb-qa/homedir_scripts/* /home/${USER}/ 2>&1
@@ -84,6 +90,7 @@ ln -fs /home/${USER}/mariadb-qa/pquery-crash-recovery-check-trials.sh /home/${US
 ln -fs /home/${USER}/mariadb-qa/mariadb-build-qa/count_testcases_out /home/${USER}/cto 2>&1
 ln -fs /home/${USER}/mariadb-qa/mini_mtr_to_sql.sh /home/${USER}/mmtr 2>&1
 ln -fs /home/${USER}/mariadb-qa/stack.sh /home/${USER}/stack 2>&1
+ln -fs /home/${USER}/mariadb-qa/random /home/${USER}/random 2>&1  # xoshiro256++ entropy source, built by build_random.sh
 ln -fs /home/${USER}/mariadb-qa/log_jira_ticket.sh /home/${USER}/jira 2>&1
 ln -fs /home/${USER}/mariadb-qa/homedir_scripts/claude_resume /home/${USER}/clr 2>&1
 ln -fs /home/${USER}/mariadb-qa/homedir_scripts/claude_send   /home/${USER}/cls 2>&1

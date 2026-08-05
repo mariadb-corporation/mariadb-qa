@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # build_clang.sh - build a clean stable clang/llvm from source into /usr/local,
 # including the binutils gold plugin (LLVMgold.so), remove any prior clang/llvm
-# installs, and repoint the mariadb-qa sanitizer build scripts at it.
+# installs, and check that the mariadb-qa sanitizer build scripts land on it.
 #
 # Usage: build_clang.sh [llvm_version]   (default: latest stable, auto-discovered)
 #
@@ -143,7 +143,26 @@ GOLD_BUILT="$(find "$BUILD" -name LLVMgold.so -print -quit)"
 log "LLVMgold.so built at ${GOLD_BUILT}"
 fi
 
-# --- 4. Remove old toolchains ----------------------------------------------
+# --- 4. Install -------------------------------------------------------------
+# Install runs before anything is removed: "ninja install" can re-run a compile
+# step, so the compiler this build bootstrapped with has to be still present. On
+# a box whose only clang is the apt one, the purge in step 5 would take it away.
+log "installing to ${PREFIX}"
+sudo ninja -C "$BUILD" install || die "ninja install failed"
+sudo ldconfig
+[ -f "${PREFIX}/lib/LLVMgold.so" ] || die "LLVMgold.so missing after install"
+# Prune stale OTHER-version clang installs left under the prefix. Same-version
+# files are overwritten by the install itself.
+for d in "${PREFIX}/lib/clang"/*/; do
+  [ -d "$d" ] || continue
+  [ "$(basename "$d")" != "$LLVM_MAJOR" ] && { log "pruning stale ${d}"; sudo rm -rf "$d"; }
+done
+for f in "${PREFIX}/bin/"clang-[0-9]*; do
+  [ -e "$f" ] || continue
+  [ "$(basename "$f")" != "clang-${LLVM_MAJOR}" ] && { log "pruning stale ${f}"; sudo rm -f "$f"; }
+done
+
+# --- 5. Remove old toolchains ----------------------------------------------
 log "removing prior clang/llvm installs"
 # Record version-suffixed symbolizer links already present (left by a prior apt
 # clang). Their suffix is the path baked into legacy SAN binaries still under test;
@@ -162,11 +181,9 @@ if [ -n "$old_pkgs" ]; then
   log "apt purge (llvm-only): ${old_pkgs//$'\n'/ }"
   sudo apt-get purge -y $old_pkgs || warn "apt purge incomplete"
 fi
+# Only apt-owned paths are removed here. The prefix holds the toolchain that step 4
+# just installed, so nothing under it is touched
 sudo rm -rf /usr/lib/llvm-*
-# Do NOT delete the prefix's own clang resource dir here: this script bootstraps
-# with the existing /usr/local clang, and "ninja install" can re-touch a compile.
-# Same-version files are overwritten by install; stale OTHER-version files under
-# the prefix are pruned AFTER install (see step 5).
 # stale linker symlinks (ld.lld is recreated in step 6; ld.lld-21 is unused). The
 # suffixed symbolizers captured above are deliberately left for step 6 to re-link.
 sudo rm -f /usr/bin/ld.lld /usr/bin/ld.lld-21
@@ -176,22 +193,6 @@ sudo rm -f /usr/bin/ld.lld /usr/bin/ld.lld-21
 for lst in /etc/apt/sources.list.d/*llvm*.list; do
   [ -f "$lst" ] || continue
   sudo sed -i -E 's@^(deb .*llvm-toolchain-[a-z]+-[0-9]+ .*)$@# \1@' "$lst"
-done
-
-# --- 5. Install -------------------------------------------------------------
-log "installing to ${PREFIX}"
-sudo ninja -C "$BUILD" install || die "ninja install failed"
-sudo ldconfig
-[ -f "${PREFIX}/lib/LLVMgold.so" ] || die "LLVMgold.so missing after install"
-# Prune stale OTHER-version clang installs left under the prefix (safe now that
-# the new toolchain is in place and nothing else compiles with the old one).
-for d in "${PREFIX}/lib/clang"/*/; do
-  [ -d "$d" ] || continue
-  [ "$(basename "$d")" != "$LLVM_MAJOR" ] && { log "pruning stale ${d}"; sudo rm -rf "$d"; }
-done
-for f in "${PREFIX}/bin/"clang-[0-9]*; do
-  [ -e "$f" ] || continue
-  [ "$(basename "$f")" != "clang-${LLVM_MAJOR}" ] && { log "pruning stale ${f}"; sudo rm -f "$f"; }
 done
 
 # --- 6. Convenience symlinks in /usr/bin -----------------------------------
@@ -210,24 +211,24 @@ if [ "${#EXISTING_SUFFIXED_SYMBOLIZERS[@]}" -gt 0 ]; then
   done
 fi
 
-# --- 7. Repoint mariadb-qa sanitizer build scripts -------------------------
+# --- 7. Check the mariadb-qa sanitizer build scripts -----------------------
 NEW_RT_DIR="$(${PREFIX}/bin/clang -print-runtime-dir)"
 log "clang runtime dir: ${NEW_RT_DIR}"
 for n in asan ubsan_standalone; do
   [ -f "${NEW_RT_DIR}/libclang_rt.${n}-x86_64.a" ] \
     || die "expected ${NEW_RT_DIR}/libclang_rt.${n}-x86_64.a not found"
 done
+# The scripts name their compiler in CLANG_LOCATION and read the runtime dir from
+# it with -print-runtime-dir, so the symlinks of step 6 are what repoints them.
+# There is nothing to rewrite; check that each one lands on the new toolchain.
 for f in "${SAN_SCRIPTS[@]}"; do
   p="${QA_DIR}/${f}"
   [ -f "$p" ] || { warn "san script not found: $p"; continue; }
-  cp -f "$p" "/tmp/${f}.pre_build_clang.bak"
-  # Repoint whatever runtime-archive dir the script currently names (any prefix,
-  # any clang major) at the freshly built one, keyed on the libclang_rt filename.
-  sed -i -E "s#[^ ']*/libclang_rt\.(asan|ubsan_standalone)-x86_64\.a#${NEW_RT_DIR}/libclang_rt.\1-x86_64.a#g" "$p"
-  if grep -q "${NEW_RT_DIR}/libclang_rt.asan-x86_64.a" "$p"; then
-    log "updated ${f} -> ${NEW_RT_DIR}"
+  loc="$(sed -n 's/^CLANG_LOCATION="\([^"]*\)".*/\1/p' "$p" | tail -1)"
+  if [ -n "$loc" ] && [ "$(readlink -f "$loc")" = "$(readlink -f "${PREFIX}/bin/clang")" ]; then
+    log "${f}: CLANG_LOCATION ${loc} -> ${PREFIX}/bin/clang"
   else
-    warn "${f}: sanitizer path not rewritten (libclang_rt path not found?)"
+    warn "${f}: CLANG_LOCATION is '${loc}', not the clang just installed"
   fi
 done
 
@@ -260,5 +261,5 @@ echo "  clang        : $(${PREFIX}/bin/clang --version | head -1)"
 echo "  LLVMgold.so  : ${PREFIX}/lib/LLVMgold.so ($(stat -c%s "${PREFIX}/lib/LLVMgold.so") bytes)"
 echo "  runtime dir  : ${NEW_RT_DIR}"
 echo "  symbolizer   : /usr/bin/llvm-symbolizer + ${#EXISTING_SUFFIXED_SYMBOLIZERS[@]} re-linked suffixed link(s) -> ${PREFIX}/bin/llvm-symbolizer"
-echo "  san scripts  : ${SAN_SCRIPTS[*]} repointed (backups in /tmp/*.pre_build_clang.bak)"
+echo "  san scripts  : ${SAN_SCRIPTS[*]} follow CLANG_LOCATION, checked"
 echo "  free on /    : $(df -BG --output=avail / | tail -1 | tr -d ' ')"

@@ -43,8 +43,7 @@ while :; do
         cd "${DATADIR}/${MON[${i}]}"
         ~/pr | grep --binary-files=text -vEi '^=========$|^[ \t]+$|no reducer scripts were found in this directory' | sed '/Trials which /,+1d' | sed '/Trials with /,+1d' | sed '/SHUTDOWN/,+1d' | sed '/Coredumps found in trials/,+1d' | sed "s|^========== |========== [${i}] |"
       else
-        echo "Index ${i} seems to be invalid: directory ${DATADIR}/${MON[${i}]} does not exist!"
-        exit 1
+        echo "Index ${i} is invalid: directory ${DATADIR}/${MON[${i}]} does not exist!"
       fi
     fi
   done

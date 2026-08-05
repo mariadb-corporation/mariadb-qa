@@ -17,11 +17,11 @@ BASEDIR=/test/MD220726-mariadb-13.1.0-linux-x86_64-opt
 RUNSOPT=3
 RUNSDBG=3
 #CONF=pquery-run-MD-Aria-enc.conf  # Encryption (ENABLE_ENCRYPTION=1), PS=2, Aria swap # Testing MDEV-38246, bb-10.11-monty
-#CONF=pquery-run-MD-spider.conf  # PRE_SHUFFLE_SQL=2, and spider swap
-#CONF=pquery-run-MD-spider-SAN.conf  # Using PRE_SHUFFLE_SQL=2, SAN
+#CONF=pquery-run-MD-spider.conf  # all-disk SQL, and spider swap
+#CONF=pquery-run-MD-spider-SAN.conf  # Using all-disk SQL, SAN
 #CONF=pquery-run-MD-optimizer.conf
-#CONF=pquery-run-MD-replication.conf  # Replication, PRE_SHUFFLE_SQL=2. Use at least 3 dbg to get RBR, SBR, MBR auto-rotation
-#CONF=pquery-run-MD.conf  # Set currently to PRE_SHUFFLE_SQL=2
+#CONF=pquery-run-MD-replication.conf  # Replication, all-disk SQL. Use at least 3 dbg to get RBR, SBR, MBR auto-rotation
+#CONF=pquery-run-MD.conf  # Set currently to all-disk SQL
 #CONF=pquery-run-MD-binlog-recovery.conf
 ###CONF=pquery-run-MD-r1.conf
 #CONF=pquery-run-MD-eng-enc-rep.conf
@@ -41,7 +41,8 @@ RUNSDBG=3
 #CONF=pquery-run-MD-8.conf
 #CONF=pquery-run-MD-9.conf
 #CONF=pquery-run-MD-cpp.conf
-CONF=pquery-run-MD-revgen.conf
+#CONF=pquery-run-MD-revgen.conf
+CONF=pquery-run-MD-new.conf
 #CONF=pquery-run-MD-MDEV-39661.conf
 #CONF=pquery-run-MD-pavi.conf
 #CONF=pquery-run-MD-MDEV_35915.conf
@@ -50,18 +51,18 @@ CONF=pquery-run-MD-revgen.conf
 #CONF=pquery-run-MD-MDEV-37833.conf
 #CONF=pquery-run-MD-MDEV-9826.conf
 #CONF=pquery-run-MD-MDEV-9826_2.conf
-#CONF=pquery-run-MD_mtr.conf  # PRE_SHUFFLE_SQL=1
-#CONF=pquery-run-MD-XA.conf  # PRE_SHUFFLE_SQL=1, using xa-main-ms-ps-md_v2.sql (replication enabled)
-#CONF=pquery-run-MD-repl.conf  # Using PRE_SHUFFLE_SQL=2
-#CONF=pquery-run-MD2.conf  # Using PRE_SHUFFLE_SQL=2
-#CONF=pquery-run-MD.conf  # Using PRE_SHUFFLE_SQL=2
-#CONF=pquery-run-MD_saahil.conf  # Using PRE_SHUFFLE_SQL=2
-#CONF=pquery-run-MD-multi.conf  # Using PRE_SHUFFLE_SQL=2, multithreaded
-#CONF=pquery-run-MD-SAN.conf  # Using PRE_SHUFFLE_SQL=2, SAN
-#CONF=pquery-run-MD-VAL.conf  # Using PRE_SHUFFLE_SQL=2, VAL
-#CONF=pquery-run-MD-innodb.conf  # Using PRE_SHUFFLE_SQL=2
-#CONF=pquery-run-MD-innodb-SAN.conf  # Using PRE_SHUFFLE_SQL=2, SAN
-#CONF=pquery-run-MD-innodb-MDEV-30531-SAN.conf  # PRE_SHUFFLE_SQL=2, SAN, PRELOAD_SQL
+#CONF=pquery-run-MD_mtr.conf  # INFILE source
+#CONF=pquery-run-MD-XA.conf  # INFILE source, using xa-main-ms-ps-md_v2.sql (replication enabled)
+#CONF=pquery-run-MD-repl.conf  # Using all-disk SQL
+#CONF=pquery-run-MD2.conf  # Using all-disk SQL
+#CONF=pquery-run-MD.conf  # Using all-disk SQL
+#CONF=pquery-run-MD_saahil.conf  # Using all-disk SQL
+#CONF=pquery-run-MD-multi.conf  # Using all-disk SQL, multithreaded
+#CONF=pquery-run-MD-SAN.conf  # Using all-disk SQL, SAN
+#CONF=pquery-run-MD-VAL.conf  # Using all-disk SQL, VAL
+#CONF=pquery-run-MD-innodb.conf  # Using all-disk SQL
+#CONF=pquery-run-MD-innodb-SAN.conf  # Using all-disk SQL, SAN
+#CONF=pquery-run-MD-innodb-MDEV-30531-SAN.conf  # all-disk SQL, SAN, PRELOAD_SQL
 #CONF=pquery-run-MD-btrfs.conf
 #CONF=pquery-run-MDEV-24660.conf   # File name only, no spaces, no directories
 #CONF=pquery-run-MD-buf.conf
@@ -88,12 +89,6 @@ if [ -z "${BASEDIR}" ]; then
   exit 1
 fi
 
-if grep -qi '^[ \t]*PRE_SHUFFLE_SQL[ \t]*=[ \t]*2' ${HOME}/mariadb-qa/${CONF}; then
-  echo "*************************************************************************************************************************"
-  echo "*** IMPORTANT NOTE: PRE_SHUFFLE_SQL=2 is set. No custom-set SQL input file will be used! Make sure this was intended! ***"
-  echo "*************************************************************************************************************************"
-  sleep 2
-fi
 COMPILER="unknown"
 if [ -r ${BASEDIR}/BUILD_CMD_CMAKE ]; then
   COMPILER="GCC"  # GCC is not specified, but the old/previous default on test servers
@@ -101,12 +96,15 @@ if [ -r ${BASEDIR}/BUILD_CMD_CMAKE ]; then
     COMPILER="Clang"
   fi
 fi
-PSS="$(grep -io '^[ \t]*PRE_SHUFFLE_SQL[ \t]*=[ \t]*[0-9]\+' ${HOME}/mariadb-qa/${CONF} | grep -o '[0-9]\+')"
+SRC=''
+for S in USE_GENERATOR:generator USE_REVGEN:revgen USE_INFILE:INFILE USE_ALL_DISK_SQL:all-disk-SQL; do
+  if grep -qi "^[ \t]*${S%%:*}[ \t]*=[ \t]*1" ${HOME}/mariadb-qa/${CONF}; then SRC="${SRC}${SRC:+ + }${S##*:}"; fi
+done
 INF=''
-if [ "${PSS}" != "2" ]; then
+if grep -qi '^[ \t]*USE_INFILE[ \t]*=[ \t]*1' ${HOME}/mariadb-qa/${CONF}; then
   INF=" $(grep -o '^INFILE=[ \t]*[^ ]*' ${HOME}/mariadb-qa/${CONF} | sed 's|=|: |' | tr -d '\n') |"
 fi
-echo "# Compiler: ${COMPILER} | PRE_SHUFFLE_SQL setting: ${PSS} |${INF} $(grep '^PQUERY_RUN_TIMEOUT' ${HOME}/mariadb-qa/${CONF} | sed 's|[ ]\+#.*||;s|PQUERY_RUN_TIMEOUT=|Trial runtime: |;s|$|s|')"
+echo "# Compiler: ${COMPILER} | SQL sources: ${SRC} |${INF} $(grep '^PQUERY_RUN_TIMEOUT' ${HOME}/mariadb-qa/${CONF} | sed 's|[ ]\+#.*||;s|PQUERY_RUN_TIMEOUT=|Trial runtime: |;s|$|s|')"
 if grep -qi '^PRELOAD=1' ${HOME}/mariadb-qa/${CONF}; then
   echo "# PRELOAD is enabled: using sql preload file: $(grep -o '^PRELOAD_SQL[^#]\+' ${HOME}/mariadb-qa/${CONF} | sed 's|PRELOAD_SQL=||;s| *$||')"
 fi

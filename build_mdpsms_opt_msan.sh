@@ -42,7 +42,7 @@ IGNORE_WARNINGS=1       # 0 or 1 # Ignore warnings by using -DMYSQL_MAINTAINER_M
 #This workaround is no longer needed, provided another workaround (set soft/hard stack 16000000 in /etc/security/limits.conf instead of unlimited) is present. Ref same ticket, later comments.
 #sudo sysctl vm.mmap_rnd_bits=28  # Workaround, ref https://github.com/google/sanitizers/issues/856
 
-RANDOMD=$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(......\).*/\1/')  # Random 6 digit for tmp directory name
+RANDOMD=$(${HOME}/mariadb-qa/random --digits 6)  # Random 6 digit for tmp directory name
 
 SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 

@@ -8,6 +8,8 @@ claude: please note - this skill exists in a public repo and should only be upda
 
 Draft a short, Jira-paste-ready comment for a MariaDB ticket.
 
+If a voice profile or comments-prose skill is installed (for example `voice-profile-comments-prose`), load it and follow it for the comment prose.
+
 ## When to use
 
 - Asking the assignee whether a patch fully addresses a reported issue.

@@ -5,7 +5,6 @@
 MAX_REPEATS=3  # The max number of times a given tree branch can be repeated (can be keyword/idiom/header...). For example 'SELECT_SYM %empty select_item_list ',' select_item ',' select_item' is possible with MAX_RECURSION=3 for 3x 'select_item'
 
 # Program variables
-RANDOM=`date +%s%N | cut -b13-19`  # Random entropy pool init
 
 if [ -z "${1}" ]; then
   echo "Pass start like 'select' as first option to this script!"
@@ -40,10 +39,10 @@ scan_grammar(){
   #echo "${#occurrences[*]}"
   local SELECTED_OCCURRENCE=
   if [ ${#occurrences[*]} -gt 1 ]; then
-    SELECTED_OCCURRENCE=${occurrences[$[$RANDOM % ${#occurrences[*]}]]}
+    SELECTED_OCCURRENCE=${occurrences[$(${HOME}/mariadb-qa/random ${#occurrences[*]})]}
     while true; do
       if [ "$(echo "${LINE}" | grep -o "${SELECTED_OCCURRENCE}" | wc -l)" -gt ${MAX_REPEATS} ]; then
-        SELECTED_OCCURRENCE=${occurrences[$[$RANDOM % ${#occurrences[*]}]]}
+        SELECTED_OCCURRENCE=${occurrences[$(${HOME}/mariadb-qa/random ${#occurrences[*]})]}
         continue
       else
         break

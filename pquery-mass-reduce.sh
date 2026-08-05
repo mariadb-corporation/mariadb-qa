@@ -32,7 +32,7 @@ else
 fi
 TOTAL=$[ $1 + $SKIP ]
 
-RND=${RANDOM}
+RND=$(${SCRIPT_PWD}/random --digits 5)
 # For each issue, take the first trial number and sent it to a file
 ${SCRIPT_PWD}/pquery-results.sh | grep '(Seen ' | grep -v 'reducers)$' | grep -o "reducers.*" | sed 's|reducers ||;s|[,)]\+.*||' > /tmp/${RND}.txt
 # Now put the issues into an issue array

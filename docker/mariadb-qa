@@ -1,0 +1,268 @@
+#!/bin/bash
+# MariaDB QA Framework Container - host side control script.
+# Run "./mariadb-qa help" for the command list.
+
+set -u
+
+IMAGE_REPO="${MARIADB_QA_IMAGE:-ghcr.io/mariadb-corporation/mariadb-qa}"
+IMAGE_TAG="${MARIADB_QA_TAG:-latest}"
+NAME="${MARIADB_QA_NAME:-mariadb-qa}"
+BOX_USER="qa"                       # The user inside the image, ref the Dockerfile
+BOX_DIR="${HOME}/mariadb-qa-box"    # Default location of the mapped directories
+TEST_DIR=""
+DATA_DIR=""
+CLAUDE_DIR=""
+MSAN_DIR=""
+SHM_SIZE=""
+TZ_NAME="${TZ:-}"
+PRIVILEGED=0
+FORCE=0
+WITH_MSAN_LIBS=0        # Ref the Dockerfile: a build container cannot run MSAN binaries
+WITH_CLANG_SOURCE=1
+WITH_CLAUDE=1
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+die() { echo "error: $*" >&2; exit 1; }
+
+usage() {
+  cat << EOF
+MariaDB QA Framework Container
+
+Usage
+  ./mariadb-qa [options]             Start the box and open a shell in it
+  ./mariadb-qa build [options]       Build the image from this directory
+  ./mariadb-qa start [options]       Start the box only, without a shell
+  ./mariadb-qa shell                 Open a shell in the box
+  ./mariadb-qa check                 Check the box
+  ./mariadb-qa update                Pull mariadb-qa and run linkit
+  ./mariadb-qa upgrade               Rebuild clang and the MSAN libraries
+  ./mariadb-qa status                Show the box, the mappings and the disk use
+  ./mariadb-qa logs                  Show the start banner and any start warning
+  ./mariadb-qa stop                  Stop the box, keeping /test and /data
+  ./mariadb-qa rm                    Stop and remove the box
+  ./mariadb-qa pull | push           Pull or push the image
+
+In the box
+  qa-check qa-guide qa-run qa-tools qa-update qa-upgrade
+  cb  and  cb-san cb-msan cb-tsan cb-val    Clone the sources and build them
+
+Options for start
+  --test DIR         Host directory mapped to /test   (default ${BOX_DIR}/test)
+  --data DIR         Host directory mapped to /data   (default ${BOX_DIR}/data)
+  --claude-home DIR  Host directory mapped to /home/${BOX_USER}/.claude, which
+                     keeps the Claude Code sign-in between boxes
+  --msan DIR         Host directory mapped to /MSAN_libs, which keeps the MSAN
+                     instrumented libraries between boxes
+  --shm SIZE         Size of /dev/shm, for example 32g (default: half the memory)
+  --tz ZONE          Time zone, for example Australia/Sydney
+  --privileged       Add --privileged, needed by rr
+  --force            Map a /test that another install already owns
+  --name NAME        Container name (default ${NAME})
+  --image REF        Image reference (default ${IMAGE_REPO}:${IMAGE_TAG})
+
+Options for build
+  --with-msan-libs   Build the MSAN instrumented libraries into the image. This
+                     needs a build worker that allows an MSAN binary to run;
+                     the normal way is qa-upgrade msan in a running box
+  --no-clang-source  Leave out the clang built from source, use apt clang only
+  --no-claude        Leave out Claude Code
+  --tag TAG          Image tag to build (default ${IMAGE_TAG})
+EOF
+}
+
+parse_options() {
+  while [ $# -gt 0 ]; do
+    case "${1}" in
+      --test)          TEST_DIR="${2:-}"; shift 2 ;;
+      --data)          DATA_DIR="${2:-}"; shift 2 ;;
+      --claude-home)   CLAUDE_DIR="${2:-}"; shift 2 ;;
+      --msan)          MSAN_DIR="${2:-}"; shift 2 ;;
+      --shm)           SHM_SIZE="${2:-}"; shift 2 ;;
+      --tz)            TZ_NAME="${2:-}"; shift 2 ;;
+      --name)          NAME="${2:-}"; shift 2 ;;
+      --image)         case "${2##*/}" in                 # A tag, if the last part holds one
+                         *:*) IMAGE_REPO="${2%:*}"; IMAGE_TAG="${2##*:}" ;;
+                         *)   IMAGE_REPO="${2}" ;;
+                       esac
+                       shift 2 ;;
+      --tag)           IMAGE_TAG="${2:-}"; shift 2 ;;
+      --privileged)    PRIVILEGED=1; shift ;;
+      --force)         FORCE=1; shift ;;
+      --with-msan-libs) WITH_MSAN_LIBS=1; shift ;;
+      --no-clang-source) WITH_CLANG_SOURCE=0; shift ;;
+      --no-claude)     WITH_CLAUDE=0; shift ;;
+      -h|--help|help)  usage; exit 0 ;;
+      *)               die "unknown option: ${1}" ;;
+    esac
+  done
+}
+
+image_ref() { echo "${IMAGE_REPO}:${IMAGE_TAG}"; }
+
+running() { [ "$(docker inspect -f '{{.State.Running}}' "${NAME}" 2> /dev/null)" = "true" ]; }
+exists()  { docker inspect "${NAME}" > /dev/null 2>&1; }
+
+default_shm() {  # Half the memory, which leaves room for the build and the client side
+  local KB; KB="$(awk '/^MemTotal:/ {print $2}' /proc/meminfo)"
+  echo "$((KB / 2 / 1024 / 1024))g"
+}
+
+# A /test that a native install owns has helper symlinks into another home
+# directory. Mapping it would repoint them and break that install
+check_test_dir() {
+  local T="${1}" TARGET
+  [ -L "${T}/gendirs.sh" ] || return 0
+  TARGET="$(readlink "${T}/gendirs.sh")"
+  case "${TARGET}" in
+    /home/${BOX_USER}/mariadb-qa/*) return 0 ;;
+  esac
+  [ "${FORCE}" = "1" ] && return 0
+  cat >&2 << EOF
+error: ${T} is already used by another mariadb-qa install.
+       Its helper links point at ${TARGET}
+       Starting the box rewrites them to /home/${BOX_USER}/mariadb-qa, which
+       breaks that install. Use a separate directory, or pass --force.
+EOF
+  exit 1
+}
+
+host_core_pattern_check() {
+  local P; P="$(cat /proc/sys/kernel/core_pattern 2> /dev/null)"
+  case "${P}" in
+    core|core.*) : ;;
+    *) cat >&2 << EOF
+warning: the host core pattern is '${P}'.
+         Core files will not reach the trial directories. On the host, run:
+           sudo sysctl -w kernel.core_pattern=core
+EOF
+    ;;
+  esac
+}
+
+cmd_build() {
+  [ -f "${HERE}/Dockerfile" ] || die "no Dockerfile in ${HERE}"
+  echo "building $(image_ref)"
+  docker build "${HERE}" \
+    --tag "$(image_ref)" \
+    --build-arg "WITH_MSAN_LIBS=${WITH_MSAN_LIBS}" \
+    --build-arg "WITH_CLANG_SOURCE=${WITH_CLANG_SOURCE}" \
+    --build-arg "WITH_CLAUDE=${WITH_CLAUDE}" \
+    --build-arg "BOX_USER=${BOX_USER}" \
+    --progress=plain
+}
+
+cmd_start() {
+  if running; then
+    echo "the box '${NAME}' is already running"
+  else
+    if exists; then
+      docker rm -f "${NAME}" > /dev/null
+    fi
+    [ -n "${TEST_DIR}" ] || TEST_DIR="${BOX_DIR}/test"
+    [ -n "${DATA_DIR}" ] || DATA_DIR="${BOX_DIR}/data"
+    mkdir -p "${TEST_DIR}" "${DATA_DIR}" || die "cannot create the mapped directories"
+    TEST_DIR="$(cd "${TEST_DIR}" && pwd)"
+    DATA_DIR="$(cd "${DATA_DIR}" && pwd)"
+    check_test_dir "${TEST_DIR}"
+    host_core_pattern_check
+    [ -n "${SHM_SIZE}" ] || SHM_SIZE="$(default_shm)"
+
+    local ARGS=()
+    ARGS+=(--name "${NAME}" --hostname mariadb-qa --detach)
+    ARGS+=(--shm-size "${SHM_SIZE}")
+    ARGS+=(--ulimit core=-1 --ulimit nofile=1048576:1048576 --ulimit memlock=-1)
+    # Stack, in bytes here, holds the same 400000 and 16000000 KB a QA server
+    # sets. A sanitizer build needs the room, and an unlimited stack breaks ASAN
+    ARGS+=(--ulimit stack=409600000:16384000000)
+    ARGS+=(--pids-limit -1)
+    # PID 1 then reaps an orphaned process, the way systemd does on a QA server.
+    # Without it a long run leaves a zombie behind for every orphan
+    ARGS+=(--init)
+    ARGS+=(--cap-add SYS_PTRACE --security-opt seccomp=unconfined)
+    ARGS+=(--env "HOST_UID=$(id -u)" --env "HOST_GID=$(id -g)")
+    ARGS+=(--volume "${TEST_DIR}:/test" --volume "${DATA_DIR}:/data")
+    [ -n "${CLAUDE_DIR}" ] && {
+      mkdir -p "${CLAUDE_DIR}"
+      ARGS+=(--volume "$(cd "${CLAUDE_DIR}" && pwd):/home/${BOX_USER}/.claude")
+    }
+    [ -n "${MSAN_DIR}" ] && {
+      mkdir -p "${MSAN_DIR}"
+      ARGS+=(--volume "$(cd "${MSAN_DIR}" && pwd):/MSAN_libs")
+    }
+    [ -n "${TZ_NAME}" ] && ARGS+=(--env "TZ=${TZ_NAME}")
+    [ "${PRIVILEGED}" = "1" ] && ARGS+=(--privileged)
+
+    echo "starting ${NAME} from $(image_ref)"
+    echo "  /test     ${TEST_DIR}"
+    echo "  /data     ${DATA_DIR}"
+    echo "  /dev/shm  ${SHM_SIZE}"
+    docker run "${ARGS[@]}" "$(image_ref)" > /dev/null || die "the box did not start"
+    # linkit runs at every start and takes a moment. Wait for the banner, so the
+    # shell that follows has the aliases in place
+    local N=0
+    while [ ${N} -lt 90 ]; do
+      docker logs "${NAME}" 2>&1 | grep -q 'Check the box' && break
+      running || die "the box stopped. Run: ./mariadb-qa logs"
+      sleep 1
+      N=$((N + 1))
+    done
+    docker logs "${NAME}" 2>&1 | tail -n 20
+  fi
+}
+
+cmd_shell() {
+  running || die "the box '${NAME}' is not running. Start it first"
+  exec docker exec -it --user "${BOX_USER}" --workdir "/home/${BOX_USER}" "${NAME}" bash -l
+}
+
+cmd_exec() {
+  running || die "the box '${NAME}' is not running. Start it first"
+  docker exec -it --user "${BOX_USER}" "${NAME}" "$@"
+}
+
+cmd_status() {
+  docker ps -a --filter "name=^${NAME}$" \
+    --format 'box: {{.Names}}  state: {{.Status}}  image: {{.Image}}'
+  exists || return 0
+  docker inspect -f '{{range .Mounts}}map: {{.Source}} -> {{.Destination}}
+{{end}}' "${NAME}"
+  running || return 0
+  docker exec "${NAME}" df -h /dev/shm /test /data
+}
+
+cmd_push() {
+  local DATED
+  DATED="${IMAGE_REPO}:$(date +%Y%m%d)"
+  docker tag "$(image_ref)" "${DATED}" || die "tagging failed"
+  docker push "$(image_ref)" || die "the push failed. Sign in first: docker login ${IMAGE_REPO%%/*}"
+  docker push "${DATED}"
+  echo "pushed $(image_ref) and ${DATED}"
+}
+
+COMMAND="up"                        # No command given: start the box and open a shell
+if [ $# -gt 0 ]; then
+  case "${1}" in
+    build|start|shell|check|update|upgrade|status|logs|stop|rm|pull|push|help|-h|--help)
+      COMMAND="${1}"; shift ;;
+  esac
+fi
+parse_options "$@"
+
+command -v docker > /dev/null 2>&1 || die "docker is not installed"
+
+case "${COMMAND}" in
+  build)  cmd_build ;;
+  up)     cmd_start; cmd_shell ;;
+  start)  cmd_start ;;
+  shell)  cmd_shell ;;
+  check)  cmd_exec qa-check ;;
+  update) cmd_exec qa-update ;;
+  upgrade) cmd_exec qa-upgrade ;;
+  status) cmd_status ;;
+  logs)   docker logs "${NAME}" ;;
+  stop)   docker stop "${NAME}" ;;
+  rm)     docker rm -f "${NAME}" ;;
+  pull)   docker pull "$(image_ref)" ;;
+  push)   cmd_push ;;
+  help|-h|--help) usage ;;
+esac

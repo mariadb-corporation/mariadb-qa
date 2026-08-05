@@ -13,8 +13,8 @@ set -o nounset    # no undefined variables
 
 # Global variables
 declare ADDR="127.0.0.1"
-declare PORT=$[50000 + ( $RANDOM % ( 9999 ) ) ]
-declare -i RPORT=$(( (RANDOM%21 + 10)*1000 ))
+declare PORT=$(${HOME}/mariadb-qa/random 50000 59998)
+declare -i RPORT=$(( $(${HOME}/mariadb-qa/random 10 30)*1000 ))
 declare LADDR="$ADDR:$(( RPORT + 8 ))"
 declare SUSER=root
 declare SPASS=""
@@ -297,7 +297,7 @@ trap cleanup EXIT KILL
 # Find empty port
 init_empty_port(){
   # Choose a random port number in 13-47K range, with triple check to confirm it is free
-  NEWPORT=$((13001 + ((RANDOM << 15) | RANDOM) % 34001))  # 'RANDOM << 15': 1st $RANDOM is bit-shifted left by 15 places (i.e. * 2^15), '| RANDOM': Bitwise OR operation with a 2nd $RANDOM, which fills the lower 15 bits with a new random number. Result: 30-bit random integer
+  NEWPORT=$(${HOME}/mariadb-qa/random 13001 47001)
   DOUBLE_CHECK=0
   while :; do
     # Check if the port is free in four different ways
@@ -310,11 +310,11 @@ init_empty_port(){
         break  # Suitable port number found
       else
         DOUBLE_CHECK=$[ ${DOUBLE_CHECK} + 1 ]
-        sleep 0.0${RANDOM}  # Random Microsleep to further avoid races
+        sleep 0.0$(${HOME}/mariadb-qa/random 10000 99999)  # Random microsleep of 10 to 100 ms to further avoid races
         continue  # Loop the check
       fi
     else
-      NEWPORT=$((13001 + ((RANDOM << 15) | RANDOM) % 34001))  # Try a new port
+      NEWPORT=$(${HOME}/mariadb-qa/random 13001 47001)  # Try a new port
       DOUBLE_CHECK=0  # Reset the double check
       continue  # Recheck the new port
     fi

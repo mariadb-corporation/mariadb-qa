@@ -351,8 +351,8 @@ export DEBUGINFOD_PROGRESS=0
 # Provision ABORT_ACTIVE
 ABORT_ACTIVE=0
 
-# Random entropy init
-RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
+# High-entropy random source
+RANDOM_BIN="${HOME}/mariadb-qa/random"  # xoshiro256++ entropy source; build it with build_random.sh
 
 # Get this reducer's location+name
 THIS_REDUCER="$(cd "`dirname $0`" && pwd)/$(basename "$0")"
@@ -610,7 +610,7 @@ if [ $REDUCE_GLIBC_OR_SS_CRASHES -gt 0 ]; then
   # Ensure the output of this console is logged. For this, reducer.sh is restarted with self-logging activated using script
   # With thanks, http://stackoverflow.com/a/26308092 from http://stackoverflow.com/questions/5985060/bash-script-using-script-command-from-a-bash-script-for-logging-a-session
   if [ -z "$REDUCER_TYPESCRIPT" ]; then
-    TYPESCRIPT_UNIQUE_FILESUFFIX=$RANDOM$RANDOM
+    TYPESCRIPT_UNIQUE_FILESUFFIX=$(${RANDOM_BIN} --digits 10)
     # TODO: this does not work for *** buffer overflow detected *** at all atm; it looks like the typescript is not being captured correctly until CTRL+C is pressed (even with SKIPV turned off). Needs bugfix, though the issue may be OS-related. Example contents in ~/ts_example.log
     # TODO: the following line does not work correctly when passing multiple variables to reducer (outside of the input file), or when such variables contain spaces. This is currenty only seen for the basedir local reducers as created by startup.sh, and is not a common issue otherwise. Workaround; just specify everything in the variables inside the script, without passing command line parameters.
     exec $SCRIPT_LOC -q -f /tmp/reducer_typescript${TYPESCRIPT_UNIQUE_FILESUFFIX}.log -c "REDUCER_TYPESCRIPT=1 TYPESCRIPT_UNIQUE_FILESUFFIX=${TYPESCRIPT_UNIQUE_FILESUFFIX} $0 $@"
@@ -1279,7 +1279,7 @@ set_internal_options(){  # Internal options: do not modify!
   if [ "${FIREWORKS}" == "1" ]; then
     RUNMODE='FIREWORKS'
   fi
-  sleep 0.1$RANDOM  # Subreducer OS slicing
+  sleep 0.1$(${RANDOM_BIN} --digits 5)  # Subreducer OS slicing
   WHOAMI=$(whoami)
   if [ "$MULTI_REDUCER" != "1" ]; then  # This is the main reducer. For subreducers, EPOCH, SKIPV, SPORADIC is set in #VARMOD#
     EPOCH=$(date +%s%N)  # Used for /dev/shm work directory name and WORK_INIT, WORK_START etc. file names
@@ -1521,7 +1521,7 @@ multi_reducer(){
           SUBR_SVR_START_FAILURE=0
           if grep -Eqi --binary-files=text "Failed to start the.*server" $RESTART_WORKD/reducer.log 2>/dev/null; then  # Check if this was a subreducer who's mariadbd/mysqld failed to start
             SUBR_SVR_START_FAILURE=1
-            TMP_RND_FILENAME="err_$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(......\).*/\1/').txt"  # Subshell creates random number with 6 digits
+            TMP_RND_FILENAME="err_$(${RANDOM_BIN} --digits 6).txt"  # Random number with 6 digits
             cp $RESTART_WORKD/log/master.err /tmp/${TMP_RND_FILENAME}  # Copy the mariadbd/mysqld error log from the subreducer run which had a failed startup to /tmp for research
             if [ -r $RESTART_WORKD/log/slave.err ]; then
               cp $RESTART_WORKD/log/slave.err /tmp/${TMP_RND_FILENAME}.slave
@@ -1777,7 +1777,7 @@ init_empty_port(){
   done
 
   while :; do
-    NEWPORT=$((13001 + ((RANDOM << 15) | RANDOM) % 34001))  # 'RANDOM << 15': 1st $RANDOM is bit-shifted left by 15 places (i.e. * 2^15), '| RANDOM': Bitwise OR operation with a 2nd $RANDOM, which fills the lower 15 bits with a new random number. Result: 30-bit random integer
+    NEWPORT=$(${RANDOM_BIN} 13001 47001)
     # Atomic claim attempt. set -o noclobber makes the redirect use O_CREAT|O_EXCL; on collision with another picker
     # holding the same port, the subshell's redirect fails, the subshell exits non-zero, and we retry a fresh random port.
     if ! ( set -o noclobber; echo "$$" > "${_INIT_EMPTY_PORT_CLAIM_DIR}/${NEWPORT}" ) 2>/dev/null; then
@@ -1962,7 +1962,7 @@ init_workdir_and_files(){
           # Clean any DROPC statements from WORKT (similar to the grep -v above but for multiple lines instead)
           remove_dropc $WORKF
           # Re-setup DROPC using multiple lines (ref remove_dropc() for more information)
-          DROPC_UNIQUE_FILESUFFIX=$RANDOM$RANDOM
+          DROPC_UNIQUE_FILESUFFIX=$(${RANDOM_BIN} --digits 10)
           echo "$(echo "$DROPC" | sed 's|;|;\n|g' | grep --binary-files=text -vE '^$')" > /tmp/WORKF_${DROPC_UNIQUE_FILESUFFIX}.tmp
           cat $WORKF >> /tmp/WORKF_${DROPC_UNIQUE_FILESUFFIX}.tmp
           rm -f $WORKF
@@ -3164,7 +3164,7 @@ cut_random_chunk(){
   if [ "${PQUERY_CONS_Q_FAIL}" -eq 0 ]; then  # Regular runs
     #RANDLINE=$[ ( $RANDOM % ( $[ $LINECOUNTF - $CHUNK - 1 ] + 1 ) ) + 1 ]  # Old
     while [ "${RANDLINE}" -le 0 ]; do
-      RANDLINE=$[ $RANDOM % ($[ $LINECOUNTF - $CHUNK ] + 1 ) ]  # New
+      RANDLINE=$(${RANDOM_BIN} 0 $[ $LINECOUNTF - $CHUNK ])
       # Anchor avoidance: reject candidates whose cut-range covers the tail anchor. After 100 retries release the anchor for this trial so STAGE progresses; cleanup_and_save SQL-line guard and MODE=0 PRE_SHUTDOWN_RUNTIME filter catch any resulting empty/header-only WORKT.
       if [ "${RANDLINE}" -gt 0 ] && [ "${TAIL_ANCHOR_LINE}" -gt 0 ]; then
         if [ "${RANDLINE}" -le "${TAIL_ANCHOR_LINE}" ] && [ $[$RANDLINE+$CHUNK] -ge "${TAIL_ANCHOR_LINE}" ]; then
@@ -3189,11 +3189,11 @@ cut_random_chunk(){
     RANDLINEMIN250=$[ $LINECOUNTF - $CHUNK - 250 ]  # Ref explanation below
     while [ "${RANDLINEMIN250}" -lt 1 ]; do  # When getting close/closer to 250 lines, it is possible that the CHUNK is too large, vary CHUNK size  # TODO: this could be part of determine_chunk, i.e. if PQUERY_CONS_Q_FAIL=1 then reduce CHUNK by 250? etc
 #251 lines left   251
-      CHUNK=$[ $RANDOM % $[ $LINECOUNTF - 250 ] ]  # For example, 251 lines left: 251-250=1 and RANDOM%1 is 0 max, and CHUNK=0 means one line removal. Similarly 252 left: 252-250=2, RANDOM%2 is 1 max and CHUNK=1 (+1 in sed) is two lines removed
+      CHUNK=$(${RANDOM_BIN} 0 $[ $LINECOUNTF - 251 ])  # For example, 251 lines left: CHUNK=0 means one line removal. Similarly 252 left: CHUNK is 0 or 1 and CHUNK=1 (+1 in sed) is two lines removed
       RANDLINEMIN250=$[ $LINECOUNTF - $CHUNK - 250 ]  # For example, 251 lines left: 251-0-250=1 and line=1 is the only possible starting line in that case. Similarly 252 left: 252-1(max)-250=1 or 252-0(min)-250=2 and lines 1 and 2 are two viable options as the startline (RANDLINE, calculated below)
     done
     while [ "${RANDLINE}" -le 0 ]; do
-      RANDLINE=$[ $RANDOM % ( ${RANDLINEMIN250} + 1 ) ]  # +1: RANDOM%nr requires nr to be nr+1 to be able to reach (max) nr, and we want to have line 1 or higher for the sed
+      RANDLINE=$(${RANDOM_BIN} 0 ${RANDLINEMIN250})  # 0 or higher; the sed uses line 1 or higher
       # Inf loop protection (can be removed in time if this assert never triggers)
       RLLOOPCOUNT=$[ ${RLLOOPCOUNT} + 1 ]
       if [ "${RLLOOPCOUNT}" -ge 1000 ]; then
@@ -3224,9 +3224,8 @@ cut_random_chunk(){
 
 cut_fireworks_chunk_and_shuffle(){
   echoit "$ATLEASTONCE [Stage $STAGE] [Trial $TRIAL] [FIREWORKS] Chunking, shuffling and executing ${FIREWORKS_LINES} lines"  # The 'executing' is a bit premature (as it happens a bit later outside of this procedure), but the text makes sense here
-  RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')  # Resetting random entropy to ensure highest quality entropy
   diskspace "$(dirname "${WORKT}")"  # Ensure >=500MB free on WORKD before writing WORKT (fireworks shuf)
-  shuf -n${FIREWORKS_LINES} --random-source=/dev/urandom ${INPUTFILE} > ${WORKT}
+  shuf -n${FIREWORKS_LINES} --random-source=<(${RANDOM_BIN} --raw) ${INPUTFILE} > ${WORKT}
 }
 
 cut_threadsync_chunk(){
@@ -3941,7 +3940,7 @@ process_outcome(){
               if [ -z "${FINDBUG}" ]; then  # Reducer found a new bug (nothing found in known bugs)
                 # TODO: need some provision for when MYBUG.FOUND is empty (possibly due to top SAN issues being dropped?)
                 echoit "[NewBug] Reducer located a new bug while reducing this issue: $(cat ${WORKD}/MYBUG.FOUND 2>/dev/null | head -n1)"
-                EPOCH_RAN="$(date +%H%M%S%N)${RANDOM}"
+                EPOCH_RAN="$(date +%H%M%S%N)$(${RANDOM_BIN} --digits 10)"
                 if [ ! -z "${NEW_BUGS_SAVE_DIR}" ]; then  # If set, we need to copy this new bug to the NEW_BUGS_SAVE_DIR
                   if [ ! -d "${NEW_BUGS_SAVE_DIR}" ]; then  # Leave this check, it re-checks if the [previously created, at the start of the script] NEW_BUGS_SAVE_DIR still exists
                     echo "Assert: SCAN_FOR_NEW_BUGS was set to 1, and NEW_BUGS_SAVE_DIR was set to '${NEW_BUGS_SAVE_DIR}'. This directory already existed, or was created succesfully at the start of this script run. However, it is not present anymore. Please check cause as this should not happen."
@@ -4739,7 +4738,7 @@ verify(){
               # Clean any DROPC statements from WORKT (similar to the grep -v above but for multiple lines instead)
               remove_dropc $WORKT
               # Re-setup DROPC using multiple lines (ref remove_dropc() for more information) and add the INITFILE
-              DROPC_UNIQUE_FILESUFFIX="${RANDOM}${RANDOM}"
+              DROPC_UNIQUE_FILESUFFIX=$(${RANDOM_BIN} --digits 10)
               echo "$(echo "$DROPC" | sed 's|;|;\n|g' | grep --binary-files=text -v "^$";cat $INITFILE;cat $WORKT)" > /tmp/WORKT_${DROPC_UNIQUE_FILESUFFIX}.tmp
               rm -f $WORKT
               mv /tmp/WORKT_${DROPC_UNIQUE_FILESUFFIX}.tmp $WORKT
@@ -4784,7 +4783,7 @@ verify(){
               # Clean any DROPC statements from WORKT (similar to the grep -v above but for multiple lines instead)
               remove_dropc $WORKT
               # Re-setup DROPC using multiple lines (ref remove_dropc() for more information) and add the INITFILE
-              DROPC_UNIQUE_FILESUFFIX=$RANDOM$RANDOM
+              DROPC_UNIQUE_FILESUFFIX=$(${RANDOM_BIN} --digits 10)
               echo "$(echo "$DROPC" | sed 's|;|;\n|g' | grep -v "^$";cat $INITFILE;cat $WORKT)" > /tmp/WORKT_${DROPC_UNIQUE_FILESUFFIX}.tmp
               rm -f $WORKT
               mv /tmp/WORKT_${DROPC_UNIQUE_FILESUFFIX}.tmp $WORKT
@@ -4832,7 +4831,7 @@ verify(){
               # Clean any DROPC statements from WORKT (similar to the grep -v above but for multiple lines instead)
               remove_dropc $WORKT
               # Re-setup DROPC using multiple lines (ref remove_dropc() for more information) and add the INITFILE
-              DROPC_UNIQUE_FILESUFFIX=$RANDOM$RANDOM
+              DROPC_UNIQUE_FILESUFFIX=$(${RANDOM_BIN} --digits 10)
               echo "$(echo "$DROPC" | sed 's|;|;\n|g' | grep -v "^$";cat $INITFILE;cat $WORKT)" > /tmp/WORKT_${DROPC_UNIQUE_FILESUFFIX}.tmp
               rm -f $WORKT
               mv /tmp/WORKT_${DROPC_UNIQUE_FILESUFFIX}.tmp $WORKT
@@ -4873,7 +4872,7 @@ verify(){
               # Clean any DROPC statements from WORKT (similar to the grep -v above but for multiple lines instead)
               remove_dropc $WORKT
               # Re-setup DROPC using multiple lines (ref remove_dropc() for more information) and add the INITFILE
-              DROPC_UNIQUE_FILESUFFIX=$RANDOM$RANDOM
+              DROPC_UNIQUE_FILESUFFIX=$(${RANDOM_BIN} --digits 10)
               echo "$(echo "$DROPC" | sed 's|;|;\n|g' | grep -v "^$";cat $INITFILE;cat $WORKT)" > /tmp/WORKT_${DROPC_UNIQUE_FILESUFFIX}.tmp
               rm -f $WORKT
               mv /tmp/WORKT_${DROPC_UNIQUE_FILESUFFIX}.tmp $WORKT
@@ -4912,7 +4911,7 @@ verify(){
               # Clean any DROPC statements from WORKT (similar to the grep -v above but for multiple lines instead)
               remove_dropc $WORKT
               # Re-setup DROPC using multiple lines (ref remove_dropc() for more information) and add the INITFILE
-              DROPC_UNIQUE_FILESUFFIX=$RANDOM$RANDOM
+              DROPC_UNIQUE_FILESUFFIX=$(${RANDOM_BIN} --digits 10)
               echo "$(echo "$DROPC" | sed 's|;|;\n|g' | grep -v "^$";cat $INITFILE;cat $WORKT)" > /tmp/WORKT_${DROPC_UNIQUE_FILESUFFIX}.tmp
               rm -f $WORKT
               mv /tmp/WORKT_${DROPC_UNIQUE_FILESUFFIX}.tmp $WORKT
@@ -4946,7 +4945,7 @@ verify(){
               sed -i "1 r $INITFILE" $WORKT  # Inline INITFILE into WORKT after the DROPC line so the testcase under test no longer depends on --init-file (mirrors the pquery branch's INITFILE inlining)
             else  # pquery is used; use a multi-line format for DROPC
               remove_dropc $WORKT
-              DROPC_UNIQUE_FILESUFFIX=$RANDOM$RANDOM
+              DROPC_UNIQUE_FILESUFFIX=$(${RANDOM_BIN} --digits 10)
               echo "$(echo "$DROPC" | sed 's|;|;\n|g' | grep -v "^$";cat $INITFILE;cat $WORKT)" > /tmp/WORKT_${DROPC_UNIQUE_FILESUFFIX}.tmp
               rm -f $WORKT
               mv /tmp/WORKT_${DROPC_UNIQUE_FILESUFFIX}.tmp $WORKT

@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <array>
 #include <atomic>
+#include <bit>
 #include <cassert>
 #include <cerrno>
 #include <chrono>
@@ -22,7 +23,6 @@
 #include <map>
 #include <mutex>
 #include <optional>
-#include <random>
 #include <regex>
 #include <set>
 #include <sstream>
@@ -40,8 +40,96 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <ctime>
+#include <sys/auxv.h>
+#include <sys/random.h>
+#if defined(__x86_64__)
+#include <x86intrin.h>
+#endif
 
 namespace fs = std::filesystem;
+
+// ============================================================================
+// PRNG - xoshiro256++, the same generator and the same seeding as random.cpp,
+// generatorcpp/generator.cpp and revgen/revgen.cpp
+// ============================================================================
+
+// xoshiro256++ - BigCrush-clean 64-bit PRNG, period 2^256-1. seed_full() fills all 256 bits of
+// state from the kernel CSPRNG, the kernel's per-exec random bytes, the wall clock date and
+// time, a monotonic clock, the CPU cycle counter, the pid, the tid and a stack address.
+struct Xoshiro256pp {
+  uint64_t s[4];
+  static inline uint64_t splitmix64(uint64_t& x) {
+    uint64_t z = (x += 0x9E3779B97F4A7C15ULL);
+    z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ULL;
+    z = (z ^ (z >> 27)) * 0x94D049BB133111EBULL;
+    return z ^ (z >> 31);
+  }
+  void seed(uint64_t z) {
+    s[0] = splitmix64(z); s[1] = splitmix64(z);
+    s[2] = splitmix64(z); s[3] = splitmix64(z);
+    if ((s[0] | s[1] | s[2] | s[3]) == 0) s[0] = 0x9E3779B97F4A7C15ULL;
+  }
+  // Seed all 256 bits of state from independent entropy. A single 64-bit seed expanded by
+  // splitmix64 can only reach 2^64 of the 2^256 states; filling every word directly removes
+  // that ceiling. Sources:
+  //   getrandom        kernel CSPRNG, the pool /dev/urandom serves, 32 bytes in one syscall
+  //   AT_RANDOM        16 kernel-random bytes placed at exec, no syscall
+  //   CLOCK_REALTIME   wall clock date and time, true nanosecond resolution
+  //   CLOCK_MONOTONIC  monotonic, nanosecond; a wall clock step cannot repeat it
+  //   rdtsc            CPU cycle counter, finer still than the clocks
+  //   pid, tid         separate concurrent processes and threads
+  //   frame address    this thread's stack, ASLR-varying per process
+  // clock_gettime is used rather than std::chrono because system_clock counts microseconds
+  // under libc++, so it would not carry the nanosecond.
+  // Each word is then run through splitmix64, so a weak bit in any one source cannot leave a
+  // whole state word structured.
+  void seed_full() {
+    // Pre-set to splitmix64/xoshiro constants so the words are always defined, then let
+    // getrandom overwrite them. A short read or an error leaves constants in place and the
+    // seven sources below still fill every word - no branch, nothing untestable.
+    uint64_t w[4] = { 0x9E3779B97F4A7C15ULL, 0xBF58476D1CE4E5B9ULL,
+                      0x94D049BB133111EBULL, 0x2545F4914F6CDD1DULL };
+    (void)getrandom(w, sizeof(w), 0);
+    if (const void* ar = reinterpret_cast<const void*>(getauxval(AT_RANDOM))) {
+      uint64_t k[2];
+      std::memcpy(k, ar, sizeof(k));
+      w[0] ^= k[0]; w[1] ^= k[1];
+    }
+    struct timespec rt, mt;
+    clock_gettime(CLOCK_REALTIME, &rt);
+    clock_gettime(CLOCK_MONOTONIC, &mt);
+    w[0] ^= uint64_t(rt.tv_sec) * 1000000000ULL + uint64_t(rt.tv_nsec);
+    w[1] ^= std::rotl(uint64_t(mt.tv_sec) * 1000000000ULL + uint64_t(mt.tv_nsec), 32);
+#if defined(__x86_64__)
+    w[2] ^= uint64_t(__rdtsc());
+#endif
+    w[2] ^= uint64_t(getpid()) << 16;
+    w[3] ^= uint64_t(gettid()) << 8;
+    w[3] ^= uint64_t(reinterpret_cast<uintptr_t>(&w));
+    for (auto& v : w) { uint64_t t = v; v = splitmix64(t); }
+    s[0] = w[0]; s[1] = w[1]; s[2] = w[2]; s[3] = w[3];
+    if ((s[0] | s[1] | s[2] | s[3]) == 0) s[0] = 0x9E3779B97F4A7C15ULL;
+  }
+  inline uint64_t next() {
+    const uint64_t result = std::rotl(s[0] + s[3], 23) + s[0];
+    const uint64_t t = s[1] << 17;
+    s[2] ^= s[0]; s[3] ^= s[1]; s[1] ^= s[2]; s[0] ^= s[3];
+    s[2] ^= t;
+    s[3] = std::rotl(s[3], 45);
+    return result;
+  }
+  // Uniform 0..range-1 without modulo bias.
+  inline uint64_t bounded(uint64_t range) {
+    if (range == 0) return next();
+    if ((range & (range - 1)) == 0) return next() & (range - 1);
+    const uint64_t threshold = (0ULL - range) % range;
+    uint64_t x;
+    do { x = next(); } while (x < threshold);
+    return x % range;
+  }
+};
+
 
 // ============================================================================
 // CONFIG — user-configurable globals (mirror reducer.sh lines 36..147 order)
@@ -320,10 +408,18 @@ std::ofstream reducer_log;
 std::mutex    log_mutex;
 
 // PRNG (per-thread state is overkill for reducer's modest use; one shared mutex-guarded engine)
-std::mt19937_64 rng;
-std::mutex      rng_mutex;
+Xoshiro256pp rng;
+std::mutex   rng_mutex;
 
 }  // namespace state
+
+// Uniform lo..hi inclusive, mutex-guarded, no modulo bias.
+static inline int64_t rand_range(int64_t lo, int64_t hi) {
+  if (hi < lo) std::swap(lo, hi);
+  const uint64_t range = uint64_t(hi) - uint64_t(lo) + 1;
+  std::lock_guard<std::mutex> g(state::rng_mutex);
+  return int64_t(uint64_t(lo) + state::rng.bounded(range));
+}
 
 // ============================================================================
 // UTIL — small helpers (string, file, shell, time)
@@ -544,12 +640,13 @@ inline std::string nsec_epoch() {
   return std::to_string(static_cast<long long>(ns));
 }
 
-// Generate a random suffix similar to bash $RANDOM (0..32767). For reducer
-// purposes any uniform integer suffices.
+// Random 10-digit suffix for temporary file and directory names. Fixed width and uniform, so
+// every value is equally likely.
 inline std::string rand_suffix() {
-  std::lock_guard<std::mutex> g(state::rng_mutex);
-  std::uniform_int_distribution<int> d(0, 32767);
-  return std::to_string(d(state::rng)) + std::to_string(d(state::rng));
+  char buf[16];
+  std::snprintf(buf, sizeof(buf), "%010llu",
+                static_cast<unsigned long long>(rand_range(0, 9999999999LL)));
+  return buf;
 }
 
 }  // namespace util
@@ -971,12 +1068,7 @@ static int init_empty_port() {
     }
   }
   while (true) {
-    int new_port;
-    {
-      std::lock_guard<std::mutex> g(state::rng_mutex);
-      std::uniform_int_distribution<int> d(13001, 47001);
-      new_port = d(state::rng);
-    }
+    int new_port = int(rand_range(13001, 47001));
     // Atomic O_CREAT|O_EXCL claim.
     std::string claim = state::INIT_EMPTY_PORT_CLAIM_DIR + "/" + std::to_string(new_port);
     int fd = open(claim.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0644);
@@ -1066,13 +1158,8 @@ static void set_internal_options() {
   state::RUNMODE = "MULTI";
   if (cfg::FIREWORKS == 1) state::RUNMODE = "FIREWORKS";
 
-  // Subreducer OS slicing: sleep 0.1..0.10000s — random.
-  {
-    std::lock_guard<std::mutex> g(state::rng_mutex);
-    std::uniform_int_distribution<int> d(0, 32767);
-    int slack = d(state::rng);
-    std::this_thread::sleep_for(std::chrono::milliseconds(100 + (slack % 100)));
-  }
+  // Subreducer OS slicing: sleep 100..199 ms, random.
+  std::this_thread::sleep_for(std::chrono::milliseconds(rand_range(100, 199)));
   state::WHOAMI = util::sh_capture_trimmed("whoami");
   if (state::MULTI_REDUCER != 1) {
     state::EPOCH = util::nsec_epoch();
@@ -3399,15 +3486,11 @@ static void cut_random_chunk() {
     }
   }
   auto rand_int = [](long long max) -> long long {
-    std::lock_guard<std::mutex> g(state::rng_mutex);
-    std::uniform_int_distribution<long long> d(0, std::max<long long>(0, max));
-    return d(state::rng);
+    return rand_range(0, std::max<long long>(0, max));
   };
   if (cfg::PQUERY_CONS_Q_FAIL == 0) {
     while (state::RANDLINE <= 0) {
-      state::RANDLINE = rand_int(state::LINECOUNTF - state::CHUNK + 0);  // RANDOM % (n+1) range; n = LINECOUNTF-CHUNK
-      // Match bash: $RANDOM % ($[LINECOUNTF - CHUNK] + 1)
-      // Our rand_int(max) is uniform [0..max] inclusive, so passing (LINECOUNTF-CHUNK) is equivalent to RANDOM % (LINECOUNTF-CHUNK+1).
+      state::RANDLINE = rand_int(state::LINECOUNTF - state::CHUNK);  // rand_int(max) is uniform over [0..max] inclusive
       if (state::RANDLINE > 0 && state::TAIL_ANCHOR_LINE > 0) {
         if (state::RANDLINE <= state::TAIL_ANCHOR_LINE && state::RANDLINE + state::CHUNK >= state::TAIL_ANCHOR_LINE) {
           state::RANDLINE = -1;
@@ -5417,8 +5500,7 @@ static void apply_subreducer_env() {
 
 int main(int argc, char** argv) {
   std::ios::sync_with_stdio(false);
-  state::rng.seed(static_cast<uint64_t>(
-    std::chrono::high_resolution_clock::now().time_since_epoch().count()));
+  state::rng.seed_full();
   // Top-of-binary process-wide init — mirrors reducer.sh:344,348-349,370-376.
   // Done in main() so every forked mariadbd/gdb child inherits it. Each call
   // is best-effort: a missing /proc node or a host with no /home/$USER/mariadb-qa

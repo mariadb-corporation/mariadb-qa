@@ -3,7 +3,7 @@
 
 # TODO: Idea: the current file check (only done for reducer.log) checks the file age. Likely other directories could have a file age check by using ls -t 2>/dev/null | head -n1 and taking the age of that file. If any updates happen in the directory then this would show directory is still live/active
 
-EXCLUDE_DIR_REGEX='multipath|var_|afl|sql_shuffled|r1'  # 'var_' is excluded to avoid deleting MTR --mem directories, and multipath is a system dir
+EXCLUDE_DIR_REGEX='multipath|var_|afl|trial_sql|r1'  # 'var_' is excluded to avoid deleting MTR --mem directories, and multipath is a system dir
 LOW_MEMORY=20  # A number, reflecting a minimum 'directly free available memory' before long-running reducers which have been successful thus far (i.e. at least 2 ~/pge started after the original reduction, and file is _out_out_out already), are terminated. If total memory is for example 128GB then 20 may be a good number to use here, or similar.
 
 ARMED=0
@@ -113,7 +113,7 @@ else
                       if [ ! -z "${SUBDIR}" ]; then  # No subdir, if directory exists, then it is empty
                         AGESUBDIR=$(( $(date +%s) - $(stat -c %Z "${SUBDIR}") ))  # Current trial directory age in seconds
                         if [ ${AGESUBDIR} -ge 10800 ]; then  # Don't delete pquery-run.sh directories if they have recent trials in them (i.e. they are likely still running): >=3hr
-                          if [[ "${DIR}" != "/dev/shm/sql_shuffled" && "${DIR}" != "/dev/shm/afl"* ]]; then  # Do not delete the temporary SQL shuffle directory created and used by pquery-run.sh, and do not delete fuzzer directories
+                          if [[ "${DIR}" != "/dev/shm/trial_sql" && "${DIR}" != "/dev/shm/afl"* ]]; then  # Do not delete the per-trial SQL directory created and used by pquery-run.sh, and do not delete fuzzer directories
                             if [ ${SILENT} -eq 0 ]; then
                               echo "Deleting workdir ${DIR} (trial subdirectory age: ${AGESUBDIR}s)"
                             fi
@@ -140,7 +140,7 @@ else
                     MMDC=
                   fi
                 else
-                  if [[ "${DIR}" != "/dev/shm/sql_shuffled" && "${DIR}" != "/dev/shm/afl"* ]]; then  # As above
+                  if [[ "${DIR}" != "/dev/shm/trial_sql" && "${DIR}" != "/dev/shm/afl"* ]]; then  # As above
                     if [ ${SILENT} -eq 0 ]; then
                       echo "Deleting directory ${DIR} (directory age: ${AGEDIR}s)"
                     fi
@@ -158,9 +158,9 @@ else
       COUNT_FOUND_AND_NOT_DEL=$[ ${COUNT_FOUND_AND_NOT_DEL} + 1 ]
     fi; STORE_COUNT_FOUND_AND_DEL=
   done
-  # Check for out-of-use sql_shuffled files (new method)
-  if [ -d /dev/shm/sql_shuffled ]; then
-    cd /dev/shm/sql_shuffled
+  # Check for out-of-use per-trial SQL files
+  if [ -d /dev/shm/trial_sql ]; then
+    cd /dev/shm/trial_sql
     TEMP=$(mktemp)
     touch -d '5 hours ago' ${TEMP}
     FILELIST=$(mktemp)
@@ -169,9 +169,9 @@ else
     NROFFILES=$(cat ${FILELIST} 2>/dev/null | wc -l)
     if [ "${NROFFILES}" -gt 0 ]; then
       for i in `seq 1 ${NROFFILES}`; do  
-        FILETODEL="/dev/shm/sql_shuffled/$(head -n${i} ${FILELIST} 2>/dev/null | tail -n1)"
+        FILETODEL="/dev/shm/trial_sql/$(head -n${i} ${FILELIST} 2>/dev/null | tail -n1)"
         if [ -r "${FILETODEL}" ]; then 
-          echo "Deleting outdated sql shuffle file ${FILETODEL} (file age: $[ $(date +%s) - $(stat -c %Z ${FILETODEL}) ]s)"
+          echo "Deleting outdated per-trial SQL file ${FILETODEL} (file age: $[ $(date +%s) - $(stat -c %Z ${FILETODEL}) ]s)"
           if [ ${ARMED} -eq 1 ]; then rm -f "${FILETODEL}" ; fi
           COUNT_FOUND_AND_DEL=$[ ${COUNT_FOUND_AND_DEL} + 1 ]
         fi
@@ -199,16 +199,16 @@ else
   fi
 fi
 
-# This is now handles above in 'Check for out-of-use sql_shuffled files (new method)'
-# TODO: somehow make this more universal in case PRE_SHUFFLE_DIR is changed in pquery-run.conf
-#if [ -d /dev/shm/sql_shuffled ]; then
+# This is now handles above in 'Check for out-of-use per-trial SQL files'
+# TODO: somehow make this more universal in case TRIAL_SQL_DIR is changed in pquery-run.conf
+#if [ -d /dev/shm/trial_sql ]; then
 #  if [ ${SILENT} -eq 0 ]; then
-#    echo "> Note: /dev/shm/sql_shuffled directory found (default PRE_SHUFFLE_DIR in pquery-run.conf): cleaning unused shuffled SQL files"
+#    echo "> Note: /dev/shm/trial_sql directory found (default TRIAL_SQL_DIR in pquery-run.conf): cleaning unused per-trial SQL files"
 #  fi
 #  sleep 2
-#  # The following oneliner takes the leading 6 digits of the shuffled .sql file (which is the workdir), then checkes if a pquery-go-expert screen (running in a 'ge' screen session) with the same workdir is running. If not, it will delete the file as it is then safe to do so. 
+#  # The following oneliner takes the leading 6 digits of the per-trial .sql file (which is the workdir), then checkes if a pquery-go-expert screen (running in a 'ge' screen session) with the same workdir is running. If not, it will delete the file as it is then safe to do so. 
 # # TODO: how to make this safer for runs not started inside screen sessions (almost never the case for professional setups). Perhaps it is possible to do a similar "age check" as is used elsewhere in this script
-#  ls --color=never /dev/shm/sql_shuffled 2>/dev/null | sed 's|_[0-9]\+\.sql||' | xargs -I{} echo "echo '{}' | grep -vE \$(screen -ls | grep -o '\.ge[0-9][0-9][0-9][0-9][0-9][0-9]' | sed 's|\.ge||' | tr '\n' '|' | sed 's/|$//') 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | xargs -I{} echo "if [ ! -z '{}' ]; then echo 'rm -Rf /dev/shm/sql_shuffled/{}_*.sql'; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
+#  ls --color=never /dev/shm/trial_sql 2>/dev/null | sed 's|_[0-9]\+\.sql||' | xargs -I{} echo "echo '{}' | grep -vE \$(screen -ls | grep -o '\.ge[0-9][0-9][0-9][0-9][0-9][0-9]' | sed 's|\.ge||' | tr '\n' '|' | sed 's/|$//') 2>/dev/null" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | xargs -I{} echo "if [ ! -z '{}' ]; then echo 'rm -Rf /dev/shm/trial_sql/{}_*.sql'; fi" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
 #fi
 
 if [ ! -z "$(ls -d --color=never /dev/shm/var_* 2>/dev/null)" ]; then

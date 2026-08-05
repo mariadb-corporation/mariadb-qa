@@ -41,6 +41,7 @@ Verify with `~/jira --whoami`.
 - Every testcase SQL statement stays on ONE unbroken line - in `log_jira_ticket.body`, the eb file, the `.test`, AND in any chat display. Wrapping/splitting a line breaks pquery/reducer/MTR replay. When presenting CLI + MTR testcases, stack them as separate full-width blocks; never side-by-side (it wraps lines).
 - NEVER post a comment (`~/jira --comment`) on the user's behalf without BOTH (a) the user's explicit instruction to comment AND (b) the user's review and approval of the EXACT, literal comment text. Comments are outward-facing - draft it, show the verbatim text, wait for sign-off; never auto-post.
 - All deliverable prose is timeless and literal (CLAUDE.md). No "fixed in", "re-scored", build-internal paths, or `MD<DDMMYY>`/`EMD` shorthand in the Jira body - use CS/ES + version.
+- If a voice profile or comments-prose skill is installed (for example `voice-profile-comments-prose`), load it and follow it for the ticket prose.
 
 ## Tools used
 

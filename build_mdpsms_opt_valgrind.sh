@@ -25,7 +25,7 @@ AFL_LOCATION="$(cd `dirname $0` && pwd)/fuzzer/afl-2.52b"
 # cd ..
 # TMP_CLANG/clang/scripts/update.py
 
-RANDOMD=$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(......\).*/\1/')  # Random 6 digit for tmp directory name
+RANDOMD=$(${HOME}/mariadb-qa/random --digits 6)  # Random 6 digit for tmp directory name
 
 if [ "${PERFSCHEMA}" != "NO" -a "${PERFSCHEMA}" != "YES" -a "${PERFSCHEMA}" != "STATIC" -a "${PERFSCHEMA}" != "DYNAMIC" ]; then
   if [ -z "${PERFSCHEMA}" ]; then

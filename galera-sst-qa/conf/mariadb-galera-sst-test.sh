@@ -155,7 +155,7 @@ fi
 init_empty_port(){
   NEWPORT=
   # Choose a random port number in 3307-5500 range, check if free, increase if needbe
-  NEWPORT=$[ 3307 + ( ${RANDOM} % 5500 ) ]
+  NEWPORT=$(${HOME}/mariadb-qa/random 3307 8806)
   while :; do
     ISPORTFREE="$(netstat -an | tr '\t' ' ' | grep -E --binary-files=text "[ :]${NEWPORT} " | wc -l)"
     ISPORTFREE2="$(ps -ef | grep --binary-files=text "port=${NEWPORT}" | grep --binary-files=text -v 'grep')"

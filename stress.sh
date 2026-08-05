@@ -33,7 +33,7 @@ abort(){ jobs -p | xargs -P100 kill >/dev/null 2>&1; rm -Rf ${ramloc}/${prefix}_
 trap abort SIGINT
  
 count=0
-prefix="$(echo "${RANDOM}${RANDOM}${RANDOM}" | cut -b1-5)"
+prefix="$(${HOME}/mariadb-qa/random --digits 5)"
 rm -f ${ramloc}/${prefix}_md_proc_*
 for ((i=0;i<${rounds};i++)); do
   for ((i=0;i<${threads};i++)); do

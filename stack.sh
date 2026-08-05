@@ -1,8 +1,7 @@
 #!/bin/bash
 set +H  # Disables history substitution and avoids  -bash: !: event not found  like errors
 SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
-RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')  # Random entropy init
-RANDF=$(echo $RANDOM$RANDOM$RANDOM$RANDOM | sed 's|.\(..........\).*|\1|')  # Random 10 digits filenr
+RANDF=$(${SCRIPT_PWD}/random --digits 10)  # Random 10 digits filenr
 
 # Call the version check helper script to set the following vars:
 # BIN, SOURCE_CODE_REV, SVR, SERVER_VERSION, BUILD_TYPE, MDG

@@ -9,13 +9,22 @@ fi
 CHECK=
 
 # Check screens for pr vs ge counts
-CNT1="$(screen -ls | grep --binary-files=text pr | grep --binary-files=text -v 'Dead' | wc -l)"
-CNT2="$(screen -ls | grep --binary-files=text ge | grep --binary-files=text -v 'Dead' | wc -l)"
+CNT1="$(screen -ls | grep --binary-files=text '\.pr[0-9]' | grep --binary-files=text -v 'Dead' | wc -l)"
+CNT2="$(screen -ls | grep --binary-files=text '\.ge[0-9]' | grep --binary-files=text -v 'Dead' | wc -l)"
 
-if [ "${1}" != "automation" -o "${CNT1}" != "${CNT2}" ]; then
+if [ "${1}" != "automation" -a "${CNT1}" == "${CNT2}" ]; then  # On a mismatch the counts show in the warning header instead
   echo "pr: ${CNT1}"
   echo "ge: ${CNT2}"
 fi
+
+# A pr screen keeps a shell after its run ends, so it outlives the run. A pr screen with no pquery-run.sh below it explains a pr count above the ge count without any ge screen being missing
+IDLE_PR=
+for SCR in $(screen -ls | grep --binary-files=text -v 'Dead' | grep --binary-files=text -oE '[0-9]+\.pr[0-9]+'); do
+  CHILD_PIDS="$(ps -o pid= --ppid ${SCR%%.*} 2>/dev/null | tr -d ' ' | tr '\n' ',' | sed 's|,$||')"
+  if [ -z "${CHILD_PIDS}" ] || [ -z "$(ps -o args= --ppid ${CHILD_PIDS} 2>/dev/null | grep --binary-files=text 'pquery-run.sh')" ]; then
+    IDLE_PR="${IDLE_PR} ${SCR#*.}"
+  fi
+done
 
 missing_screen_info=$(screen -ls | grep --binary-files=text -o 'pr[0-9]\+' | grep --binary-files=text -v 'Dead' | sort -V | awk '
 {
@@ -60,49 +69,52 @@ END {
 }
 ')
 
-# /dev/shm/<workdir> rundir classification: a live pquery-run writes /data/<workdir>/pquery-run.log at least once per trial, and every 10 minutes while diskspace-paused. No update for 60+ minutes means the run ended or was terminated (assert exits skip the rundir cleanup), leaving a stale rundir
+# /dev/shm/<workdir> rundir classification: a live pquery-run writes <workdir>/pquery-run.log at least once per trial, and every 10 minutes while diskspace-paused. The rundir holds a mariadbd symlink into <workdir>/mysqld, so the workdir is read from that link and does not have to be /data/<workdir>. A rundir is stale only when the run log and the rundir itself are both older than STALE_MINS: a fresh log means the run is going, and a fresh rundir means the run is still starting up
+STALE_MINS=60
 SGE_SUGGESTIONS=
 STALE_RUNDIRS=
+STALE_AGE=
 for WD in $(ls --color=never -1d /dev/shm/[0-9][0-9][0-9][0-9][0-9][0-9] 2>/dev/null | sed 's|/dev/shm/||'); do
-  if [ -n "$(find /data/${WD}/pquery-run.log -mmin -60 2>/dev/null)" ]; then
-    if [ -z "$(screen -ls | grep --binary-files=text "\.ge${WD}[[:space:]]")" ]; then
-      SGE_SUGGESTIONS="${SGE_SUGGESTIONS}*** Run ~/sge ${WD} to restart sge for workdir ${WD}, which is currently missing from the screen list"$'\n'
+  RUN_WORKDIR="$(readlink /dev/shm/${WD}/mariadbd 2>/dev/null | sed 's|/mysqld/mariadbd$||')"
+  if [ -z "${RUN_WORKDIR}" ]; then RUN_WORKDIR="/data/${WD}"; fi
+  if [ -n "$(find "${RUN_WORKDIR}/pquery-run.log" -mmin -${STALE_MINS} 2>/dev/null)" ]; then
+    if [ "${RUN_WORKDIR}" == "/data/${WD}" -a -z "$(screen -ls | grep --binary-files=text -v 'Dead' | grep --binary-files=text "\.ge${WD}[[:space:]]")" ]; then  # ~/sge only works for a /data workdir. A Dead screen does not count as a ge handler
+      SGE_SUGGESTIONS="${SGE_SUGGESTIONS}*** Workdir ${WD} has no ge screen. Fix: ~/sge ${WD}"$'\n'
     fi
-  else
+  elif [ -n "$(find /dev/shm/${WD} -maxdepth 0 -mmin +${STALE_MINS} 2>/dev/null)" ]; then
     STALE_RUNDIRS="${STALE_RUNDIRS} /dev/shm/${WD}"
+    MTIME="$(stat -c %Y /dev/shm/${WD} 2>/dev/null)"
+    if [ ! -z "${MTIME}" ]; then
+      AGE=$(( ( $(date +%s) - MTIME ) / 60 ))
+      if [ -z "${STALE_AGE}" ] || [ ${AGE} -lt ${STALE_AGE} ]; then STALE_AGE=${AGE}; fi  # Lowest age of the listed rundirs, so the reported age holds for all of them
+    fi
   fi
 done
 
 EXITCODE=0
 if [ "${CNT1}" != "${CNT2}" -o ! -z "${missing_screen_info}" ]; then
-  echo '!!!!! ======= WARNING ======= !!!!!'
-  if [ "${CNT1}" != "${CNT2}" ]; then
-    echo "WARNING: 'pr' and 'ge' sessions were detected. A quick automated check then noticed that the number of 'pr' screens does not equal the number of 'ge' screens (check 's' output)."
-    if [ ${CNT1} -gt ${CNT2} ]; then
-      echo "As the number of 'pr' screens was larger than the number of 'ge' screens, to prevent a /data/ OOS, you will likely want to fix this by running ~/sge <workdir_number> where workdir_number is the /data/<workdir_number> which is missing from the 's' list (compare with an up-to-date 'vr' list to find which is missing, or check the list below.)"
-    fi
-    if [ ! -z "${missing_screen_info}" ]; then
-      if [ ${CNT1} -lt ${CNT2} ]; then
-        echo "WARNING: Note: ${missing_screen_info}"
-      else
-        echo "WARNING: Additionally, ${missing_screen_info}"
-      fi
-    fi
-  else
-    if [ ! -z "${missing_screen_info}" ]; then  # Defensive coding
-      echo "WARNING: 'pr' and 'ge' sessions were detected. A quick automated check then noticed that while the number of 'pr' screens matches the number of 'ge' screens, ${missing_screen_info}"
+  echo "======= WARNING: pr:${CNT1} vs ge:${CNT2} ======="
+  if [ ${CNT1} -lt ${CNT2} ]; then
+    echo "More ge screens than pr: a run ended and its ge screen is still reducing."
+  elif [ ${CNT1} -gt ${CNT2} -a -z "${SGE_SUGGESTIONS}" ]; then
+    if [ ! -z "${IDLE_PR}" ]; then
+      echo "pr screen(s) with no run:${IDLE_PR} - that run ended, so no ~/sge is needed."
+    else
+      echo "A run has no ge screen. Compare 's' with 'vr', then run ~/sge <workdir>."
     fi
   fi
-  echo ''
+  if [ ! -z "${missing_screen_info}" ]; then
+    echo "${missing_screen_info}"
+  fi
   EXITCODE=1
 fi
 if [ ! -z "${SGE_SUGGESTIONS}" ]; then
   printf '%s' "${SGE_SUGGESTIONS}"
-  echo ''
   EXITCODE=1
 fi
 if [ ! -z "${STALE_RUNDIRS}" ]; then
-  echo "*** Stale rundir(s) detected:${STALE_RUNDIRS} (no pquery-run.log update for 60+ minutes: the run ended or was terminated). Cleanup: rm -rf${STALE_RUNDIRS}"
+  echo "*** Stale rundir(s), no run activity for ${STALE_AGE:-${STALE_MINS}}+ min: rm -rf${STALE_RUNDIRS}"
   EXITCODE=1
 fi
+if [ ${EXITCODE} -eq 1 ]; then echo ''; fi  # Separates the warnings from the caller's own output
 exit ${EXITCODE}

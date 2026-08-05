@@ -29,7 +29,6 @@
 #include <map>
 #include <mutex>
 #include <optional>
-#include <random>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -39,13 +38,20 @@
 
 #include <mysql/mysql.h>
 #include <unistd.h>
+#include <ctime>
+#include <sys/auxv.h>
+#include <sys/random.h>
+#if defined(__x86_64__)
+#include <x86intrin.h>
+#endif
 
 namespace {
 
 constexpr int kInf = 1 << 29;
 
-// xoshiro256++ - BigCrush-clean 64-bit PRNG, period 2^256-1 (same RNG as generatorcpp).
-// Seeded via splitmix64 from a high-entropy mix (random_device + clock + pid).
+// xoshiro256++ - BigCrush-clean 64-bit PRNG, period 2^256-1. seed_full() fills all 256 bits of
+// state from the kernel CSPRNG, the kernel's per-exec random bytes, the wall clock date and
+// time, a monotonic clock, the CPU cycle counter, the pid, the tid and a stack address.
 struct Xoshiro256pp {
   uint64_t s[4];
   Xoshiro256pp() = default;
@@ -61,6 +67,47 @@ struct Xoshiro256pp {
     s[2] = splitmix64(z); s[3] = splitmix64(z);
     if ((s[0] | s[1] | s[2] | s[3]) == 0) s[0] = 0x9E3779B97F4A7C15ULL;
   }
+  // Seed all 256 bits of state from independent entropy. A single 64-bit seed expanded by
+  // splitmix64 can only reach 2^64 of the 2^256 states; filling every word directly removes
+  // that ceiling. Sources:
+  //   getrandom        kernel CSPRNG, the pool /dev/urandom serves, 32 bytes in one syscall
+  //   AT_RANDOM        16 kernel-random bytes placed at exec, no syscall
+  //   CLOCK_REALTIME   wall clock date and time, true nanosecond resolution
+  //   CLOCK_MONOTONIC  monotonic, nanosecond; a wall clock step cannot repeat it
+  //   rdtsc            CPU cycle counter, finer still than the clocks
+  //   pid, tid         separate concurrent processes and threads
+  //   frame address    this thread's stack, ASLR-varying per process
+  // clock_gettime is used rather than std::chrono because system_clock counts microseconds
+  // under libc++, so it would not carry the nanosecond.
+  // Each word is then run through splitmix64, so a weak bit in any one source cannot leave a
+  // whole state word structured.
+  void seed_full() {
+    // Pre-set to splitmix64/xoshiro constants so the words are always defined, then let
+    // getrandom overwrite them. A short read or an error leaves constants in place and the
+    // seven sources below still fill every word - no branch, nothing untestable.
+    uint64_t w[4] = { 0x9E3779B97F4A7C15ULL, 0xBF58476D1CE4E5B9ULL,
+                      0x94D049BB133111EBULL, 0x2545F4914F6CDD1DULL };
+    (void)getrandom(w, sizeof(w), 0);
+    if (const void* ar = reinterpret_cast<const void*>(getauxval(AT_RANDOM))) {
+      uint64_t k[2];
+      std::memcpy(k, ar, sizeof(k));
+      w[0] ^= k[0]; w[1] ^= k[1];
+    }
+    struct timespec rt, mt;
+    clock_gettime(CLOCK_REALTIME, &rt);
+    clock_gettime(CLOCK_MONOTONIC, &mt);
+    w[0] ^= uint64_t(rt.tv_sec) * 1000000000ULL + uint64_t(rt.tv_nsec);
+    w[1] ^= std::rotl(uint64_t(mt.tv_sec) * 1000000000ULL + uint64_t(mt.tv_nsec), 32);
+#if defined(__x86_64__)
+    w[2] ^= uint64_t(__rdtsc());
+#endif
+    w[2] ^= uint64_t(getpid()) << 16;
+    w[3] ^= uint64_t(gettid()) << 8;
+    w[3] ^= uint64_t(reinterpret_cast<uintptr_t>(&w));
+    for (auto& v : w) { uint64_t t = v; v = splitmix64(t); }
+    s[0] = w[0]; s[1] = w[1]; s[2] = w[2]; s[3] = w[3];
+    if ((s[0] | s[1] | s[2] | s[3]) == 0) s[0] = 0x9E3779B97F4A7C15ULL;
+  }
   inline uint64_t next() {
     const uint64_t result = std::rotl(s[0] + s[3], 23) + s[0];
     const uint64_t t = s[1] << 17;
@@ -71,6 +118,7 @@ struct Xoshiro256pp {
   }
   uint64_t operator()() { return next(); }  // lets call sites use rng_() directly
 };
+
 
 // Identifier kinds. A name is generated from the kind of slot it sits in, so
 // the name a statement creates is the name a later statement references. Keep
@@ -745,12 +793,15 @@ bool keyword_pool(const Grammar &g, const std::vector<Production> &prods) {
 
 class Generator {
  public:
+  // full_entropy: seed this thread's engine from all 256 bits of independent entropy instead
+  // of expanding the scalar seed. Left off when --seed was given, so that run stays reproducible.
   Generator(const Grammar &g,
             const std::unordered_map<std::string, std::string> &kw,
             uint64_t seed, int max_chain = 3, int chain_share = 30,
-            int grants = 2)
+            int grants = 2, bool full_entropy = false)
       : g_(g), kw_(kw), rng_(seed), max_chain_(max_chain),
         grants_start_(grants), chain_share_(chain_share) {
+    if (full_entropy) rng_.seed_full();
     build_roles();
     build_leaves();
     compute_min_height();
@@ -2246,14 +2297,16 @@ int main(int argc, char **argv) {
     }
   }
 
-  uint64_t base;
+  // --seed makes a run reproducible: every engine derives from the given scalar. Without it
+  // each engine seeds its own 256 bits from independent entropy, and base only labels the run.
+  const bool full_entropy = !seed.has_value();
+  uint64_t base = 0;
   if (seed) {
     base = *seed;
-  } else {  // high-entropy mix (matches generatorcpp); distinct per parallel revgen process
-    std::random_device rd;
-    base = (uint64_t(rd()) << 32) ^ rd();
-    base ^= uint64_t(std::chrono::high_resolution_clock::now().time_since_epoch().count());
-    base ^= uint64_t(getpid());
+  } else {
+    Xoshiro256pp t;
+    t.seed_full();
+    base = t.next();
   }
   std::cerr << "revgen: queries=" << queries << " threads=" << threads
             << " depth=" << depth << " start=" << start
@@ -2280,7 +2333,7 @@ int main(int argc, char **argv) {
     parts[i] = base_part + ".part" + std::to_string(i);
     ts.emplace_back([&, i, n]() {
       Generator gen(g, kw, base + i * 0x9E3779B97F4A7C15ULL, max_chain,
-                    chain_share, grants);
+                    chain_share, grants, full_entropy);
       gen.stride_pool(i, threads);
       Coverage my_cov;
       GenStats my_stats;
@@ -2300,6 +2353,7 @@ int main(int argc, char **argv) {
       long emitted = 0, attempts = 0, reset_round = 0;
       const long cap = (validate ? 10 : 3) * n + 100;
       Xoshiro256pp srng(base + 0xA5A5A5A5A5A5A5A5ULL + i);
+      if (full_entropy) srng.seed_full();
       // Spread the interjections over +/-20% of the interval so they do not
       // land on a fixed stride.
       const long gap_lo = std::max(1L, schema_every * 4 / 5);

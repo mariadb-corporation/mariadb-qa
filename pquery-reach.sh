@@ -15,10 +15,9 @@ MYEXTRA="--plugin-load=TokuDB=ha_tokudb.so --tokudb-check-jemalloc=0 --plugin-lo
 EARLYCOPY=0  # Make a copy to the COPYDIR before starting reducer. Not strictly required, but handy if your machine may power off and you were using /dev/shm as WORKDIR
 
 # Internal variables: Do not change!
-RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')  # Random entropy init
-RANDOMR=$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(.......\).*/\1/')  # Create random dir nr | 7 digits to separate it from other runs
-RANDOMD=$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(......\).*/\1/')   # Create random dir/file nr
 SCRIPT_PWD="$(readlink -f "${0}" | sed "s|$(basename "${0}")||;s|/\+$||")"
+RANDOMR=$(${SCRIPT_PWD}/random --digits 7)  # Create random dir nr, 7 digits to separate it from other runs
+RANDOMD=$(${SCRIPT_PWD}/random --digits 6)   # Create random dir/file nr
 RUN_DONE=0
 
 echoit(){
@@ -81,7 +80,7 @@ pquery_run(){
   #echoit "Randomly selected mysqld options input file: ${INFILE}"
 
   # Select a random duration from 10 seconds to 3 minutes
-  PQUERY_RUN_TIMEOUT=$[$RANDOM % 170 + 10];
+  PQUERY_RUN_TIMEOUT=$(${SCRIPT_PWD}/random 10 179);
   echoit "Randomly selected trial duration: ${PQUERY_RUN_TIMEOUT} seconds"
 
   # pquery-run.sh setup and run

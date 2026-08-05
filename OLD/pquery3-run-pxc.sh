@@ -576,29 +576,27 @@ pquery_test(){
     echoit "Generating new SQL inputfile using the SQL Generator..."
     SAVEDIR=${PWD}
     cd ${SCRIPT_PWD}/generatorcpp/
-    if [ ${TRIAL} -eq 1 -o $[ ${TRIAL} % ${GENERATE_NEW_QUERIES_EVERY_X_TRIALS} ] -eq 0 ]; then
-      if [ "${RANDOMD}" == "" ]; then
-        echoit "Assert: RANDOMD is empty. This should not happen. Terminating."
-        exit 1
-      fi
-      if [ ! -x ./generator ]; then
-        echoit "Assert: ${SCRIPT_PWD}/generatorcpp/generator missing or not executable. Run generatorcpp/build.sh first."
-        exit 1
-      fi
-      ./generator --threads 4 --output out${RANDOMD}.sql ${QUERIES_PER_GENERATOR_RUN} >/dev/null
-      if [ ! -r out${RANDOMD}.sql ]; then
-        echoit "Assert: out${RANDOMD}.sql not present in ${PWD} after generator execution"
-        exit 1
-      fi
-      if [[ "${MYEXTRA^^}" != *"ROCKSDB"* ]]; then  # If this is not a RocksDB run, exclude RocksDB SE
-        sed -i "s|RocksDB|InnoDB|" out${RANDOMD}.sql
-      fi
-      if [[ "${MYEXTRA^^}" != *"HA_TOKUDB"* ]]; then  # If this is not a TokuDB enabled run, exclude TokuDB SE
-        sed -i "s|TokuDB|InnoDB|" out${RANDOMD}.sql
-      fi
-      if [ ${ADD_INFILE_TO_GENERATED_SQL} -eq 1 ]; then
-        cat ${INFILE} >> out${RANDOMD}.sql
-      fi
+    if [ "${RANDOMD}" == "" ]; then
+      echoit "Assert: RANDOMD is empty. This should not happen. Terminating."
+      exit 1
+    fi
+    if [ ! -x ./generator ]; then
+      echoit "Assert: ${SCRIPT_PWD}/generatorcpp/generator missing or not executable. Run generatorcpp/build.sh first."
+      exit 1
+    fi
+    ./generator --threads 4 --output out${RANDOMD}.sql ${QUERIES_PER_GENERATOR_RUN} >/dev/null
+    if [ ! -r out${RANDOMD}.sql ]; then
+      echoit "Assert: out${RANDOMD}.sql not present in ${PWD} after generator execution"
+      exit 1
+    fi
+    if [[ "${MYEXTRA^^}" != *"ROCKSDB"* ]]; then  # If this is not a RocksDB run, exclude RocksDB SE
+      sed -i "s|RocksDB|InnoDB|" out${RANDOMD}.sql
+    fi
+    if [[ "${MYEXTRA^^}" != *"HA_TOKUDB"* ]]; then  # If this is not a TokuDB enabled run, exclude TokuDB SE
+      sed -i "s|TokuDB|InnoDB|" out${RANDOMD}.sql
+    fi
+    if [ ${USE_INFILE} -eq 1 ]; then
+      cat ${INFILE} >> out${RANDOMD}.sql
     fi
     INFILE=${PWD}/out${RANDOMD}.sql
     cd ${SAVEDIR}
@@ -1271,7 +1269,7 @@ else
 fi
 SQL_INPUT_TEXT="SQL file used: ${INFILE}"
 if [ ${USE_GENERATOR} -eq 1 ]; then
-  if [ ${ADD_INFILE_TO_GENERATED_SQL} -eq 0 ]; then
+  if [ ${USE_INFILE} -eq 0 ]; then
     SQL_INPUT_TEXT="Using SQL Generator"
   else
     SQL_INPUT_TEXT="Using SQL Generator combined with SQL file ${INFILE}"

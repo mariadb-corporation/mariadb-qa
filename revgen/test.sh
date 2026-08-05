@@ -196,6 +196,12 @@ gen "$W/b.sql" --queries 800 --depth 8 --seed 7 --threads 4
 cmp -s "$W/a.sql" "$W/b.sql" && ok || bad "same seed and threads must repeat exactly"
 gen "$W/c.sql" --queries 800 --depth 8 --seed 8 --threads 4
 cmp -s "$W/a.sql" "$W/c.sql" && bad "different seed produced identical output" || ok
+# No --seed is the default: every engine seeds its own 256 bits from independent entropy, so
+# two runs must differ. This is also the only path that reaches Xoshiro256pp::seed_full().
+gen "$W/e1.sql" --queries 800 --depth 8 --threads 4
+gen "$W/e2.sql" --queries 800 --depth 8 --threads 4
+[ -s "$W/e1.sql" ] && [ -s "$W/e2.sql" ] && ok || bad "default seeding produced no output"
+cmp -s "$W/e1.sql" "$W/e2.sql" && bad "default seeding repeated itself across runs" || ok
 # --seed has to reach the generator itself, not only the interjection RNG.
 # --schema-every 0 removes the interjections, so if the statements still differ the
 # seed is genuinely feeding the derivation. Comparing whole files would pass on

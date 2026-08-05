@@ -43,7 +43,7 @@ declare -a VALUES=('' '0' '1' '2' '10' '240' '-1125899906842624' '11258999068426
 
 # Vars
 MYSQLD_START_TIMEOUT=10  # Default: 30, but this may be tuned down on non-loaded servers with single threaded testruns. Increase when there is more load.
-RANDOMD=$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(.......\).*/\1/')
+RANDOMD=$(${HOME}/mariadb-qa/random --digits 7)
 WORKDIR=/sda/${RANDOMD}  # Here we keep the log files, option list, failed items
 RUNDIR=/dev/shm/${RANDOMD}  # Here we keep a copy of the data template dir and here we do the actual mysqld runs (--datadir=...). Not required for TEST_OR_GENERATE=1 runs
 FINDS="^Error:|ERROR|allocated at line|missing DBUG_RETURN|^safe_mutex:|Invalid.*old.*table or database|InnoDB: Warning|InnoDB: Error:|InnoDB: Operating system error|Error while setting value"
@@ -72,7 +72,7 @@ test_options(){
   mkdir -p ${RUNDIR}/data/test ${RUNDIR}/data/mysql ${RUNDIR}/log
   echoit "Copying datadir from template..."
   cp -R ${RUNDIR}/data.template/* ${RUNDIR}/data
-  PORT=$[50000 + ( $RANDOM % ( 9999 ) ) ]
+  PORT=$(${HOME}/mariadb-qa/random 50000 59998)
   echoit "Starting mysqld..."
   CMD="./bin/mysqld ${MYEXRA} --basedir=${PWD} --datadir=${RUNDIR}/data --core-file \
                     --port=${PORT} --pid_file=${RUNDIR}/pid.pid --socket=${RUNDIR}/socket.sock \

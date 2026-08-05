@@ -1,0 +1,4 @@
+# The build context is this directory only. Keep editor and git files out
+.git
+*.swp
+*~

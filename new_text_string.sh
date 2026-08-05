@@ -610,8 +610,7 @@ if [ -z "${LATEST_CORE}" ]; then
   fi
 fi
 
-RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')  # Random entropy init
-RANDF=$(echo $RANDOM$RANDOM$RANDOM$RANDOM | sed 's|.\(..........\).*|\1|')  # Random 10 digits filenr
+RANDF=$(${SCRIPT_PWD}/random --digits 10)  # Random 10 digits filenr
 
 rm -f /tmp/${RANDF}.gdb*
 gdb -q -iex 'set debuginfod enabled off' ${MYSQLD} ${LATEST_CORE} >/tmp/${RANDF}.gdb1 2>&1 << EOF

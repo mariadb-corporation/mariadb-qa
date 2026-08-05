@@ -20,6 +20,10 @@ _init_empty_port_cleanup(){
 
 init_empty_port(){  # Find an empty port
   # Pick a random port in the 10001-13000 range; reducer.sh uses the 13001-47001 range to avoid conflicts.
+  if [ ! -x "${HOME}/mariadb-qa/random" ]; then
+    echo "Assert: ${HOME}/mariadb-qa/random is missing. Run ${HOME}/mariadb-qa/build_random.sh (or linkit)"
+    return 1
+  fi
   mkdir -p "${_INIT_EMPTY_PORT_CLAIM_DIR}" 2>/dev/null
   # Best-effort reap of claims whose owner PID is no longer alive. Scoped to this picker's range to bound cost.
   # Race-tolerant: if a concurrent picker rewrites the file between read and rm, we re-verify ownership before unlinking.
@@ -36,7 +40,7 @@ init_empty_port(){  # Find an empty port
   done
 
   while :; do
-    NEWPORT=$[ 10001 + ( ${RANDOM} % 3000 ) ]
+    NEWPORT=$(${HOME}/mariadb-qa/random 10001 13000)
     # Atomic claim attempt. set -o noclobber makes the redirect use O_CREAT|O_EXCL; on collision with another picker
     # holding the same port, the subshell's redirect fails, the subshell exits non-zero, and we retry a fresh random port.
     if ! ( set -o noclobber; echo "$$" > "${_INIT_EMPTY_PORT_CLAIM_DIR}/${NEWPORT}" ) 2>/dev/null; then

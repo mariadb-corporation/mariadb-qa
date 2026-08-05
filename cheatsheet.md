@@ -105,30 +105,46 @@ Configs are `~/mariadb-qa/pquery-run-*.conf`, one per test target:
 | `MYEXTRA` / `MYINIT` | Extra server options, at runtime / also at data directory init |
 | `MYSAFE` | Options the framework always adds, to cap memory use |
 | `ADD_RANDOM_OPTIONS` | Add random server options per trial |
-| `PRE_SHUFFLE_SQL` | Where the SQL comes from, see below |
+| `USE_GENERATOR` / `USE_REVGEN` / `USE_INFILE` / `USE_ALL_DISK_SQL` | Which SQL sources to use, see below |
 | `QUERY_CORRECTNESS_TESTING` | Compare results between two option sets instead of hunting crashes |
 | `ENABLE_ENCRYPTION` | Run with the file-key-management plugin |
 
 ## Where the SQL comes from
 
-Three sources, mixed by `PRE_SHUFFLE_SQL`:
+Turn on any set of the four sources. Each one contributes lines to one SQL file per trial, and that
+file is shuffled before the trial runs, so the SQL of each source is spread over the whole file.
 
-| Source | What it is |
-|---|---|
-| `INFILE` | A fixed SQL file. The default is every distribution's MTR suite converted to SQL |
-| `generatorcpp/generator` | Random SQL built from hand-written templates. `USE_GENERATOR=1` |
-| `revgen/revgen` | Random SQL built by walking the server's own yacc grammar. `USE_REVGEN=1` |
+| Source | What it is | Turn it on with |
+|---|---|---|
+| `generatorcpp/generator` | Random SQL built from hand-written templates | `USE_GENERATOR=1`, `QUERIES_PER_GENERATOR_RUN` |
+| `revgen/revgen` | Random SQL built by walking the server's own yacc grammar | `USE_REVGEN=1`, `QUERIES_PER_REVGEN_RUN` |
+| `INFILE` | A fixed SQL file. The default is every distribution's MTR suite converted to SQL | `USE_INFILE=1` |
+| all SQL on the disk | A random sample of every `*.sql` file found | `USE_ALL_DISK_SQL=1`, `QUERIES_PER_ALL_DISK_RUN` |
 
-| `PRE_SHUFFLE_SQL` | Input for each trial |
-|---|---|
-| 0 | The `INFILE` as-is, shuffled by pquery only |
-| 1 / 2 | Pre-shuffled per trial, from the one `INFILE` / from all SQL found |
-| 3 / 4 | Generator, plus the rest from the one `INFILE` / from all SQL found |
-| 5 / 6 | revgen, plus the rest, same two options |
-| 7 / 8 | Generator and revgen, plus the rest, same two options |
+The generator and revgen run every trial. The all-disk source is the slow one, so it collects a
+new pool every `ALL_DISK_SQL_NEW_QUERIES_EVERY_X_TRIALS` trials; the file list it samples from is
+indexed once per run. An `INFILE` larger than the line cap is read from a random offset each
+trial, so a run covers the whole file over its trials.
 
-`GENERATOR_MIX_PERCENTAGE` / `REVGEN_MIX_PERCENTAGE` set the generated share of each trial.
+The share each source gets is simply its line count: `QUERIES_PER_GENERATOR_RUN`,
+`QUERIES_PER_REVGEN_RUN`, `QUERIES_PER_ALL_DISK_RUN`, and the length of the `INFILE`. So for 25%
+generator, 25% revgen and 50% `INFILE`, set both query counts to half the `INFILE`'s line count.
+
+`PQUERY_MAX_SQL_LINES` (5141189, the pquery maximum) caps the per-trial SQL. Lines are cut from
+the end, and the sources are joined in the order generator, revgen, `INFILE`, all-disk, so the
+last source in use loses lines first. The file lands in `TRIAL_SQL_DIR`.
 `REVGEN_YACC` picks the grammar revgen walks, so it tracks the version under test.
+
+| Applied to the per-trial SQL | What it does |
+|---|---|
+| `ADV_FILTER_SQL=1` | Removes any line matching `ADV_FILTER_LIST`, e.g. shutdown and kill |
+| `INTERLEAVE` / `INTERLEAVE_SQL` / `INTERLEAVE_LINES` | Inserts your SQL every n lines |
+| `STORAGE_ENGINE_SWAP` (+`_PERCENTAGE`) | Changes engine names |
+| `SWAP_ALL_TABLE_NAMES_TO_T1` / `SWAP_CREATE_TABLE_NAMES_TO_T1` | Collapses table names to `t1` |
+
+`FILTER_SQL=1` is the separate, lighter filter through `mariadb-qa/filter.sql`. It runs once per
+trial, over all the sources together, after they are joined. The pass is split over up to 24 cores,
+which keeps a 150,000 line mix at about 2.6 seconds.
 
 ## See what happened
 

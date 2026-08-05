@@ -31,7 +31,6 @@ if [ "" == "${5}" ]; then
   exit 1
 fi
 
-RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
 EXE_TODO=$[${1} * ${2}]
 EXE_DONE=0
 echo "===== Total planned executions:"
@@ -114,7 +113,7 @@ for (( ; ; )); do
         fi
         # Introduce random delay if set to do so
         if [ $RND_DELAY_FUNCTION -eq 1 -a $thread -ne ${1} ]; then
-          RND_DELAY=$[ $RANDOM % 10 ]
+          RND_DELAY=$(${HOME}/mariadb-qa/random 10)
           echo -n "   Random delay: $RND_DELAY seconds | "
           eval "sleep $RND_DELAY"
           echo "Done!"

@@ -52,8 +52,7 @@ rm -f /tmp/pqr_status.cnt
 echo "0" > /tmp/pqr_status.cnt
 
 # Generate random copydir
-RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')  # Random entropy init
-RANDOMD=$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(........\).*/\1/')   # Create random dir/file nr, 8 digits
+RANDOMD=$(${HOME}/mariadb-qa/random --digits 8)   # Create random dir/file nr, 8 digits
 COPYDIR=$(echo "${COPYDIR}/${RANDOMD}")
 if [ -d ${COPYDIR} ]; then
   echo "Assert: the COPYDIR ($COPYDIR) already exists! This may have been an (unlikely) random-match. Please retry running script."

@@ -62,7 +62,7 @@ trap ctrl_c SIGINT
 
 # Internal variables
 SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
-RANDOMMUTEX=$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(......\).*/\1/')
+RANDOMMUTEX=$(${SCRIPT_PWD}/random --digits 6)
 MUTEX=/tmp/ge_${RANDOMMUTEX}_IN_PROGRESS_MUTEX
 
 # Check that this is not being executed from the SCRIPT_PWD (which would mess up the real reducer.sh

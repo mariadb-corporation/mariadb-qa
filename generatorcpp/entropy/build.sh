@@ -8,16 +8,16 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 MODE="${1:-release}"
-CXX="${CXX:-g++}"
+CXX="${CXX:-clang++}"
 OUT="entropy_test"
 SRC="entropy_test.cpp"
 
 case "$MODE" in
   release|rel|"")
-    FLAGS=(-std=c++20 -O3 -march=native -mtune=native -pipe -DNDEBUG)
+    FLAGS=(-std=c++20 -stdlib=libc++ -O3 -march=native -mtune=native -pipe -DNDEBUG)
     ;;
   debug|dbg)
-    FLAGS=(-std=c++20 -O0 -g3 -fno-omit-frame-pointer)
+    FLAGS=(-std=c++20 -stdlib=libc++ -O0 -g3 -fno-omit-frame-pointer)
     ;;
   *)
     echo "usage: $0 [release|debug]"; exit 2
@@ -25,6 +25,6 @@ case "$MODE" in
 esac
 
 echo "[entropy/build.sh] mode=$MODE cxx=$CXX"
-"$CXX" "${FLAGS[@]}" "$SRC" -o "$OUT"
+"$CXX" "${FLAGS[@]}" "$SRC" -o "$OUT" -lc++abi
 echo "[entropy/build.sh] built: $OUT ($(stat -c %s "$OUT") bytes)"
 echo "[entropy/build.sh] sanity: $(./$OUT 100000 2>&1 | head -1)"

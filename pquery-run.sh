@@ -8,7 +8,7 @@
 # ========================================= User configurable variables
 # Note: if an option is passed to this script, it will use that option as the configuration file instead, for example ./pquery-run.sh pquery-run-MD105.conf
 CONFIGURATION_FILE=pquery-run.conf # Do not use any path specifiers, the .conf file should be in the same path as pquery-run.sh
-ADV_FILTER_LIST="debug_dbug|debug_|_debug|debug[ \t]*=|'\+d,|shutdown|release|kill|aria_encrypt_tables|_size|length_|_length|timer|schedule|event|csv|recursive|oracle|track_system_variables|^#|^\-\-|set.*ndb_|^let|^[ \t]*$"  # Used for PRE_SHUFFLE=1/2 as an advanced post filter (differs from FILTER_SQL=1 functionality, which filters the original infile, before starting, with the filter in mariadb-qa/filter.sql), and the latter thus applies even when PRE_SHUFFLE is set to 0. The reasoning is that if you use PRE_SHUFFLE=0 you will have a specific SQL infile set and will not want that to be filtered with this advanced filter (for a more comprehensive run, or for testing debug_dbug variables for example). For PRE_SHUFFLE=0, only the FILTER_SQL=1 filter.sql can be used, and for PRE_SHUFFLE=1/2 ADV_FILTER_LIST will always be used, and FILTER_SQL=1 can be set additionally. You can disable it here if needed, but please re-enable as it is a global var in this script pquery-run.sh and is not bound to individual config files. Update 9 Oct 24: PRE_SHUFFLE=2 now uses mariadb-qa/filter.sql as another filter also (if FILTER_SQL=1) # TODO: consider moving it to config files
+ADV_FILTER_LIST="debug_dbug|debug_|_debug|debug[ \t]*=|'\+d,|shutdown|release|kill|aria_encrypt_tables|_size|length_|_length|timer|schedule|event|csv|recursive|oracle|track_system_variables|^#|^\-\-|set.*ndb_|^let|^[ \t]*$"  # The advanced filter, applied to the per-trial SQL when a configuration file sets ADV_FILTER_SQL=1, and to the all-disk SQL pool always. Keep ADV_FILTER_SQL=0 for a purpose-built input file, whose own queries this list would remove, a debug_dbug statement for example. FILTER_SQL=1 is the separate, lighter filter in mariadb-qa/filter.sql, and the two can be combined. This list is a global variable of this script, not bound to a configuration file # TODO: consider moving it to config files
 
 # ========================================= Improvement ideas
 # * SAVE_TRIALS_WITH_BUGS_ONLY=0 (These likely include some of the 'SIGKILL' issues - no core but terminated)
@@ -40,11 +40,21 @@ sudo echo -1000 > /proc/$$/oom_score_adj
 DISABLE_TOKUDB_AND_JEMALLOC=1
 
 # Internal variables: DO NOT CHANGE!
-RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
-RANDOMD=$(echo $RANDOM$RANDOM$RANDOM | sed 's/..\(......\).*/\1/')
 SCRIPT_AND_PATH=$(readlink -f $0)
 SCRIPT=$(echo ${SCRIPT_AND_PATH} | sed 's|.*/||')
 SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
+RANDOM_BIN="${SCRIPT_PWD}/random"  # xoshiro256++ entropy source; build it with ./build_random.sh
+if [ ! -x "${RANDOM_BIN}" ]; then
+  echo "Assert: ${RANDOM_BIN} is missing or not executable. Run ${SCRIPT_PWD}/build_random.sh"
+  exit 1
+fi
+# 6-digit workdir/rundir number, uniform over 000000..999999. Redrawn while any of the
+# directories a configuration file may build from it is already taken, so a repeat number
+# never lands on a live run
+RANDOMD=$(${RANDOM_BIN} --digits 6)
+while [ -d "/data/${RANDOMD}" -o -d "/sda/${RANDOMD}" -o -d "/dev/shm/${RANDOMD}" -o -d "${HOME}/test_p/${RANDOMD}" ]; do
+  RANDOMD=$(${RANDOM_BIN} --digits 6)
+done
 WORKDIRACTIVE=0
 SAVED=0
 ALREADY_KNOWN=0
@@ -53,8 +63,7 @@ MYSQLD_START_TIMEOUT=60
 TIMEOUT_REACHED=0
 PQUERY3=0
 NEWBUGS=0
-INFILE_SHUFFLED=
-PRE_SHUFFLE_TRIAL_ROUND=0  # Resets to 0 each time PRE_SHUFFLE_TRIALS_PER_SHUFFLE is reached
+TRIAL_SQL=  # The assembled per-trial SQL input file, the one pquery reads. Set by assemble_trial_sql()
 TRIAL_SAVED=0
 SAN_KNOWN_BUGS_DROPPED_FROM_ERROR_LOG_FLAG=0  # Reset to 0 at the start of each trial, ref top of pquery_test()
 ENCRYPTION_OPTIONS=''  # Configured with per-trial options when ENABLE_ENCRYPTION=1 in the .conf configuration file
@@ -75,13 +84,24 @@ export MSAN_OPTIONS=abort_on_error=1:poison_in_dtor=0
 
 # Print/Output function
 echoit() {
+  local ECHOIT_COLOR= ECHOIT_RESET=
+  case "${2}" in  # An optional second argument colours the line on screen. The log file always holds the plain text
+    GREEN) ECHOIT_COLOR=$'\e[32m'; ECHOIT_RESET=$'\e[0m';;
+    ORANGE) ECHOIT_COLOR=$'\e[33m'; ECHOIT_RESET=$'\e[0m';;
+    RED) ECHOIT_COLOR=$'\e[31m'; ECHOIT_RESET=$'\e[0m';;
+  esac
   if [ "${ELIMINATE_KNOWN_BUGS}" == "1" ]; then
-    echo "[$(date +'%T')] [$SAVED SAVED] [${ALREADY_KNOWN} DUPS] $1"
+    echo "${ECHOIT_COLOR}[$(date +'%T')] [$SAVED SAVED] [${ALREADY_KNOWN} DUPS] $1${ECHOIT_RESET}"
     if [ ${WORKDIRACTIVE} -eq 1 ]; then echo "[$(date +'%T')] [$SAVED SAVED] [${ALREADY_KNOWN} DUPS] $1" >> /${WORKDIR}/pquery-run.log; fi
   else
-    echo "[$(date +'%T')] [$SAVED] $1"
+    echo "${ECHOIT_COLOR}[$(date +'%T')] [$SAVED] $1${ECHOIT_RESET}"
     if [ ${WORKDIRACTIVE} -eq 1 ]; then echo "[$(date +'%T')] [$SAVED SAVED] $1" >> /${WORKDIR}/pquery-run.log; fi
   fi
+}
+
+duration(){  # $1=EPOCHREALTIME as it was when the work started. Gives the seconds since, with two decimals
+  local DUR_US=$(( ${EPOCHREALTIME/[.,]/} - ${1/[.,]/} ))  # EPOCHREALTIME always holds six decimals, so this is microseconds
+  printf '%d.%02d' $(( DUR_US / 1000000 )) $(( ( DUR_US % 1000000 ) / 10000 ))
 }
 
 # Read configuration
@@ -91,27 +111,39 @@ if [ ! -r ${SCRIPT_PWD}/${CONFIGURATION_FILE} ]; then
   echo "Assert: the confiruation file ${SCRIPT_PWD}/${CONFIGURATION_FILE} cannot be read!"
   exit 1
 fi
-if grep -qiE '^[ \t]*PRE_SHUFFLE_SQL[ \t]*=[ \t]*[24]' ${SCRIPT_PWD}/${CONFIGURATION_FILE}; then
-  echo "*************************************************************************************************************************"
-  echo "*** IMPORTANT NOTE: PRE_SHUFFLE_SQL=2/4 is set. No custom-set SQL input file will be used! Make sure this was intended! ***"
-  echo "*************************************************************************************************************************"
-  sleep 2
-fi
 source ${SCRIPT_PWD}/$CONFIGURATION_FILE
-# Defaults for the revgen options, so a configuration file that predates them still runs.
+# Defaults for the SQL source options, so a configuration file that predates them still runs.
+USE_GENERATOR=${USE_GENERATOR:-0}
 USE_REVGEN=${USE_REVGEN:-0}
 USE_INFILE=${USE_INFILE:-0}
+USE_ALL_DISK_SQL=${USE_ALL_DISK_SQL:-0}
+QUERIES_PER_ALL_DISK_RUN=${QUERIES_PER_ALL_DISK_RUN:-100000}
+ALL_DISK_SQL_NEW_QUERIES_EVERY_X_TRIALS=${ALL_DISK_SQL_NEW_QUERIES_EVERY_X_TRIALS:-45}
+ADV_FILTER_SQL=${ADV_FILTER_SQL:-0}  # Removes any SQL line matching ADV_FILTER_LIST from the assembled per-trial SQL
+FILTER_SQL=${FILTER_SQL:-0}  # Removes any SQL line matching a line in filter.sql from the assembled per-trial SQL
+TRIAL_SQL_DIR=${TRIAL_SQL_DIR:-"/dev/shm/trial_sql"}
+INTERLEAVE=${INTERLEAVE:-0}
+INTERLEAVE_SQL=${INTERLEAVE_SQL:-""}
+INTERLEAVE_LINES=${INTERLEAVE_LINES:-100}
 REVGEN_OPTIONS=${REVGEN_OPTIONS:-"--depth 10"}  # Measured best balance of parse-valid SQL against grammar reach; see pquery-run-MD-revgen.conf
 REVGEN_YACC=${REVGEN_YACC:-${SCRIPT_PWD}/yacc/13.1_sql_yacc.yy}
 REVGEN_VALIDATE_SOCKET=${REVGEN_VALIDATE_SOCKET:-}  # Optional: socket of a separate server revgen PREPARE-tests its output against, dropping unparseable statements. Ignored when unset or absent
 QUERIES_PER_REVGEN_RUN=${QUERIES_PER_REVGEN_RUN:-25000}
-REVGEN_NEW_QUERIES_EVERY_X_TRIALS=${REVGEN_NEW_QUERIES_EVERY_X_TRIALS:-10}
+QUERIES_PER_GENERATOR_RUN=${QUERIES_PER_GENERATOR_RUN:-25000}
 GENERATION_THREADS=${GENERATION_THREADS:-0}  # Threads for the generator and revgen per trial; 0 = auto (CPU cores / 4)
 if ! [[ "${GENERATION_THREADS}" =~ ^[0-9]+$ ]] || [ "${GENERATION_THREADS}" -eq 0 ]; then GENERATION_THREADS=$(( $(nproc) / 4 )); fi
 [ "${GENERATION_THREADS}" -lt 1 ] && GENERATION_THREADS=1
+# Upper bounds for the random-option counts. Defaulted because an unset bound would make the
+# count come out as 0, which silently adds no options at all instead of failing.
+MAX_NR_OF_RND_OPTS_TO_ADD=${MAX_NR_OF_RND_OPTS_TO_ADD:-4}
+MDG_MAX_NR_OF_RND_OPTS_TO_ADD=${MDG_MAX_NR_OF_RND_OPTS_TO_ADD:-4}
+MDG_WSREP_MAX_NR_OF_RND_OPTS_TO_ADD=${MDG_WSREP_MAX_NR_OF_RND_OPTS_TO_ADD:-4}
+MDG_WSREP_PROVIDER_MAX_NR_OF_RND_OPTS_TO_ADD=${MDG_WSREP_PROVIDER_MAX_NR_OF_RND_OPTS_TO_ADD:-4}
+# PQUERY_MAX_SQL_LINES caps the assembled per-trial SQL input file. The default is pquery's own line maximum.
+PQUERY_MAX_SQL_LINES=${PQUERY_MAX_SQL_LINES:-5141189}
 echo ${WORKDIR} > /tmp/gomd_helper # gomd helper
 PQUERY_TOOL_NAME=$(basename ${PQUERY_BIN})
-if [ "${SEED}" == "" ]; then SEED=${RANDOMD}; fi
+if [ "${SEED}" == "" ]; then SEED=$(${RANDOM_BIN} 1 2147483647); fi
 # TODO: research this new code (and how it affects trials, though it seeems backwards compatible; checking for PQUERY3 varialbe happens AFTER all other checks are done (i.e. first core, then other checks, then PQUERY3 check, so should be fine? Though trial-1 is apparently removed; research further))
 if [[ ${PQUERY_TOOL_NAME} == "pquery3"* ]]; then PQUERY3=1; fi
 
@@ -204,31 +236,15 @@ if [[ ${FILTER_SQL} -eq 1 ]]; then
     exit 1
   fi
 fi
-if [ "${PRE_SHUFFLE_SQL}" -gt 0 ]; then
-  if [ -z "${PRE_SHUFFLE_DIR}" ]; then
-    echoit "PRE_SHUFFLE_SQL is turned on, yet PRE_SHUFFLE_DIR is empty"
-    exit 1
-  fi
-  mkdir -p "${PRE_SHUFFLE_DIR}"
-  if [ ! -d "${PRE_SHUFFLE_DIR}" ]; then
-    echoit "PRE_SHUFFLE_SQL is turned on, yet PRE_SHUFFLE_DIR ('${PRE_SHUFFLE_DIR}') is not an actual directory or could not be created. Double check correctness of directory and that this script can write to the location provided (mkdir -p was attempted, any failure of the same would show above this message)"
-    exit 1
-  fi
-  PRE_SHUFFLE_MIN_SQL_LINES="$(echo "${PRE_SHUFFLE_MIN_SQL_LINES}" | tr -d '\n')"
-  if [ -z "${PRE_SHUFFLE_MIN_SQL_LINES}" ]; then
-    echoit "PRE_SHUFFLE_SQL is turned on, yet PRE_SHUFFLE_MIN_SQL_LINES is not configured"
-    exit 1
-  fi
-  PRE_SHUFFLE_TRIALS_PER_SHUFFLE="$(echo "${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}" | tr -d '\n')"
-  if [ -z "${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}" ]; then
-    echoit "PRE_SHUFFLE_SQL is turned on, yet PRE_SHUFFLE_TRIALS_PER_SHUFFLE is not configured"
-    exit 1
-  fi
-  # TODO: this seems to cause errors: ./pquery-run.sh: line 126: 324998: No such file or directory
-  #if [ ${PRE_SHUFFLE_MIN_SQL_LINES} < $[ $[ $[ ${PQUERY_RUN_TIMEOUT} / 15 ] * 25000 * ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} ] -2 ] ]; then
-  #  echoit "Warning: PRE_SHUFFLE_MIN_SQL_LINES (${PRE_SHUFFLE_MIN_SQL_LINES}) is set to less than the minimum recommended 25k queries per 15 seconds times the number of PRE_SHUFFLE_TRIALS_PER_SHUFFLE (${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}) trials. You may want to increase this. See the formula here or in pquery-run.conf"
-  #  sleep 10
-  #fi
+TRIAL_SQL_DIR="$(echo "${TRIAL_SQL_DIR}" | tr -d '\n')"
+if [ -z "${TRIAL_SQL_DIR}" ]; then
+  echoit "Assert: TRIAL_SQL_DIR is empty. It holds the assembled per-trial SQL, so every run needs it"
+  exit 1
+fi
+mkdir -p "${TRIAL_SQL_DIR}"
+if [ ! -d "${TRIAL_SQL_DIR}" ]; then
+  echoit "Assert: TRIAL_SQL_DIR ('${TRIAL_SQL_DIR}') is not an actual directory or could not be created. Double check correctness of directory and that this script can write to the location provided (mkdir -p was attempted, any failure of the same would show above this message)"
+  exit 1
 fi
 
 # Nr of MDG nodes 1-n
@@ -239,13 +255,43 @@ fi
 # Try and raise ulimit for user processes (see setup_server.sh for how to set correct soft/hard nproc settings in limits.conf)
 #ulimit -u 7000
 
-# PRE_SHUFFLE_SQL controls HOW the SQL is shuffled, not WHICH sources are used:
-#   0 = no pre-shuffle (pquery shuffles the active sources)
-#   1 = pre-shuffle / sample the active sources into a randomized pool (handles large inputs)
-#   2 = pre-shuffle all SQL found on disk (standalone; ignores the source toggles)
-# The sources are chosen by USE_GENERATOR / USE_REVGEN / USE_INFILE, independent of PRE_SHUFFLE_SQL.
-if ! [[ "${PRE_SHUFFLE_SQL}" =~ ^[0-2]$ ]]; then
-  echoit "Assert: PRE_SHUFFLE_SQL must be 0, 1 or 2 (current value: '${PRE_SHUFFLE_SQL}')"
+# The SQL input is a set of sources: USE_GENERATOR, USE_REVGEN, USE_INFILE and USE_ALL_DISK_SQL. Each one
+# contributes lines to one file per trial, the share of each source is simply its line count, and that file
+# is shuffled once it is assembled.
+for RETIRED_VAR in PRE_SHUFFLE_SQL PRE_SHUFFLE_MIN_SQL_LINES PRE_SHUFFLE_TWO_MIN_SQL_LINES PRE_SHUFFLE_TRIALS_PER_SHUFFLE PRE_SHUFFLE_DIR PRE_SHUFFLE_INTERLEAVE GENERATE_NEW_QUERIES_EVERY_X_TRIALS REVGEN_NEW_QUERIES_EVERY_X_TRIALS; do
+  if [ ! -z "${!RETIRED_VAR}" ]; then
+    echoit "Assert: the configuration file sets ${RETIRED_VAR}, which no longer exists. The SQL input is now a set of sources: USE_GENERATOR and USE_REVGEN run every trial, USE_INFILE takes the input file, and USE_ALL_DISK_SQL collects QUERIES_PER_ALL_DISK_RUN lines from all SQL on disk every ALL_DISK_SQL_NEW_QUERIES_EVERY_X_TRIALS trials. The per-trial SQL lands in TRIAL_SQL_DIR, capped at PQUERY_MAX_SQL_LINES lines, and is always shuffled. ADV_FILTER_SQL=1 applies the ADV_FILTER_LIST removals, and the interleave settings are now INTERLEAVE, INTERLEAVE_SQL and INTERLEAVE_LINES"
+    exit 1
+  fi
+done
+RETIRED_VAR=
+# Each of these must be 0 or 1: any other value makes the numeric tests further down fail silently,
+# which would leave a source switched off without saying so
+for SQL_TOGGLE in USE_GENERATOR USE_REVGEN USE_INFILE USE_ALL_DISK_SQL ADV_FILTER_SQL FILTER_SQL; do
+  if ! [[ "${!SQL_TOGGLE}" =~ ^[01]$ ]]; then
+    echoit "Assert: ${SQL_TOGGLE} must be 0 or 1 (current value: '${!SQL_TOGGLE}')"
+    exit 1
+  fi
+done
+SQL_TOGGLE=
+if [ "${USE_GENERATOR}" -ne 1 ] && [ "${USE_REVGEN}" -ne 1 ] && [ "${USE_INFILE}" -ne 1 ] && [ "${USE_ALL_DISK_SQL}" -ne 1 ]; then
+  echoit "Assert: no SQL source is active. Turn on at least one of USE_GENERATOR, USE_REVGEN, USE_INFILE or USE_ALL_DISK_SQL"
+  exit 1
+fi
+if ! [[ "${PQUERY_MAX_SQL_LINES}" =~ ^[0-9]{1,10}$ ]] || [ "${PQUERY_MAX_SQL_LINES}" -lt 1 ]; then
+  echoit "Assert: PQUERY_MAX_SQL_LINES must be a positive integer of at most 10 digits (current value: '${PQUERY_MAX_SQL_LINES}')"
+  exit 1
+fi
+if ! [[ "${QUERIES_PER_ALL_DISK_RUN}" =~ ^[0-9]{1,10}$ ]] || [ "${QUERIES_PER_ALL_DISK_RUN}" -lt 1 ]; then
+  echoit "Assert: QUERIES_PER_ALL_DISK_RUN must be a positive integer of at most 10 digits (current value: '${QUERIES_PER_ALL_DISK_RUN}')"
+  exit 1
+fi
+if ! [[ "${ALL_DISK_SQL_NEW_QUERIES_EVERY_X_TRIALS}" =~ ^[0-9]{1,10}$ ]] || [ "${ALL_DISK_SQL_NEW_QUERIES_EVERY_X_TRIALS}" -lt 1 ]; then
+  echoit "Assert: ALL_DISK_SQL_NEW_QUERIES_EVERY_X_TRIALS must be a positive integer of at most 10 digits (current value: '${ALL_DISK_SQL_NEW_QUERIES_EVERY_X_TRIALS}')"
+  exit 1
+fi
+if [ ! -z "${INTERLEAVE_LINES}" ] && { ! [[ "${INTERLEAVE_LINES}" =~ ^[0-9]{1,10}$ ]] || [ "${INTERLEAVE_LINES}" -lt 1 ]; }; then
+  echoit "Assert: INTERLEAVE_LINES must be a positive integer of at most 10 digits (current value: '${INTERLEAVE_LINES}')"
   exit 1
 fi
 
@@ -259,29 +305,25 @@ if [ "${USE_REVGEN}" -eq 1 ]; then
   echoit "revgen grammar (REVGEN_YACC): ${REVGEN_YACC}"
 fi
 
-# Input file (INFILE) tarball preflight. The single INFILE is needed whenever it is a source: no
-# generator active (INFILE is the input) or USE_INFILE=1 (its full content is appended). It is not
-# needed for PRE_SHUFFLE_SQL=2 (all SQL on disk). Extract it here if it is a .tar.* archive (the tar
-# may also need extracting on a fresh clone or for multi-threaded runs).
-if { [ "${USE_GENERATOR}" -ne 1 ] && [ "${USE_REVGEN}" -ne 1 ]; } || [ "${USE_INFILE}" -eq 1 ]; then
-  if [ "${PRE_SHUFFLE_SQL}" -ne 2 ]; then
+# Input file (INFILE) tarball preflight, for USE_INFILE=1: extract it here if it is a .tar.* archive
+# (the tar may also need extracting on a fresh clone or for multi-threaded runs).
+if [ "${USE_INFILE}" -eq 1 ]; then
+  if [ ! -r ${INFILE} ]; then
+    echo "Assert! \$INFILE (${INFILE}) cannot be read? Check file existence and privileges!"
+    exit 1
+  elif [[ "${INFILE}" == *".tar."* ]]; then
+    echoit "The input file is a compressed tarball. This script will untar the file in the same location as the tarball. Please note this overwrites any existing files with the same names as those in the tarball, if any. If the sql input file needs patching (and is part of the github repo), please remember to update the tarball with the new file."
+    STORECURPWD=${PWD}
+    cd $(echo ${INFILE} | sed 's|/[^/]\+\.tar\..*|/|') || exit 1 # Change to the directory containing the input file
+    tar -xf ${INFILE}
+    cd ${STORECURPWD} || exit 1
+    ORIGINAL_INFILE="${INFILE}"
+    INFILE=$(echo ${INFILE} | sed 's|\.tar\..*||')
     if [ ! -r ${INFILE} ]; then
-      echo "Assert! \$INFILE (${INFILE}) cannot be read? Check file existence and privileges!"
+      echo "Assert! \$INFILE (${INFILE}) cannot be read after decompression (original input file: '${ORIGINAL_INFILE}?'"
       exit 1
-    elif [[ "${INFILE}" == *".tar."* ]]; then
-      echoit "The input file is a compressed tarball. This script will untar the file in the same location as the tarball. Please note this overwrites any existing files with the same names as those in the tarball, if any. If the sql input file needs patching (and is part of the github repo), please remember to update the tarball with the new file."
-      STORECURPWD=${PWD}
-      cd $(echo ${INFILE} | sed 's|/[^/]\+\.tar\..*|/|') || exit 1 # Change to the directory containing the input file
-      tar -xf ${INFILE}
-      cd ${STORECURPWD} || exit 1
-      ORIGINAL_INFILE="${INFILE}"
-      INFILE=$(echo ${INFILE} | sed 's|\.tar\..*||')
-      if [ ! -r ${INFILE} ]; then
-        echo "Assert! \$INFILE (${INFILE}) cannot be read after decompression (original input file: '${ORIGINAL_INFILE}?'"
-        exit 1
-      fi
-      ORIGINAL_INFILE=
     fi
+    ORIGINAL_INFILE=
   fi
 fi
 
@@ -316,7 +358,7 @@ check_for_version() {
 # Find empty port
 init_empty_port(){
   # Choose a random port number in 13-65K range, with triple check to confirm it is free
-  NEWPORT=$((13001 + ((RANDOM << 15) | RANDOM) % 52001))  # 'RANDOM << 15': 1st $RANDOM is bit-shifted left by 15 places (i.e. * 2^15), '| RANDOM': Bitwise OR operation with a 2nd $RANDOM, which fills the lower 15 bits with a new random number. Result: 30-bit random integer
+  NEWPORT=$(${RANDOM_BIN} 13001 65001)
   DOUBLE_CHECK=0
   while :; do
     # Check if the port is free in four different ways
@@ -329,11 +371,11 @@ init_empty_port(){
         break  # Suitable port number found
       else
         DOUBLE_CHECK=$[ ${DOUBLE_CHECK} + 1 ]
-        sleep 0.0${RANDOM}  # Random Microsleep to further avoid races
+        sleep 0.0$(${RANDOM_BIN} 10000 99999)  # Random microsleep of 10 to 100 ms to further avoid races
         continue  # Loop the check
       fi
     else
-      NEWPORT=$((13001 + ((RANDOM << 15) | RANDOM) % 52001))  # Try a new port
+      NEWPORT=$(${RANDOM_BIN} 13001 65001)  # Try a new port
       DOUBLE_CHECK=0  # Reset the double check
       continue  # Recheck the new port
     fi
@@ -448,163 +490,305 @@ if [ "${DISABLE_TOKUDB_AND_JEMALLOC}" -eq 0 ]; then
   fi
 fi
 
-pre_shuffle_collect_all_sql(){  # $1=output file, $2=max lines, $3=1 to use the high-entropy random binary for per-file sample sizes (else ${RANDOM}). Collects randomly-sampled SQL from all *.sql found on disk: the engine behind PRE_SHUFFLE_SQL=2, reused by =4
-  local OUTF="${1}"
-  local MAXLINES="${2}"
-  local SAMPLE_EXPR
-  if [ "${3}" == "1" ] && [ -x "${SCRIPT_PWD}/random" ]; then  # Full-range entropy (not capped at 32767 like ${RANDOM}) for per-file sample sizes
-    SAMPLE_EXPR="\$(( \$(${SCRIPT_PWD}/random \$(( \$(wc -l '{}' | awk '{print \$1}') + 1 )) ) + 1 ))"
-  else
-    SAMPLE_EXPR="\$[ \${RANDOM} % (\$(wc -l '{}' | awk '{print \$1}')+1) + 1 ]"
-  fi
-  touch ${OUTF}
-  rm -f ${OUTF}.done ${OUTF}.sh
-  if [ $[$RANDOM % 20 + 1] -le 10 ]; then  # At random use one or another SQL pre-shuffler (for PRE_SHUFFLE=2/4), both which have proven to work well
-    find ${HOME} /*/SQL /*/TESTCASES -maxdepth 3 -name '*.sql' -type f 2>/dev/null | grep --binary-files=text -hvi 'newbugs_dups' | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${OUTF}.done ]; then if [ \"\$(wc -l ${OUTF} | awk '{print \$1}')\" -lt ${MAXLINES} ]; then shuf --random-source=/dev/urandom -n ${SAMPLE_EXPR} {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}\" >> ${OUTF}; else touch ${OUTF}.done; fi; fi" > ${OUTF}.sh
-  else
-    find / -maxdepth 5 -name '*.sql' -type f 2>/dev/null | grep --binary-files=text -hviE '/test/TESTCASES|newbugs_dups' | shuf --random-source=/dev/urandom | xargs -I{} echo "if [ ! -r ${OUTF}.done ]; then if [ \"\$(wc -l ${OUTF} | awk '{print \$1}')\" -lt ${MAXLINES} ]; then shuf --random-source=/dev/urandom -n ${SAMPLE_EXPR} {} | grep --binary-files=text -hivE \"${ADV_FILTER_LIST}\" >> ${OUTF}; else touch ${OUTF}.done; fi; fi" > ${OUTF}.sh
-  fi
-  chmod +x ${OUTF}.sh
-  ${OUTF}.sh  # No leading './' needed as OUTF is a fully qualified path (already starts with /)
-  rm -f ${OUTF}.done ${OUTF}.sh
+# Wait until the filesystem holding $1 has $2 KB free, then return. Reports on entry and every 5
+# minutes after, so a long wait stays visible without filling the log.
+wait_for_diskspace(){  # $1=target file or directory, $2=KB required
+  local DS_DIR="${1}" DS_NEED="${2}" DS_WAITED=0 DS_FREE
+  [ ! -d "${DS_DIR}" ] && DS_DIR="$(dirname ${DS_DIR})"
+  DS_FREE="$(df -Pk ${DS_DIR} 2>/dev/null | tail -n1 | awk '{print $4}')"
+  [ -z "${DS_FREE}" ] && return 0  # Cannot read the filesystem: leave the write to report its own failure
+  while [ "${DS_FREE}" -lt "${DS_NEED}" ]; do
+    if [ $(( DS_WAITED % 300 )) -eq 0 ]; then
+      echoit "Waiting for disk space on ${DS_DIR}: ${DS_FREE} KB free, ${DS_NEED} KB needed. Free up space to continue (waited ${DS_WAITED}s so far)"
+    fi
+    sleep 10
+    DS_WAITED=$(( DS_WAITED + 10 ))
+    DS_FREE="$(df -Pk ${DS_DIR} 2>/dev/null | tail -n1 | awk '{print $4}')"
+  done
+  [ "${DS_WAITED}" -gt 0 ] && echoit "Disk space on ${DS_DIR} is sufficient again (${DS_FREE} KB free after waiting ${DS_WAITED}s), continuing"
+  return 0
 }
 
-# PRE_SHUFFLE=1/2/3/4 handling
-pre_shuffle_setup(){
-  local WORKNRDIR="$(echo ${RUNDIR} | sed 's|.*/||' | grep -o '[0-9]\+')"
-  INFILE_SHUFFLED="${PRE_SHUFFLE_DIR}/${WORKNRDIR}_${TRIAL}.sql"
-  WORKNRDIR=
-  echoit "Randomly pre-shuffling ${PRE_SHUFFLE_MIN_SQL_LINES}+ lines of SQL into ${INFILE_SHUFFLED} Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
-  PRE_SHUFFLE_DUR_START=$(date +'%s' | tr -d '\n')
-  RANDOM=$(date +%s%N | cut -b10-19 | sed 's|^[0]\+||')
-  if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
-    shuf --random-source=/dev/urandom -n ${PRE_SHUFFLE_MIN_SQL_LINES} ${INFILE} | grep --binary-files=text -hivE "${ADV_FILTER_LIST}" | sed 's|/data/[^:]\+\.sql:||g;s|/test/[^:]\+\.sql:||g;s|;#NOERROR$|;|;s|;#NOERROR[#:].*$|;|;s|;#ERROR: .*$|;|;s|\r#NOERROR.*$|;|;' > ${INFILE_SHUFFLED}  # Final sed: remove any erronous /data or /test prefixes and previous pquery outcomes (also another one below v)
-    PRE_SHUFFLE_RES_FIN_LINES="$(wc -l ${INFILE_SHUFFLED} | awk '{print $1}')"
-    if [ "${PRE_SHUFFLE_RES_FIN_LINES}" -eq 0 ]; then
-      echoit "Assert: obtaining the PRE_SHUFFLE_SQL=1 SQL failed: the resulting outfile, (${INFILE_SHUFFLED}) contains 0 lines"
-      exit 1
-    fi
-    echoit "Obtaining the PRE_SHUFFLE_SQL=1 SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds. The final file (${INFILE_SHUFFLED}) contains ${PRE_SHUFFLE_RES_FIN_LINES} lines"
-    PRE_SHUFFLE_RES_FIN_LINES=
-  elif [ "${PRE_SHUFFLE_SQL}" == "2" ]; then
-    pre_shuffle_collect_all_sql "${INFILE_SHUFFLED}" "${PRE_SHUFFLE_MIN_SQL_LINES}"
-    # Filtering using ${SCRIPT_PWD}/filter.sql when FILTER_SQL=1 and PRE_SHUFFLE_SQL=2 is done here as it would not be possible to do it on all input files that PRE_SHUFFLE_SQL=2 uses. Filtering for PRE_SHUFFLE_SQL=0 and PRE_SHUFFLE_SQL=1 is done elsewhere (at the start) of this script, as that can be done on the single input filefile  applicable when =0/=1 is used
-    PRE_SHUFFLE_RES_FIN_LINES_BEFORE_FILTER="$(wc -l ${INFILE_SHUFFLED} | awk '{print $1}')"
-    if [ "${FILTER_SQL}" == "1" ]; then
-      echoit "SQL filter is enabled, filtering all SQL lines in ${SCRIPT_PWD}/filter.sql from the input file"
-      mv ${INFILE_SHUFFLED} ${INFILE_SHUFFLED}.temp
-      grep --binary-files=text -hvif ${SCRIPT_PWD}/filter.sql ${INFILE_SHUFFLED}.temp > ${INFILE_SHUFFLED}
-      rm -f ${INFILE_SHUFFLED}.temp
-    fi
-    sed -i 's|/data/[^:]\+\.sql:||g;s|/test/[^:]\+\.sql:||g;s|;#NOERROR$|;|;s|;#NOERROR[#:].*$|;|;s|;#ERROR: .*$|;|;s|\r#NOERROR.*$|;|;' ${INFILE_SHUFFLED}  # Remove any erronous /data or /test prefixes and previous pquery outcomes (also another one above ^)
-    PRE_SHUFFLE_RES_FIN_LINES="$(wc -l ${INFILE_SHUFFLED} | awk '{print $1}')"
-    if [ "${PRE_SHUFFLE_RES_FIN_LINES}" -eq 0 ]; then
-      echoit "Assert: obtaining the PRE_SHUFFLE_SQL=2 SQL failed: the resulting outfile, (${INFILE_SHUFFLED}) contains 0 lines"
-      exit 1
-    else
-      if [ "${FILTER_SQL}" == "1" ]; then
-        echoit "Obtaining the PRE_SHUFFLE_SQL=2 SQL inc filter.sql application took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds. The final file (${INFILE_SHUFFLED}) contains ${PRE_SHUFFLE_RES_FIN_LINES} lines ($[ ${PRE_SHUFFLE_RES_FIN_LINES_BEFORE_FILTER} - ${PRE_SHUFFLE_RES_FIN_LINES} ] lines were filtered)"
-      else
-        echoit "Obtaining the PRE_SHUFFLE_SQL=2 SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_DUR_START} ] seconds. The final file (${INFILE_SHUFFLED}) contains ${PRE_SHUFFLE_RES_FIN_LINES} lines"
-      fi
-    fi
-    PRE_SHUFFLE_RES_FIN_LINES=
-    PRE_SHUFFLE_RES_FIN_LINES_BEFORE_FILTER=
-  else
-    echoit "Assert: pre_shuffle_setup reached with PRE_SHUFFLE_SQL not 1 or 2: PRE_SHUFFLE_SQL=${PRE_SHUFFLE_SQL}"
-    exit 1
+# Cap a SQL input file to PQUERY_MAX_SQL_LINES lines, pquery's own maximum. Lines are cut from the end of
+# the file. While the sources still stand one after another, as generator, revgen, INFILE, all-disk, that
+# means the all-disk SQL loses lines first, then the INFILE, then revgen, then the generator SQL, and any
+# source past the cut is dropped whole. Once the file is shuffled the cut takes random lines instead.
+cap_sql_lines(){  # $1=file to cap in place, $2=description for the log message
+  local CAP_LINES="$(wc -l < ${1})"
+  if [ "${CAP_LINES}" -gt "${PQUERY_MAX_SQL_LINES}" ]; then
+    truncate -s "$(head -n ${PQUERY_MAX_SQL_LINES} ${1} | wc -c)" ${1}  # Truncated in place: a copy would briefly need double the space, and these files often sit in tmpfs
+    echoit "Capped ${2} from ${CAP_LINES} to PQUERY_MAX_SQL_LINES=${PQUERY_MAX_SQL_LINES} lines"
   fi
-  PRE_SHUFFLE_DUR_START=
+}
+
+# The lighter filter, filter.sql, holds regular expressions with .* in them, so one pass over a large mix of
+# SQL costs tens of seconds on a single core. The file is split on line boundaries, the parts are filtered at
+# the same time, and the parts are joined again in order, which brings a 150,000 line mix from about 40
+# seconds to about 3. The greps run in the locale of the box, so the SQL is matched as text, not as bytes.
+filter_sql_file(){  # $1=file, filtered in place. Sets FILTERED_LINES, and returns 1 when a part failed
+  local FSF="${1}" FSF_JOBS FSF_PART FSF_PID FSF_RC FSF_FAIL=0 FSF_PIDS=()
+  FILTERED_LINES="$(wc -l < ${FSF})"
+  FSF_JOBS=$(nproc); [ "${FSF_JOBS}" -gt 24 ] && FSF_JOBS=24  # A part per core, up to 24. More parts still help a little, but a busy box needs its cores for the trials and the reducers
+  rm -f ${FSF}.p_* ${FSF}.f_*
+  if ! split -n l/${FSF_JOBS} -d "${FSF}" "${FSF}.p_"; then
+    rm -f ${FSF}.p_*
+    return 1
+  fi
+  for FSF_PART in ${FSF}.p_*; do
+    grep --binary-files=text -hvif ${SCRIPT_PWD}/filter.sql "${FSF_PART}" > "${FSF}.f_${FSF_PART##*.p_}" &
+    FSF_PIDS+=($!)
+  done
+  for FSF_PID in ${FSF_PIDS[@]}; do
+    wait ${FSF_PID}; FSF_RC=$?
+    [ ${FSF_RC} -gt 1 ] && FSF_FAIL=1  # 1 is a part with every line removed, which is a normal outcome
+  done
+  if [ ${FSF_FAIL} -eq 1 ]; then
+    rm -f ${FSF}.p_* ${FSF}.f_*
+    return 1
+  fi
+  cat ${FSF}.f_* > "${FSF}"
+  rm -f ${FSF}.p_* ${FSF}.f_*
+  FILTERED_LINES=$(( FILTERED_LINES - $(wc -l < ${FSF}) ))
+  return 0
+}
+
+assemble_abort(){  # $1=message. Stops the run on an assert from the SQL assembly, leaving no SQL of this run behind
+  echoit "Assert: ${1}"
+  rm -f ${TRIAL_SQL_DIR}/${RANDOMD}_*
+  exit 1
+}
+
+all_disk_sql_index(){  # Builds ALL_DISK_SQL_INDEX: every *.sql file on disk, one path per line, tagged with the set it belongs to
+  # Two sets, tagged P and A, are indexed. Each collection uses one of them, so the two searches keep
+  # giving the SQL mix they always did, at the cost of one walk per run instead of one per collection.
+  local IDX_START="${EPOCHREALTIME}"
+  echoit "USE_ALL_DISK_SQL=1: indexing all SQL files on the disk, into ${ALL_DISK_SQL_INDEX}. This is done once per run"
+  { find ${HOME} /*/SQL /*/TESTCASES -maxdepth 3 -name '*.sql' -type f 2>/dev/null | grep --binary-files=text -hvi 'newbugs_dups' | sed 's|^|P\t|'
+    find / -maxdepth 5 -name '*.sql' -type f 2>/dev/null | grep --binary-files=text -hviE '/test/TESTCASES|newbugs_dups' | sed 's|^|A\t|'
+  } > ${ALL_DISK_SQL_INDEX}
+  if [ ! -s "${ALL_DISK_SQL_INDEX}" ]; then
+    assemble_abort "USE_ALL_DISK_SQL=1, yet no SQL file was found on the disk. The index (${ALL_DISK_SQL_INDEX}) is empty"
+  fi
+  echoit "USE_ALL_DISK_SQL=1: indexing took $(duration ${IDX_START}) seconds. The index holds $(grep -c '^P' ${ALL_DISK_SQL_INDEX}) paths in the home/SQL/TESTCASES set and $(grep -c '^A' ${ALL_DISK_SQL_INDEX}) in the whole-disk set"
+}
+
+all_disk_sql_collect(){  # $1=output file, $2=lines to collect. Randomly samples SQL from the files in ALL_DISK_SQL_INDEX
+  local OUTF="${1}"
+  local WANT="${2}"
+  local COLLECTED=0 SET_TAG FILE_LINES TAKE ADDED ADS_FILE
+  if [ ! -s "${ALL_DISK_SQL_INDEX}" ]; then  # Without this the grep below would read stdin and the run would hang
+    assemble_abort "the SQL file index (${ALL_DISK_SQL_INDEX}) is missing or empty. It is written once per run by all_disk_sql_index()"
+  fi
+  if [ $(${RANDOM_BIN} 1 20) -le 10 ]; then SET_TAG=P; else SET_TAG=A; fi  # Either set, 50/50
+  if [ "$(grep -c "^${SET_TAG}	" ${ALL_DISK_SQL_INDEX})" -eq 0 ]; then  # A box may hold no SQL in one of the two sets
+    [ "${SET_TAG}" == "P" ] && SET_TAG=A || SET_TAG=P
+  fi
+  > ${OUTF}
+  while read -r ADS_FILE; do
+    [ "${COLLECTED}" -ge "${WANT}" ] && break
+    [ -r "${ADS_FILE}" ] || continue
+    FILE_LINES="$(wc -l < "${ADS_FILE}" 2>/dev/null)"
+    [ -z "${FILE_LINES}" ] && continue
+    [ "${FILE_LINES}" -lt 1 ] && continue
+    TAKE=$(( $(${RANDOM_BIN} ${FILE_LINES}) + 1 ))  # Random part of the file: 1 line up to all of them, each equally likely
+    ADDED="$(shuf --random-source=<(${RANDOM_BIN} --raw) -n ${TAKE} "${ADS_FILE}" | grep --binary-files=text -hivE "${ADV_FILTER_LIST}" | tee -a ${OUTF} | wc -l)"
+    COLLECTED=$(( COLLECTED + ADDED ))
+  done < <(grep "^${SET_TAG}	" ${ALL_DISK_SQL_INDEX} | cut -f2- | shuf --random-source=<(${RANDOM_BIN} --raw))
+  # The last file read usually takes the total past the target, so cut it back to the exact number
+  if [ "${COLLECTED}" -gt "${WANT}" ]; then
+    truncate -s "$(head -n ${WANT} ${OUTF} | wc -c)" ${OUTF}
+    COLLECTED=${WANT}
+  fi
+  ALL_DISK_SQL_LINES=${COLLECTED}
+}
+
+# The clean-up applied to every source: drop the file name prefixes and the outcome markers that SQL
+# harvested from an earlier run carries
+TRIAL_SQL_CLEANUP_SED='s|/data/[^:]\+\.sql:||g;s|/test/[^:]\+\.sql:||g;s|;#NOERROR$|;|;s|;#NOERROR[#:].*$|;|;s|;#ERROR: .*$|;|;s|\r#NOERROR.*$|;|;'
+
+emit_file(){  # One source file on stdout, always ending in a newline
+  cat "${1}"
+  # A file whose last line has no newline would run into the first line of the next source, making one
+  # statement out of two. tail -c 1 gives that last byte, and $() drops it when it is a newline
+  [ -n "$(tail -c 1 "${1}")" ] && echo
+  return 0
+}
+
+emit_trial_sources(){  # Every active source's SQL on stdout, in the order the line cap cuts back from the end
+  [ ${USE_GENERATOR} -eq 1 ] && emit_file "${GEN_OUTFILE}"
+  [ ${USE_REVGEN} -eq 1 ] && emit_file "${REVGEN_OUTFILE}"
+  if [ ${USE_INFILE} -eq 1 ]; then
+    if [ "${INFILE_LINES}" -le "${PQUERY_MAX_SQL_LINES}" ]; then
+      emit_file "${INFILE}"
+    else  # Larger than the cap: read a window at a random offset, so each trial sees other SQL
+      tail -c +$(( $(${RANDOM_BIN} ${INFILE_WINDOW_MAX_OFFSET}) + 1 )) "${INFILE}" | tail -n +2  # tail -n +2 drops the part line the offset lands in
+      [ -n "$(tail -c 1 "${INFILE}")" ] && echo  # The window can end at the end of the file, so the same applies
+    fi
+  fi
+  [ ${USE_ALL_DISK_SQL} -eq 1 ] && emit_file "${ALL_DISK_SQL_POOL}"
+  return 0
+}
+
+assemble_trial_sql(){  # Builds TRIAL_SQL: the one SQL file this trial gives to pquery
+  local ASM_START="${EPOCHREALTIME}"
+  local ASM_PREV="${TRIAL_SQL}" ASM_KB=0 ASM_LINES ADS_START ASM_DIR_WAITED=0
+  while [ ! -d "${TRIAL_SQL_DIR}" ]; do  # tmpfs_clean.sh, or an operator, can remove it mid-run
+    mkdir -p "${TRIAL_SQL_DIR}"
+    [ -d "${TRIAL_SQL_DIR}" ] && break
+    if [ $(( ASM_DIR_WAITED % 300 )) -eq 0 ]; then  # On entry, then every 5 minutes, so a long wait does not fill the log
+      echoit "Warning: TRIAL_SQL_DIR (${TRIAL_SQL_DIR}) is missing and could not be recreated. Retrying every 5 seconds (waited ${ASM_DIR_WAITED}s so far)"
+    fi
+    sleep 5
+    ASM_DIR_WAITED=$(( ASM_DIR_WAITED + 5 ))
+  done
+  TRIAL_SQL="${TRIAL_SQL_DIR}/${RANDOMD}_${TRIAL}.sql"
+  # The previous trial is finished with its file, so free that space before writing the new one
+  if [ ! -z "${ASM_PREV}" ] && [ "${ASM_PREV}" != "${TRIAL_SQL}" ]; then rm -f "${ASM_PREV}"; fi
+  if [ ${USE_ALL_DISK_SQL} -eq 1 ]; then  # The one expensive source, so it keeps a cadence of its own
+    if [ ${TRIAL} -eq 1 ] || [ $(( TRIAL % ALL_DISK_SQL_NEW_QUERIES_EVERY_X_TRIALS )) -eq 0 ] || [ ! -s "${ALL_DISK_SQL_POOL}" ]; then
+      ADS_START="${EPOCHREALTIME}"
+      echoit "Collecting SQL from all SQL available on any local disk..."
+      all_disk_sql_collect "${ALL_DISK_SQL_POOL}" "${QUERIES_PER_ALL_DISK_RUN}"
+      if [ "${ALL_DISK_SQL_LINES}" -eq 0 ]; then
+        assemble_abort "collecting SQL from the disk index gave 0 lines. Check ${ALL_DISK_SQL_INDEX} and whether the files it lists can be read"
+      fi
+      echoit "Collected ${ALL_DISK_SQL_LINES} lines (${ALL_DISK_SQL_POOL}) in $(duration ${ADS_START}) seconds"
+    else
+      echoit "Re-using the all-disk SQL pool ${ALL_DISK_SQL_POOL} (${ALL_DISK_SQL_LINES} lines). A new one is collected every ${ALL_DISK_SQL_NEW_QUERIES_EVERY_X_TRIALS} trials"
+    fi
+  fi
+  [ ${USE_GENERATOR} -eq 1 ] && ASM_KB=$(( ASM_KB + $(stat -c %s ${GEN_OUTFILE}) / 1024 ))
+  [ ${USE_REVGEN} -eq 1 ] && ASM_KB=$(( ASM_KB + $(stat -c %s ${REVGEN_OUTFILE}) / 1024 ))
+  [ ${USE_INFILE} -eq 1 ] && ASM_KB=$(( ASM_KB + INFILE_ASM_KB ))
+  [ ${USE_ALL_DISK_SQL} -eq 1 ] && ASM_KB=$(( ASM_KB + $(stat -c %s ${ALL_DISK_SQL_POOL}) / 1024 ))
+  wait_for_diskspace "${TRIAL_SQL_DIR}" "$(( ASM_KB + 1 ))"  # An upper bound: the line cap often makes the write smaller
+  # Cut at the cap while writing, not afterwards: with a large input file, writing the whole
+  # concatenation first would write gigabytes to then throw most of them away
+  if [ ${ADV_FILTER_SQL} -eq 1 ]; then
+    emit_trial_sources | sed "${TRIAL_SQL_CLEANUP_SED}" | grep --binary-files=text -hivE "${ADV_FILTER_LIST}" | head -n ${PQUERY_MAX_SQL_LINES} > "${TRIAL_SQL}"
+  else
+    emit_trial_sources | sed "${TRIAL_SQL_CLEANUP_SED}" | head -n ${PQUERY_MAX_SQL_LINES} > "${TRIAL_SQL}"
+  fi
+  ASM_LINES="$(wc -l < ${TRIAL_SQL})"
+  if [ "${ASM_LINES}" -ge "${PQUERY_MAX_SQL_LINES}" ]; then
+    echoit "The assembled SQL was cut at PQUERY_MAX_SQL_LINES=${PQUERY_MAX_SQL_LINES} lines. The cut takes from the end, so the last source in use loses lines first"
+  fi
+  if [ ${FILTER_SQL} -eq 1 ]; then  # One pass over the whole mix, so the sources are filtered together and not each on its own
+    FILTER_DUR_START="${EPOCHREALTIME}"
+    wait_for_diskspace "${TRIAL_SQL_DIR}" "$(( $(stat -c %s ${TRIAL_SQL}) / 1024 * 2 + 1 ))"  # The parts the filter splits the file into need room beside the file
+    if ! filter_sql_file "${TRIAL_SQL}"; then
+      assemble_abort "applying the filter ${SCRIPT_PWD}/filter.sql to ${TRIAL_SQL} failed. Check that the filter file can still be read, and the free space in ${TRIAL_SQL_DIR}"
+    fi
+    ASM_LINES="$(wc -l < ${TRIAL_SQL})"
+    echoit "Applied filter ${SCRIPT_PWD}/filter.sql (${FILTERED_LINES} lines filtered) in $(duration ${FILTER_DUR_START}) seconds"
+    FILTER_DUR_START=
+  fi
+  if [ "${ASM_LINES}" -eq 0 ]; then
+    assemble_abort "the SQL assembled for this trial (${TRIAL_SQL}) holds 0 lines. Check the sources in use, and any filter in use"
+  fi
+  # Shuffle the mix, so the SQL of each source is spread over the file instead of the sources standing one
+  # after another. shuf reads all of its input before it writes, so the output file can be the input file
+  if ! shuf --random-source=<(${RANDOM_BIN} --raw) -o "${TRIAL_SQL}" "${TRIAL_SQL}"; then
+    assemble_abort "shuffling the assembled SQL (${TRIAL_SQL}) failed. Check the free memory and the free space in ${TRIAL_SQL_DIR}"
+  fi
   if [ ! -z "${STORAGE_ENGINE_SWAP}" ]; then
-    STORAGE_ENGINE_SWAP_DUR_START=$(date +'%s' | tr -d '\n')
+    STORAGE_ENGINE_SWAP_DUR_START="${EPOCHREALTIME}"
     if [ -z "${STORAGE_ENGINE_SWAP_PERCENTAGE}" ]; then
       STORAGE_ENGINE_SWAP_PERCENTAGE=100
     fi
     if ! [[ "${STORAGE_ENGINE_SWAP_PERCENTAGE}" =~ ^[0-9]+$ ]] || [ "${STORAGE_ENGINE_SWAP_PERCENTAGE}" -lt 1 ] || [ "${STORAGE_ENGINE_SWAP_PERCENTAGE}" -gt 100 ]; then
-      echoit "Assert: STORAGE_ENGINE_SWAP_PERCENTAGE must be an integer in the range 1-100 (current value: '${STORAGE_ENGINE_SWAP_PERCENTAGE}')"
-      exit 1
+      assemble_abort "STORAGE_ENGINE_SWAP_PERCENTAGE must be an integer in the range 1-100 (current value: '${STORAGE_ENGINE_SWAP_PERCENTAGE}')"
     fi
-    # Swap engines in the first STORAGE_ENGINE_SWAP_PERCENTAGE% of lines. The SQL is already
-    # shuffled, so the first N% is effectively a random sample; the remainder keeps its
-    # original engines, giving a mixed-engine input file.
-    SE_SWAP_TOTAL_LINES=$(wc -l < ${INFILE_SHUFFLED})
-    SE_SWAP_LINES=$(( SE_SWAP_TOTAL_LINES * STORAGE_ENGINE_SWAP_PERCENTAGE / 100 ))
-    if [ "${SE_SWAP_LINES}" -lt 1 ]; then SE_SWAP_LINES=1; fi
-    echoit "STORAGE_ENGINE_SWAP Active: changing ${STORAGE_ENGINE_SWAP_PERCENTAGE}% of lines (${SE_SWAP_LINES}/${SE_SWAP_TOTAL_LINES}) of storage engine references to ${STORAGE_ENGINE_SWAP}"
-    sed -i "1,${SE_SWAP_LINES}{s|InnoDB|${STORAGE_ENGINE_SWAP}|gi;s|Aria|${STORAGE_ENGINE_SWAP}|gi;s|MyISAM|${STORAGE_ENGINE_SWAP}|gi;s|BLACKHOLE|${STORAGE_ENGINE_SWAP}|gi;s|RocksDB|${STORAGE_ENGINE_SWAP}|gi;s|RocksDBcluster|${STORAGE_ENGINE_SWAP}|gi;s|MRG_MyISAM|${STORAGE_ENGINE_SWAP}|gi;s|SEQUENCE|${STORAGE_ENGINE_SWAP}|gi;s|NDB|${STORAGE_ENGINE_SWAP}|gi;s|NDBCluster|${STORAGE_ENGINE_SWAP}|gi;s|CSV|${STORAGE_ENGINE_SWAP}|gi;s|TokuDB|${STORAGE_ENGINE_SWAP}|gi;s|MEMORY|${STORAGE_ENGINE_SWAP}|gi;s|ARCHIVE|${STORAGE_ENGINE_SWAP}|gi;s|CASSANDRA|${STORAGE_ENGINE_SWAP}|gi;s|CONNECT|${STORAGE_ENGINE_SWAP}|gi;s|EXAMPLE|${STORAGE_ENGINE_SWAP}|gi;s|FALCON|${STORAGE_ENGINE_SWAP}|gi;s|HEAP|${STORAGE_ENGINE_SWAP}|gi;s|${STORAGE_ENGINE_SWAP}cluster|${STORAGE_ENGINE_SWAP}|gi;s|MARIA|${STORAGE_ENGINE_SWAP}|gi;s|MEMORYCLUSTER|${STORAGE_ENGINE_SWAP}|gi;s|MERGE|${STORAGE_ENGINE_SWAP}|gi;s|FEDERATED|${STORAGE_ENGINE_SWAP}|gi;s|\$engine|${STORAGE_ENGINE_SWAP}|gi;s|NonExistentEngine|${STORAGE_ENGINE_SWAP}|gi;s|Spider|${STORAGE_ENGINE_SWAP}|gi;}" ${INFILE_SHUFFLED}
-    echoit "STORAGE_ENGINE_SWAP: Swapping storage engines took $[ $(date +'%s' | tr -d '\n') - ${STORAGE_ENGINE_SWAP_DUR_START} ] seconds"
+    SE_SWAP_SED="s|InnoDB|${STORAGE_ENGINE_SWAP}|gi;s|Aria|${STORAGE_ENGINE_SWAP}|gi;s|MyISAM|${STORAGE_ENGINE_SWAP}|gi;s|BLACKHOLE|${STORAGE_ENGINE_SWAP}|gi;s|RocksDB|${STORAGE_ENGINE_SWAP}|gi;s|RocksDBcluster|${STORAGE_ENGINE_SWAP}|gi;s|MRG_MyISAM|${STORAGE_ENGINE_SWAP}|gi;s|SEQUENCE|${STORAGE_ENGINE_SWAP}|gi;s|NDB|${STORAGE_ENGINE_SWAP}|gi;s|NDBCluster|${STORAGE_ENGINE_SWAP}|gi;s|CSV|${STORAGE_ENGINE_SWAP}|gi;s|TokuDB|${STORAGE_ENGINE_SWAP}|gi;s|MEMORY|${STORAGE_ENGINE_SWAP}|gi;s|ARCHIVE|${STORAGE_ENGINE_SWAP}|gi;s|CASSANDRA|${STORAGE_ENGINE_SWAP}|gi;s|CONNECT|${STORAGE_ENGINE_SWAP}|gi;s|EXAMPLE|${STORAGE_ENGINE_SWAP}|gi;s|FALCON|${STORAGE_ENGINE_SWAP}|gi;s|HEAP|${STORAGE_ENGINE_SWAP}|gi;s|${STORAGE_ENGINE_SWAP}cluster|${STORAGE_ENGINE_SWAP}|gi;s|MARIA|${STORAGE_ENGINE_SWAP}|gi;s|MEMORYCLUSTER|${STORAGE_ENGINE_SWAP}|gi;s|MERGE|${STORAGE_ENGINE_SWAP}|gi;s|FEDERATED|${STORAGE_ENGINE_SWAP}|gi;s|\$engine|${STORAGE_ENGINE_SWAP}|gi;s|NonExistentEngine|${STORAGE_ENGINE_SWAP}|gi;s|Spider|${STORAGE_ENGINE_SWAP}|gi;"
+    if [ "${STORAGE_ENGINE_SWAP_PERCENTAGE}" -eq 100 ]; then
+      sed -i "${SE_SWAP_SED}" ${TRIAL_SQL}
+    else
+      # Mark the lines to swap first, spread evenly over the file, then swap the engines in the
+      # marked lines only and drop the marker again. Marking gives the exact percentage asked for,
+      # where a fixed step (one line in every 100/percentage) only lands on a divisor of 100
+      if ! awk -v pct=${STORAGE_ENGINE_SWAP_PERCENTAGE} '{if(int(NR*pct/100)>int((NR-1)*pct/100)){printf "\001%s\n",$0}else{print}}' ${TRIAL_SQL} > ${TRIAL_SQL}.temp; then
+        assemble_abort "marking the lines for STORAGE_ENGINE_SWAP failed. Check the free space in ${TRIAL_SQL_DIR}"
+      fi
+      mv ${TRIAL_SQL}.temp ${TRIAL_SQL}
+      sed -i "/^\x01/{${SE_SWAP_SED}};s|^\x01||" ${TRIAL_SQL}
+    fi
+    SE_SWAP_SED=
+    echoit "STORAGE_ENGINE_SWAP: Swapping ${STORAGE_ENGINE_SWAP_PERCENTAGE}% of in-SQL storage engines to ${STORAGE_ENGINE_SWAP} took $(duration ${STORAGE_ENGINE_SWAP_DUR_START}) seconds"
     STORAGE_ENGINE_SWAP_DUR_START=
   fi
   # Interleave post-storage-engine-swap to ensure not modifying CREATE TABLE ... ENGINE=... statements in interleave SQL
-  if [ "${PRE_SHUFFLE_INTERLEAVE}" == "1" ]; then
-    PRE_SHUFFLE_INTERLEAVE_DUR_START=$(date +'%s' | tr -d '\n')
-    echoit "PRE_SHUFFLE_INTERLEAVE: Interleaving SQL in PRE_SHUFFLE_INTERLEAVE_SQL into the input file every ${PRE_SHUFFLE_INTERLEAVE_LINES}th line"
-    mv ${INFILE_SHUFFLED} ${INFILE_SHUFFLED}.temp
+  if [ "${INTERLEAVE}" == "1" ]; then
+    INTERLEAVE_DUR_START="${EPOCHREALTIME}"
+    echoit "INTERLEAVE: Interleaving SQL in INTERLEAVE_SQL into the input file every ${INTERLEAVE_LINES}th line"
+    mv ${TRIAL_SQL} ${TRIAL_SQL}.temp
 
-    PRE_SHUFFLE_INTERLEAVE_SQL_TEMP_FILE="$(mktemp | tr -d '\n')"
-    echo -e "${PRE_SHUFFLE_INTERLEAVE_SQL}" > ${PRE_SHUFFLE_INTERLEAVE_SQL_TEMP_FILE}
-    awk -v sql_file=${PRE_SHUFFLE_INTERLEAVE_SQL_TEMP_FILE} "NR%${PRE_SHUFFLE_INTERLEAVE_LINES}==0{while(getline line<sql_file) print line;close(sql_file)}{print}" ${INFILE_SHUFFLED}.temp > ${INFILE_SHUFFLED}
+    INTERLEAVE_SQL_TEMP_FILE="$(mktemp | tr -d '\n')"
+    echo -e "${INTERLEAVE_SQL}" > ${INTERLEAVE_SQL_TEMP_FILE}
+    awk -v sql_file=${INTERLEAVE_SQL_TEMP_FILE} "NR%${INTERLEAVE_LINES}==0{while(getline line<sql_file) print line;close(sql_file)}{print}" ${TRIAL_SQL}.temp > ${TRIAL_SQL}
 
-    rm -f ${INFILE_SHUFFLED}.temp ${PRE_SHUFFLE_INTERLEAVE_SQL_TEMP_FILE}
-    PRE_SHUFFLE_INTERLEAVE_SQL_TEMP_FILE=
-    INTERLEAVE_FIN_LINES="$(wc -l ${INFILE_SHUFFLED} | awk '{print $1}')"
+    rm -f ${TRIAL_SQL}.temp ${INTERLEAVE_SQL_TEMP_FILE}
+    INTERLEAVE_SQL_TEMP_FILE=
+    INTERLEAVE_FIN_LINES="$(wc -l ${TRIAL_SQL} | awk '{print $1}')"
     if [ "${INTERLEAVE_FIN_LINES}" -eq 0 ]; then
-      echoit "Assert: PRE_SHUFFLE_INTERLEAVE interleaving failed: the resulting outfile, (${INFILE_SHUFFLED}) contains 0 lines"
-      exit 1
+      assemble_abort "INTERLEAVE interleaving failed: the resulting outfile, (${TRIAL_SQL}) contains 0 lines"
     fi
-    echoit "PRE_SHUFFLE_INTERLEAVE: Interleaving SQL took $[ $(date +'%s' | tr -d '\n') - ${PRE_SHUFFLE_INTERLEAVE_DUR_START} ] seconds. The final file (${INFILE_SHUFFLED}) contains ${INTERLEAVE_FIN_LINES} lines"
+    echoit "INTERLEAVE: Interleaving into ${TRIAL_SQL} complete ($(( INTERLEAVE_FIN_LINES - ASM_LINES )) interleaved lines added) in $(duration ${INTERLEAVE_DUR_START}) seconds"
     INTERLEAVE_FIN_LINES=
-    PRE_SHUFFLE_INTERLEAVE_DUR_START=
+    INTERLEAVE_DUR_START=
   fi
-  # The following needs to be the last step in the process (except SWAP_ALL_TABLE_NAMES_TO_T1) to ensure that any PRE_SHUFFLE_INTERLEAVE sql is also swapped to table name t1
+  # The following needs to be the last step in the process (except SWAP_ALL_TABLE_NAMES_TO_T1) to ensure that any INTERLEAVE sql is also swapped to table name t1
   if [ "${SWAP_CREATE_TABLE_NAMES_TO_T1}" != "0" ]; then
-    SWAP_CREATE_TABLE_NAMES_TO_T1_START=$(date +'%s' | tr -d '\n') 
+    SWAP_CREATE_TABLE_NAMES_TO_T1_START="${EPOCHREALTIME}"
     echoit "SWAP_CREATE_TABLE_NAMES_TO_T1 Active: changing all CREATE TABLE table names to t1"
-    sed -i 's|CREATE TABLE\([^(]*\)\+(|CREATE TABLE \1 (|gi;s|[ \t][ \t]\+| |g;s|CREATE TABLE [^ ]\+ |CREATE TABLE t1 |gi' ${INFILE_SHUFFLED}
-    echoit "SWAP_CREATE_TABLE_NAMES_TO_T1: Swapping CREATE TABLE table names to t1 took $[ $(date +'%s' | tr -d '\n') - ${SWAP_CREATE_TABLE_NAMES_TO_T1_START} ] seconds"
+    sed -i 's|CREATE TABLE\([^(]*\)\+(|CREATE TABLE \1 (|gi;s|[ \t][ \t]\+| |g;s|CREATE TABLE [^ ]\+ |CREATE TABLE t1 |gi' ${TRIAL_SQL}
+    echoit "SWAP_CREATE_TABLE_NAMES_TO_T1: Swapping CREATE TABLE table names to t1 took $(duration ${SWAP_CREATE_TABLE_NAMES_TO_T1_START}) seconds"
     SWAP_CREATE_TABLE_NAMES_TO_T1_START=
   fi
   # The following needs to be the last step in the process (ref above for reason)
   # Ref:  grep --binary-files=text -oi "CREATE TABLE [^ (]\+[ (]" main-ms-ps-md.sql | tr -d '`' | tr -d '(' | sed 's|[ ]*$||' | sed 's|create table|CREATE TABLE|i' | grep -v "TABLE IF" | sort -h | uniq -c |sort -n | tac | head -n20
   if [ "${SWAP_ALL_TABLE_NAMES_TO_T1}" != "0" ]; then
-    SWAP_ALL_TABLE_NAMES_TO_T1_START=$(date +'%s' | tr -d '\n') 
+    SWAP_ALL_TABLE_NAMES_TO_T1_START="${EPOCHREALTIME}"
     echoit "SWAP_ALL_TABLE_NAMES_TO_T1 Active: changing all table names to t1"
     # Except for the provisions at the end of the list of changes, do not add the sed global 'g' option as otherwise some statements will become invalid due to repeated t1
-    sed -i "s|\([ \.]\+\)t[0-9]\+\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
-    sed -i "s|\([ \.]\+\)t[itm]\+\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
-    sed -i "s|\([ \.]\+\)t\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
-    sed -i "s|\([ \.]\+\)m[0-9]\+\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
-    sed -i "s|\([ \.]\+\)articles\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
-    sed -i "s|\([ \.]\+\)foo\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
-    sed -i "s|\([ \.]\+\)bar\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
-    sed -i "s|\([ \.]\+\)Ｔ[４７１]\+\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
-    sed -i "s|\([ \.]\+\)db[0-9]\+.t[0-9]\+\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
-    sed -i "s|\([ \.]\+\)child\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
-    sed -i "s|\([ \.]\+\)parent\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
-    sed -i "s|\([ \.]\+\)ｱｱｱ\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
-    sed -i "s|\([ \.]\+\)龗龗龗\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
-    sed -i "s|\([ \.]\+\)龖龖龖\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
-    sed -i "s|\([ \.]\+\)testdb_wl5522.t1\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
-    sed -i "s|\([ \.]\+\)tm[0-9]\+\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
-    sed -i "s|\([ \.]\+\)src\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
-    sed -i "s|\([ \.]\+\)federated.t1\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
-    sed -i "s|\([ \.]\+\)variant\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
-    sed -i "s|\([ \.]\+\)RocksDB.t1\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
-    sed -i "s|\([ \.]\+\)ndb\$test\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
-    sed -i "s|\([ \.]\+\)test_wl5522.t1\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
-    sed -i "s|\([ \.]\+\)test_ps_sample_pages\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
-    sed -i "s|\([ \.]\+\)t1_will_crash\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
-    sed -i "s|\([ \.]\+\)d[0-9]\+.t[0-9]\+\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
-    sed -i "s|\([ \.]\+\)db\([\`', \t();]\+\)|\1t1\2|" ${INFILE_SHUFFLED}
-    sed -i "s|t1[ \t]\+TO[ \t]\+t1|t1 TO t2|gi" ${INFILE_SHUFFLED}  # RENAME TABLE provision
-    sed -i "s|t1[ \t]\+LIKE[ \t]\+t1|t2 LIKE t1|gi" ${INFILE_SHUFFLED}  # CREATE TABLE...LIKE provision
-    sed -i "s|t1[ \t]\+RENAME TO[ \t]\+t1|t1 RENAME TO t2|gi" ${INFILE_SHUFFLED}  # ALTER TABLE provision
-    sed -i "s|t1[ \t]*,[ \t]*t1|t1|gi" ${INFILE_SHUFFLED}  # SELECT, DROP TABLE, etc. provision
-    sed -i "s|([ \t]*t1[ \t]*,[ \t]*t[0-9]\+[ \t]*)|(t2,t3)|gi;s|([ \t]*t1[ \t]*,[ \t]*t[0-9]\+[ \t]*,[ \t]*t[0-9]\+[ \t]*)|(t2,t3)|gi" ${INFILE_SHUFFLED}  # CREATE TABLE...UNION provision
+    sed -i "s|\([ \.]\+\)t[0-9]\+\([\`', \t();]\+\)|\1t1\2|" ${TRIAL_SQL}
+    sed -i "s|\([ \.]\+\)t[itm]\+\([\`', \t();]\+\)|\1t1\2|" ${TRIAL_SQL}
+    sed -i "s|\([ \.]\+\)t\([\`', \t();]\+\)|\1t1\2|" ${TRIAL_SQL}
+    sed -i "s|\([ \.]\+\)m[0-9]\+\([\`', \t();]\+\)|\1t1\2|" ${TRIAL_SQL}
+    sed -i "s|\([ \.]\+\)articles\([\`', \t();]\+\)|\1t1\2|" ${TRIAL_SQL}
+    sed -i "s|\([ \.]\+\)foo\([\`', \t();]\+\)|\1t1\2|" ${TRIAL_SQL}
+    sed -i "s|\([ \.]\+\)bar\([\`', \t();]\+\)|\1t1\2|" ${TRIAL_SQL}
+    sed -i "s|\([ \.]\+\)Ｔ[４７１]\+\([\`', \t();]\+\)|\1t1\2|" ${TRIAL_SQL}
+    sed -i "s|\([ \.]\+\)db[0-9]\+.t[0-9]\+\([\`', \t();]\+\)|\1t1\2|" ${TRIAL_SQL}
+    sed -i "s|\([ \.]\+\)child\([\`', \t();]\+\)|\1t1\2|" ${TRIAL_SQL}
+    sed -i "s|\([ \.]\+\)parent\([\`', \t();]\+\)|\1t1\2|" ${TRIAL_SQL}
+    sed -i "s|\([ \.]\+\)ｱｱｱ\([\`', \t();]\+\)|\1t1\2|" ${TRIAL_SQL}
+    sed -i "s|\([ \.]\+\)龗龗龗\([\`', \t();]\+\)|\1t1\2|" ${TRIAL_SQL}
+    sed -i "s|\([ \.]\+\)龖龖龖\([\`', \t();]\+\)|\1t1\2|" ${TRIAL_SQL}
+    sed -i "s|\([ \.]\+\)testdb_wl5522.t1\([\`', \t();]\+\)|\1t1\2|" ${TRIAL_SQL}
+    sed -i "s|\([ \.]\+\)tm[0-9]\+\([\`', \t();]\+\)|\1t1\2|" ${TRIAL_SQL}
+    sed -i "s|\([ \.]\+\)src\([\`', \t();]\+\)|\1t1\2|" ${TRIAL_SQL}
+    sed -i "s|\([ \.]\+\)federated.t1\([\`', \t();]\+\)|\1t1\2|" ${TRIAL_SQL}
+    sed -i "s|\([ \.]\+\)variant\([\`', \t();]\+\)|\1t1\2|" ${TRIAL_SQL}
+    sed -i "s|\([ \.]\+\)RocksDB.t1\([\`', \t();]\+\)|\1t1\2|" ${TRIAL_SQL}
+    sed -i "s|\([ \.]\+\)ndb\$test\([\`', \t();]\+\)|\1t1\2|" ${TRIAL_SQL}
+    sed -i "s|\([ \.]\+\)test_wl5522.t1\([\`', \t();]\+\)|\1t1\2|" ${TRIAL_SQL}
+    sed -i "s|\([ \.]\+\)test_ps_sample_pages\([\`', \t();]\+\)|\1t1\2|" ${TRIAL_SQL}
+    sed -i "s|\([ \.]\+\)t1_will_crash\([\`', \t();]\+\)|\1t1\2|" ${TRIAL_SQL}
+    sed -i "s|\([ \.]\+\)d[0-9]\+.t[0-9]\+\([\`', \t();]\+\)|\1t1\2|" ${TRIAL_SQL}
+    sed -i "s|\([ \.]\+\)db\([\`', \t();]\+\)|\1t1\2|" ${TRIAL_SQL}
+    sed -i "s|t1[ \t]\+TO[ \t]\+t1|t1 TO t2|gi" ${TRIAL_SQL}  # RENAME TABLE provision
+    sed -i "s|t1[ \t]\+LIKE[ \t]\+t1|t2 LIKE t1|gi" ${TRIAL_SQL}  # CREATE TABLE...LIKE provision
+    sed -i "s|t1[ \t]\+RENAME TO[ \t]\+t1|t1 RENAME TO t2|gi" ${TRIAL_SQL}  # ALTER TABLE provision
+    sed -i "s|t1[ \t]*,[ \t]*t1|t1|gi" ${TRIAL_SQL}  # SELECT, DROP TABLE, etc. provision
+    sed -i "s|([ \t]*t1[ \t]*,[ \t]*t[0-9]\+[ \t]*)|(t2,t3)|gi;s|([ \t]*t1[ \t]*,[ \t]*t[0-9]\+[ \t]*,[ \t]*t[0-9]\+[ \t]*)|(t2,t3)|gi" ${TRIAL_SQL}  # CREATE TABLE...UNION provision
     # A few other minor provisions can be made: CREATE TABLE...SELECT, [LEFT etc.] JOIN (w/o aliases), etc.
-    echoit "ALL_NAMES_SWAP: Swapping all table names to t1 took $[ $(date +'%s' | tr -d '\n') - ${SWAP_ALL_TABLE_NAMES_TO_T1_START} ] seconds"
+    echoit "ALL_NAMES_SWAP: Swapping all table names to t1 took $(duration ${SWAP_ALL_TABLE_NAMES_TO_T1_START}) seconds"
     SWAP_ALL_TABLE_NAMES_TO_T1_START=
   fi
+  cap_sql_lines "${TRIAL_SQL}" "the assembled SQL"  # Last: the interleave and the swaps run above and can add lines
+  TRIAL_SQL_LINES="$(wc -l < ${TRIAL_SQL})"
+  PQUERY_INFILE_LINES="${TRIAL_SQL_LINES}"  # The lines in the file pquery reads, for the input against executed ratio after the trial ran. A multi-threaded or query correctness trial hands pquery a smaller file, and sets this again
+  echoit "Input SQL: ${TRIAL_SQL} (${TRIAL_SQL_LINES} lines) built in $(duration ${ASM_START}) seconds"
 }
 
 # Main startup
@@ -679,23 +863,22 @@ elif [ "${QUERY_CORRECTNESS_TESTING}" -ne 1 ]; then
   fi
 fi
 SRC_DESC=""
-[ "${USE_GENERATOR}" -eq 1 ] && SRC_DESC="generator"
-[ "${USE_REVGEN}" -eq 1 ] && SRC_DESC="${SRC_DESC:+${SRC_DESC} + }revgen"
-[ "${USE_INFILE}" -eq 1 ] && SRC_DESC="${SRC_DESC:+${SRC_DESC} + }INFILE (full)"
-if [ "${PRE_SHUFFLE_SQL}" -eq 2 ]; then
-  echoit "Sources: all SQL found on disk (PRE_SHUFFLE_SQL=2)"
-else
-  if [ -z "${SRC_DESC}" ]; then SRC_DESC="INFILE"; fi
-  echoit "Sources: ${SRC_DESC}"
-  case "${PRE_SHUFFLE_SQL}" in
-    0) echoit "PRE_SHUFFLE_SQL=0: no pre-shuffle (pquery shuffles the input)" ;;
-    1) echoit "PRE_SHUFFLE_SQL=1: pre-shuffle/sample up to ${PRE_SHUFFLE_MIN_SQL_LINES} lines per shuffle" ;;
-  esac
-  echoit "INFILE: ${INFILE}"
-fi
+[ "${USE_GENERATOR}" -eq 1 ] && SRC_DESC="generator (${QUERIES_PER_GENERATOR_RUN} queries per trial)"
+[ "${USE_REVGEN}" -eq 1 ] && SRC_DESC="${SRC_DESC:+${SRC_DESC} + }revgen (${QUERIES_PER_REVGEN_RUN} queries per trial)"
+[ "${USE_INFILE}" -eq 1 ] && SRC_DESC="${SRC_DESC:+${SRC_DESC} + }INFILE ${INFILE}"
+[ "${USE_ALL_DISK_SQL}" -eq 1 ] && SRC_DESC="${SRC_DESC:+${SRC_DESC} + }all SQL on disk (${QUERIES_PER_ALL_DISK_RUN} lines, new every ${ALL_DISK_SQL_NEW_QUERIES_EVERY_X_TRIALS} trials)"
+echoit "Sources: ${SRC_DESC}. Each source contributes lines to one file per trial, and its share is its line count. That file is shuffled"
+echoit "PQUERY_MAX_SQL_LINES: ${PQUERY_MAX_SQL_LINES} (the per-trial SQL is cut back to this many lines, from the end, so the last source in use loses lines first)"
+echoit "Per-trial SQL: ${TRIAL_SQL_DIR}/${RANDOMD}_<trial>.sql"
 SRC_DESC=
+if [ ${ADV_FILTER_SQL} -eq 1 ]; then
+  echoit "ADV_FILTER_SQL Active: any SQL line matching ADV_FILTER_LIST is removed from the per-trial SQL"
+fi
+if [ ${FILTER_SQL} -eq 1 ]; then
+  echoit "FILTER_SQL Active: any SQL line matching a line in ${SCRIPT_PWD}/filter.sql is removed from the per-trial SQL, in one pass over all the sources together"
+fi
 if [ ! -z "${STORAGE_ENGINE_SWAP}" ]; then
-  echoit "STORAGE_ENGINE_SWAP Active: changing all storage engine references to ${STORAGE_ENGINE_SWAP}"
+  echoit "STORAGE_ENGINE_SWAP Active: changing storage engine references to ${STORAGE_ENGINE_SWAP} in ${STORAGE_ENGINE_SWAP_PERCENTAGE:-100}% of the per-trial SQL lines"
 fi
 if [ "${PRELOAD}" == "1" ]; then
   echoit "PRELOAD SQL Active: (${PRELOAD_SQL} will be preloaded for all trials, and prepended to trial SQL traces"
@@ -777,8 +960,12 @@ if [ ${THREADS} -gt 1 ]; then
     echoit "Assert: MULTI_THREADED_TESTC_LINES is not set, yet the number of threads is greater than 1. Please setMULTI_THREADED_TESTC_LINES (recommended to be at least 100-200K)"
     exit 1
   fi
-  if [ ${PRE_SHUFFLE_MIN_SQL_LINES} -lt ${MULTI_THREADED_TESTC_LINES} ]; then
-    echoit "Assert: PRE_SHUFFLE_MIN_SQL_LINES < MULTI_THREADED_TESTC_LINES (${PRE_SHUFFLE_MIN_SQL_LINES}<${MULTI_THREADED_TESTC_LINES}). Set the number of PRE_SHUFFLE_MIN_SQL_LINES to a number equal to or larger than MULTI_THREADED_TESTC_LINES. Adding a reasonable margin (i.e. 'larger than') is recommended."
+  if [ ${PQUERY_MAX_SQL_LINES} -lt ${MULTI_THREADED_TESTC_LINES} ]; then
+    echoit "Assert: PQUERY_MAX_SQL_LINES < MULTI_THREADED_TESTC_LINES (${PQUERY_MAX_SQL_LINES}<${MULTI_THREADED_TESTC_LINES}). The per-trial SQL is capped to PQUERY_MAX_SQL_LINES lines, so a larger chunk can never be taken from it. Lower MULTI_THREADED_TESTC_LINES, or raise PQUERY_MAX_SQL_LINES."
+    exit 1
+  fi
+  if [ "${USE_ALL_DISK_SQL}" -eq 1 ] && [ "${USE_GENERATOR}" -ne 1 ] && [ "${USE_REVGEN}" -ne 1 ] && [ "${USE_INFILE}" -ne 1 ] && [ ${QUERIES_PER_ALL_DISK_RUN} -lt ${MULTI_THREADED_TESTC_LINES} ]; then
+    echoit "Assert: QUERIES_PER_ALL_DISK_RUN < MULTI_THREADED_TESTC_LINES (${QUERIES_PER_ALL_DISK_RUN}<${MULTI_THREADED_TESTC_LINES}), and the all-disk SQL is the only source. Set QUERIES_PER_ALL_DISK_RUN to a number equal to or larger than MULTI_THREADED_TESTC_LINES. Adding a reasonable margin (i.e. 'larger than') is recommended."
     exit 1
   fi
 fi
@@ -847,8 +1034,10 @@ ctrl-c() {
   fi
   if [ $USE_GENERATOR -eq 1 -o $USE_REVGEN -eq 1 ]; then
     echoit "Attempting to cleanup generator/revgen temporary files..."
-    rm -f ${SCRIPT_PWD}/generatorcpp/out${RANDOMD}*.sql ${SCRIPT_PWD}/generatorcpp/out${RANDOMD}.sql.part* ${SCRIPT_PWD}/generatorcpp/out${RANDOMD}.sql.combined ${SCRIPT_PWD}/revgen/outrev${RANDOMD}*.sql ${SCRIPT_PWD}/revgen/outrev${RANDOMD}.sql.part*
+    rm -f ${SCRIPT_PWD}/generatorcpp/out${RANDOMD}*.sql ${SCRIPT_PWD}/generatorcpp/out${RANDOMD}.sql.part* ${SCRIPT_PWD}/revgen/outrev${RANDOMD}*.sql ${SCRIPT_PWD}/revgen/outrev${RANDOMD}.sql.part*
   fi
+  echoit "Attempting to cleanup the per-trial SQL of this run..."
+  rm -f ${TRIAL_SQL_DIR}/${RANDOMD}_*  # The glob covers the per-trial SQL, the all-disk pool, and any part file a transform was writing
   if [ "$PMM" == "1" ]; then
     echoit "Attempting to cleanup PMM client services..."
     sudo pmm-admin remove --all > /dev/null
@@ -1330,7 +1519,7 @@ mdg_startup() {
 
 gr_startup() {
   ADDR="127.0.0.1"
-  RPORT=$((RANDOM % 21 + 10))
+  RPORT=$(${RANDOM_BIN} 10 30)
   RBASE="$((RPORT * 1000))"
   RBASE1="$((RBASE + 1))"
   RBASE2="$((RBASE + 2))"
@@ -1544,60 +1733,39 @@ pquery_test(){
   if [ ${USE_GENERATOR} -eq 1 ]; then
     SAVEDIR=${PWD}
     cd ${SCRIPT_PWD}/generatorcpp/ || exit 1
-    # Regenerate the generated pool every GENERATE_NEW_QUERIES_EVERY_X_TRIALS trials; reuse it in between.
-    GEN_REGEN=0
-    if [ ${TRIAL} -eq 1 ] || [ $((TRIAL % GENERATE_NEW_QUERIES_EVERY_X_TRIALS)) -eq 0 ]; then
-      GEN_REGEN=1
+    echoit "Generating new SQL inputfile using the SQL Generator..."
+    if [ "${RANDOMD}" == "" ]; then
+      echoit "Assert: RANDOMD is empty. This should not happen. Terminating."
+      exit 1
     fi
-    if [ ${GEN_REGEN} -eq 1 ]; then
-      echoit "Generating new SQL inputfile using the SQL Generator..."
-      if [ "${RANDOMD}" == "" ]; then
-        echoit "Assert: RANDOMD is empty. This should not happen. Terminating."
-        exit 1
-      fi
-      # Retry up to 5 times with a 10s pause to ride out a concurrent rebuild
-      # of generatorcpp/generator. build.sh writes to generator.tmp and atomically
-      # renames into place, but the window between rm-old-tmp and rename can
-      # still trip a -x check if a rebuild started just before us.
-      for GEN_TRY in 1 2 3 4 5; do
-        if [ -x ./generator ]; then break; fi
-        echoit "Note: ${SCRIPT_PWD}/generatorcpp/generator is missing or not executable (attempt ${GEN_TRY}/5); pausing 10s and retrying..."
-        sleep 10
-      done
-      if [ ! -x ./generator ]; then
-        echoit "Assert: ${SCRIPT_PWD}/generatorcpp/generator is missing or not executable after 5 retries. Run generatorcpp/build.sh first."
-        exit 1
-      fi
-      for GEN_RUN_TRY in 1 2 3; do
-        ./generator --threads ${GENERATION_THREADS} ${GENERATORCPP_OPTIONS:-} --output out${RANDOMD}.sql ${QUERIES_PER_GENERATOR_RUN} > /dev/null
-        if [ -r out${RANDOMD}.sql ]; then break; fi
-        echoit "Note: out${RANDOMD}.sql not present in ${PWD} after generator execution (attempt ${GEN_RUN_TRY}/3); pausing 30s and retrying..."
-        sleep 30
-      done
-      if [ ! -r out${RANDOMD}.sql ]; then
-        echoit "Assert: out${RANDOMD}.sql not present in ${PWD} after generator execution (3 retries)"
-        exit 1
-      fi
-      if [[ "${MYEXTRA^^}" != *"ROCKSDB"* ]]; then # If this is not a RocksDB run, exclude RocksDB SE
-        sed -i "s|RocksDB|InnoDB|" out${RANDOMD}.sql
-      fi
-      if [[ "${MYEXTRA^^}" != *"HA_TOKUDB"* ]]; then # If this is not a TokuDB enabled run, exclude TokuDB SE
-        sed -i "s|TokuDB|InnoDB|" out${RANDOMD}.sql
-      fi
-      if [ ${FILTER_SQL} -eq 1 ]; then
-        echoit "SQL filter is enabled, filtering all SQL lines in ${SCRIPT_PWD}/filter.sql from the generator output"
-        BEFORE_FILTER_LINES_NR="$(wc -l out${RANDOMD}.sql | awk '{print $1}')"
-        grep --binary-files=text -vif ${SCRIPT_PWD}/filter.sql out${RANDOMD}.sql > out${RANDOMD}.sql.filtered
-        mv out${RANDOMD}.sql.filtered out${RANDOMD}.sql
-        AFTER_FILTER_LINES_NR="$(wc -l out${RANDOMD}.sql | awk '{print $1}')"
-        echoit "SQL filter: Filtered $[ ${BEFORE_FILTER_LINES_NR} -${AFTER_FILTER_LINES_NR} ] lines from the generator output"
-        BEFORE_FILTER_LINES_NR=
-        AFTER_FILTER_LINES_NR=
-      fi
-    else
-      GEN_LAST_REGEN_TRIAL=$(( (TRIAL / GENERATE_NEW_QUERIES_EVERY_X_TRIALS) * GENERATE_NEW_QUERIES_EVERY_X_TRIALS ))
-      if [ ${GEN_LAST_REGEN_TRIAL} -eq 0 ]; then GEN_LAST_REGEN_TRIAL=1; fi
-      echoit "Re-using generated SQL out${RANDOMD}.sql for Trial $((TRIAL - GEN_LAST_REGEN_TRIAL + 1))/${GENERATE_NEW_QUERIES_EVERY_X_TRIALS}"
+    # Retry up to 5 times with a 10s pause to ride out a concurrent rebuild
+    # of generatorcpp/generator. build.sh writes to generator.tmp and atomically
+    # renames into place, but the window between rm-old-tmp and rename can
+    # still trip a -x check if a rebuild started just before us.
+    for GEN_TRY in 1 2 3 4 5; do
+      if [ -x ./generator ]; then break; fi
+      echoit "Note: ${SCRIPT_PWD}/generatorcpp/generator is missing or not executable (attempt ${GEN_TRY}/5); pausing 10s and retrying..."
+      sleep 10
+    done
+    if [ ! -x ./generator ]; then
+      echoit "Assert: ${SCRIPT_PWD}/generatorcpp/generator is missing or not executable after 5 retries. Run generatorcpp/build.sh first."
+      exit 1
+    fi
+    for GEN_RUN_TRY in 1 2 3; do
+      ./generator --threads ${GENERATION_THREADS} ${GENERATORCPP_OPTIONS:-} --output out${RANDOMD}.sql ${QUERIES_PER_GENERATOR_RUN} > /dev/null
+      if [ -r out${RANDOMD}.sql ]; then break; fi
+      echoit "Note: out${RANDOMD}.sql not present in ${PWD} after generator execution (attempt ${GEN_RUN_TRY}/3); pausing 30s and retrying..."
+      sleep 30
+    done
+    if [ ! -r out${RANDOMD}.sql ]; then
+      echoit "Assert: out${RANDOMD}.sql not present in ${PWD} after generator execution (3 retries)"
+      exit 1
+    fi
+    if [[ "${MYEXTRA^^}" != *"ROCKSDB"* ]]; then # If this is not a RocksDB run, exclude RocksDB SE
+      sed -i "s|RocksDB|InnoDB|" out${RANDOMD}.sql
+    fi
+    if [[ "${MYEXTRA^^}" != *"HA_TOKUDB"* ]]; then # If this is not a TokuDB enabled run, exclude TokuDB SE
+      sed -i "s|TokuDB|InnoDB|" out${RANDOMD}.sql
     fi
     GEN_OUTFILE=${PWD}/out${RANDOMD}.sql
     cd ${SAVEDIR} || exit 1
@@ -1605,81 +1773,49 @@ pquery_test(){
   if [ ${USE_REVGEN} -eq 1 ]; then
     SAVEDIR=${PWD}
     cd ${SCRIPT_PWD}/revgen/ || exit 1
-    # Regenerate the revgen pool every REVGEN_NEW_QUERIES_EVERY_X_TRIALS trials; reuse it in between.
-    REV_REGEN=0
-    if [ ${TRIAL} -eq 1 ] || [ $((TRIAL % REVGEN_NEW_QUERIES_EVERY_X_TRIALS)) -eq 0 ]; then
-      REV_REGEN=1
+    echoit "Generating new SQL inputfile using revgen (reverse grammar generator)..."
+    if [ "${RANDOMD}" == "" ]; then
+      echoit "Assert: RANDOMD is empty. This should not happen. Terminating."
+      exit 1
     fi
-    if [ ${REV_REGEN} -eq 1 ]; then
-      echoit "Generating new SQL inputfile using revgen (reverse grammar generator)..."
-      if [ "${RANDOMD}" == "" ]; then
-        echoit "Assert: RANDOMD is empty. This should not happen. Terminating."
-        exit 1
-      fi
-      for REV_TRY in 1 2 3 4 5; do
-        if [ -x ./revgen ]; then break; fi
-        echoit "Note: ${SCRIPT_PWD}/revgen/revgen is missing or not executable (attempt ${REV_TRY}/5); pausing 10s and retrying..."
-        sleep 10
-      done
-      if [ ! -x ./revgen ]; then
-        echoit "Assert: ${SCRIPT_PWD}/revgen/revgen is missing or not executable after 5 retries. Run revgen/build.sh first."
-        exit 1
-      fi
-      # With REVGEN_VALIDATE_SOCKET pointed at a running server, revgen PREPARE-tests
-      # each statement and drops the ones the server cannot parse. It has to be a
-      # server of its own: the trial's server does not exist yet at this point, and
-      # PREPARE of generated SQL reaches crashing code paths, so this must not be a
-      # server whose death matters. Skipped silently when the socket is absent.
-      REV_VALIDATE=
-      if [ -n "${REVGEN_VALIDATE_SOCKET}" ] && [ -S "${REVGEN_VALIDATE_SOCKET}" ]; then
-        REV_VALIDATE="--validate-sql --socket ${REVGEN_VALIDATE_SOCKET}"
-      fi
-      for REV_RUN_TRY in 1 2 3 4 5; do
-        ./revgen --threads ${GENERATION_THREADS} --yacc "${REVGEN_YACC}" ${REVGEN_OPTIONS:-} ${REV_VALIDATE} --output outrev${RANDOMD}.sql --queries ${QUERIES_PER_REVGEN_RUN} > /dev/null
-        if [ -r outrev${RANDOMD}.sql ] && [ $(wc -l < outrev${RANDOMD}.sql) -ge 10 ]; then break; fi
-        echoit "Note: outrev${RANDOMD}.sql not present in ${PWD}, or it has fewer than 10 lines, after revgen execution (attempt ${REV_RUN_TRY}/5); pausing 10s and retrying..."
-        sleep 10
-      done
-      if [ ! -r outrev${RANDOMD}.sql ] || [ $(wc -l < outrev${RANDOMD}.sql) -lt 10 ]; then
-        echoit "Assert: outrev${RANDOMD}.sql not present in ${PWD}, or it has fewer than 10 lines, after revgen execution (5 attempts)"
-        exit 1
-      fi
-      if [[ "${MYEXTRA^^}" != *"ROCKSDB"* ]]; then # If this is not a RocksDB run, exclude RocksDB SE
-        sed -i "s|RocksDB|InnoDB|" outrev${RANDOMD}.sql
-      fi
-      if [[ "${MYEXTRA^^}" != *"HA_TOKUDB"* ]]; then # If this is not a TokuDB enabled run, exclude TokuDB SE
-        sed -i "s|TokuDB|InnoDB|" outrev${RANDOMD}.sql
-      fi
-      if [ ${FILTER_SQL} -eq 1 ]; then
-        echoit "SQL filter is enabled, filtering all SQL lines in ${SCRIPT_PWD}/filter.sql from the revgen output"
-        BEFORE_FILTER_LINES_NR="$(wc -l outrev${RANDOMD}.sql | awk '{print $1}')"
-        grep --binary-files=text -vif ${SCRIPT_PWD}/filter.sql outrev${RANDOMD}.sql > outrev${RANDOMD}.sql.filtered
-        mv outrev${RANDOMD}.sql.filtered outrev${RANDOMD}.sql
-        AFTER_FILTER_LINES_NR="$(wc -l outrev${RANDOMD}.sql | awk '{print $1}')"
-        echoit "SQL filter: Filtered $[ ${BEFORE_FILTER_LINES_NR} -${AFTER_FILTER_LINES_NR} ] lines from the revgen output"
-        BEFORE_FILTER_LINES_NR=
-        AFTER_FILTER_LINES_NR=
-      fi
-    else
-      REV_LAST_REGEN_TRIAL=$(( (TRIAL / REVGEN_NEW_QUERIES_EVERY_X_TRIALS) * REVGEN_NEW_QUERIES_EVERY_X_TRIALS ))
-      if [ ${REV_LAST_REGEN_TRIAL} -eq 0 ]; then REV_LAST_REGEN_TRIAL=1; fi
-      echoit "Re-using revgen SQL outrev${RANDOMD}.sql for Trial $((TRIAL - REV_LAST_REGEN_TRIAL + 1))/${REVGEN_NEW_QUERIES_EVERY_X_TRIALS}"
+    for REV_TRY in 1 2 3 4 5; do
+      if [ -x ./revgen ]; then break; fi
+      echoit "Note: ${SCRIPT_PWD}/revgen/revgen is missing or not executable (attempt ${REV_TRY}/5); pausing 10s and retrying..."
+      sleep 10
+    done
+    if [ ! -x ./revgen ]; then
+      echoit "Assert: ${SCRIPT_PWD}/revgen/revgen is missing or not executable after 5 retries. Run revgen/build.sh first."
+      exit 1
+    fi
+    # With REVGEN_VALIDATE_SOCKET pointed at a running server, revgen PREPARE-tests
+    # each statement and drops the ones the server cannot parse. It has to be a
+    # server of its own: the trial's server does not exist yet at this point, and
+    # PREPARE of generated SQL reaches crashing code paths, so this must not be a
+    # server whose death matters. Skipped silently when the socket is absent.
+    REV_VALIDATE=
+    if [ -n "${REVGEN_VALIDATE_SOCKET}" ] && [ -S "${REVGEN_VALIDATE_SOCKET}" ]; then
+      REV_VALIDATE="--validate-sql --socket ${REVGEN_VALIDATE_SOCKET}"
+    fi
+    for REV_RUN_TRY in 1 2 3 4 5; do
+      ./revgen --threads ${GENERATION_THREADS} --yacc "${REVGEN_YACC}" ${REVGEN_OPTIONS:-} ${REV_VALIDATE} --output outrev${RANDOMD}.sql --queries ${QUERIES_PER_REVGEN_RUN} > /dev/null
+      if [ -r outrev${RANDOMD}.sql ] && [ $(wc -l < outrev${RANDOMD}.sql) -ge 10 ]; then break; fi
+      echoit "Note: outrev${RANDOMD}.sql not present in ${PWD}, or it has fewer than 10 lines, after revgen execution (attempt ${REV_RUN_TRY}/5); pausing 10s and retrying..."
+      sleep 10
+    done
+    if [ ! -r outrev${RANDOMD}.sql ] || [ $(wc -l < outrev${RANDOMD}.sql) -lt 10 ]; then
+      echoit "Assert: outrev${RANDOMD}.sql not present in ${PWD}, or it has fewer than 10 lines, after revgen execution (5 attempts)"
+      exit 1
+    fi
+    if [[ "${MYEXTRA^^}" != *"ROCKSDB"* ]]; then # If this is not a RocksDB run, exclude RocksDB SE
+      sed -i "s|RocksDB|InnoDB|" outrev${RANDOMD}.sql
+    fi
+    if [[ "${MYEXTRA^^}" != *"HA_TOKUDB"* ]]; then # If this is not a TokuDB enabled run, exclude TokuDB SE
+      sed -i "s|TokuDB|InnoDB|" outrev${RANDOMD}.sql
     fi
     REVGEN_OUTFILE=${PWD}/outrev${RANDOMD}.sql
     cd ${SAVEDIR} || exit 1
   fi
-  # Assemble the trial input from the active generated sources plus the full INFILE (USE_INFILE=1),
-  # rebuilt every trial so it never grows unbounded. PRE_SHUFFLE_SQL=2 (all SQL on disk) ignores this;
-  # with no generator active the conf INFILE is used as-is (USE_INFILE is moot - INFILE IS the input).
-  if [ "${PRE_SHUFFLE_SQL}" -ne 2 ] && { [ ${USE_GENERATOR} -eq 1 ] || [ ${USE_REVGEN} -eq 1 ]; }; then
-    COMBINED_SQL="${REVGEN_OUTFILE:-${GEN_OUTFILE}}.combined"
-    > "${COMBINED_SQL}"
-    [ ${USE_GENERATOR} -eq 1 ] && cat "${GEN_OUTFILE}" >> "${COMBINED_SQL}"
-    [ ${USE_REVGEN} -eq 1 ] && cat "${REVGEN_OUTFILE}" >> "${COMBINED_SQL}"
-    [ ${USE_INFILE} -eq 1 ] && cat "${INFILE}" >> "${COMBINED_SQL}"  # full INFILE appended, for every PS
-    INFILE="${COMBINED_SQL}"
-    COMBINED_SQL=
-  fi
+  assemble_trial_sql  # Builds TRIAL_SQL from every active source, before the server for this trial exists
   echoit "Generating new trial workdir ${RUNDIR}/${TRIAL}..."
   ISSTARTED=0
   diskspace
@@ -1747,9 +1883,9 @@ pquery_test(){
     MYEXTRA_SAVE_IT=${MYEXTRA}
     if [ ${ADD_RANDOM_OPTIONS} -eq 1 ]; then # Add random mysqld/mariadbd --options to MYEXTRA
       OPTIONS_TO_ADD=
-      NR_OF_OPTIONS_TO_ADD=$((RANDOM % MAX_NR_OF_RND_OPTS_TO_ADD + 1))
+      NR_OF_OPTIONS_TO_ADD=$(${RANDOM_BIN} 1 ${MAX_NR_OF_RND_OPTS_TO_ADD})
       for X in $(seq 1 ${NR_OF_OPTIONS_TO_ADD}); do
-        OPTION_TO_ADD="$(shuf --random-source=/dev/urandom ${OPTIONS_INFILE} | head -n1)"
+        OPTION_TO_ADD="$(shuf --random-source=<(${RANDOM_BIN} --raw) ${OPTIONS_INFILE} | head -n1)"
         if [ "$(echo ${OPTION_TO_ADD} | sed 's| ||g;s|.*query.alloc.block.size=1125899906842624.*||')" != "" ]; then # http://bugs.mysql.com/bug.php?id=78238
           OPTIONS_TO_ADD="${OPTIONS_TO_ADD} ${OPTION_TO_ADD}"
         fi
@@ -1762,10 +1898,10 @@ pquery_test(){
     fi
     if [ ${ADD_RANDOM_TOKUDB_OPTIONS} -eq 1 ]; then # Add random tokudb --options to MYEXTRA
       OPTIONS_TO_ADD=
-      NR_OF_OPTIONS_TO_ADD=$((RANDOM % MAX_NR_OF_RND_OPTS_TO_ADD + 1))
+      NR_OF_OPTIONS_TO_ADD=$(${RANDOM_BIN} 1 ${MAX_NR_OF_RND_OPTS_TO_ADD})
       for X in $(seq 1 ${NR_OF_OPTIONS_TO_ADD}); do
         OPTION_TO_ADD=
-        OPTION_TO_ADD="$(shuf --random-source=/dev/urandom ${TOKUDB_OPTIONS_INFILE} | head -n1)"
+        OPTION_TO_ADD="$(shuf --random-source=<(${RANDOM_BIN} --raw) ${TOKUDB_OPTIONS_INFILE} | head -n1)"
         OPTIONS_TO_ADD="${OPTIONS_TO_ADD} ${OPTION_TO_ADD}"
       done
       echoit "ADD_RANDOM_TOKUDB_OPTIONS=1: adding TokuDB mysqld/mariadbd option(s) ${OPTIONS_TO_ADD} to this run's MYEXTRA..."
@@ -1780,9 +1916,9 @@ pquery_test(){
     if [ ${ADD_RANDOM_ROCKSDB_OPTIONS} -eq 1 ]; then # Add random rocksdb --options to MYEXTRA
       OPTION_TO_ADD=
       OPTIONS_TO_ADD=
-      NR_OF_OPTIONS_TO_ADD=$((RANDOM % MAX_NR_OF_RND_OPTS_TO_ADD + 1))
+      NR_OF_OPTIONS_TO_ADD=$(${RANDOM_BIN} 1 ${MAX_NR_OF_RND_OPTS_TO_ADD})
       for X in $(seq 1 ${NR_OF_OPTIONS_TO_ADD}); do
-        OPTION_TO_ADD="$(shuf --random-source=/dev/urandom ${ROCKSDB_OPTIONS_INFILE} | head -n1)"
+        OPTION_TO_ADD="$(shuf --random-source=<(${RANDOM_BIN} --raw) ${ROCKSDB_OPTIONS_INFILE} | head -n1)"
         OPTIONS_TO_ADD="${OPTIONS_TO_ADD} ${OPTION_TO_ADD}"
       done
       echoit "ADD_RANDOM_ROCKSDB_OPTIONS=1: adding RocksDB mysqld/mariadbd option(s) ${OPTIONS_TO_ADD} to this run's MYEXTRA..."
@@ -2113,9 +2249,9 @@ pquery_test(){
     # === MDG Options Stage 1: Add random mysqld/mariadbd options to MDG_MYEXTRA
     if [ "${MDG_ADD_RANDOM_OPTIONS}" -eq 1 ]; then
       OPTIONS_TO_ADD=
-      NR_OF_OPTIONS_TO_ADD=$((RANDOM % MDG_MAX_NR_OF_RND_OPTS_TO_ADD + 1))
+      NR_OF_OPTIONS_TO_ADD=$(${RANDOM_BIN} 1 ${MDG_MAX_NR_OF_RND_OPTS_TO_ADD})
       for X in $(seq 1 ${NR_OF_OPTIONS_TO_ADD}); do
-        OPTION_TO_ADD="$(shuf --random-source=/dev/urandom ${MDG_OPTIONS_INFILE} | head -n1)"
+        OPTION_TO_ADD="$(shuf --random-source=<(${RANDOM_BIN} --raw) ${MDG_OPTIONS_INFILE} | head -n1)"
         if [ "$(echo ${OPTION_TO_ADD} | sed 's| ||g;s|.*query.alloc.block.size=1125899906842624.*||')" != "" ]; then # http://bugs.mysql.com/bug.php?id=78238
           OPTIONS_TO_ADD="${OPTIONS_TO_ADD} ${OPTION_TO_ADD}"
         fi
@@ -2129,9 +2265,9 @@ pquery_test(){
     # === MDG Options Stage 2: Add random wsrep mysqld/mariadbd options to MDG_MYEXTRA
     if [ "${MDG_WSREP_ADD_RANDOM_WSREP_MYSQLD_OPTIONS}" -eq 1 ]; then
       OPTIONS_TO_ADD=
-      NR_OF_OPTIONS_TO_ADD=$((RANDOM % MDG_WSREP_MAX_NR_OF_RND_OPTS_TO_ADD + 1))
+      NR_OF_OPTIONS_TO_ADD=$(${RANDOM_BIN} 1 ${MDG_WSREP_MAX_NR_OF_RND_OPTS_TO_ADD})
       for X in $(seq 1 ${NR_OF_OPTIONS_TO_ADD}); do
-        OPTION_TO_ADD="$(shuf --random-source=/dev/urandom ${MDG_WSREP_OPTIONS_INFILE} | head -n1)"
+        OPTION_TO_ADD="$(shuf --random-source=<(${RANDOM_BIN} --raw) ${MDG_WSREP_OPTIONS_INFILE} | head -n1)"
         OPTIONS_TO_ADD="${OPTIONS_TO_ADD} ${OPTION_TO_ADD}"
       done
       echoit "MDG_WSREP_ADD_RANDOM_WSREP_MYSQLD_OPTIONS=1: adding wsrep provider mysqld/mariadbd option(s) ${OPTIONS_TO_ADD} to this run's MDG_MYEXTRA..."
@@ -2140,9 +2276,9 @@ pquery_test(){
     # === MDG Options Stage 3: Add random wsrep (Galera) configuration options
     if [ "${MDG_WSREP_PROVIDER_ADD_RANDOM_WSREP_PROVIDER_CONFIG_OPTIONS}" -eq 1 ]; then
       OPTIONS_TO_ADD=
-      NR_OF_OPTIONS_TO_ADD=$((RANDOM % MDG_WSREP_PROVIDER_MAX_NR_OF_RND_OPTS_TO_ADD + 1))
+      NR_OF_OPTIONS_TO_ADD=$(${RANDOM_BIN} 1 ${MDG_WSREP_PROVIDER_MAX_NR_OF_RND_OPTS_TO_ADD})
       for X in $(seq 1 ${NR_OF_OPTIONS_TO_ADD}); do
-        OPTION_TO_ADD="$(shuf --random-source=/dev/urandom ${MDG_WSREP_PROVIDER_OPTIONS_INFILE} | head -n1)"
+        OPTION_TO_ADD="$(shuf --random-source=<(${RANDOM_BIN} --raw) ${MDG_WSREP_PROVIDER_OPTIONS_INFILE} | head -n1)"
         OPTIONS_TO_ADD="${OPTION_TO_ADD};${OPTIONS_TO_ADD}"
       done
       echoit "MDG_WSREP_PROVIDER_ADD_RANDOM_WSREP_PROVIDER_CONFIG_OPTIONS=1: adding wsrep provider configuration option(s) ${OPTIONS_TO_ADD} to this run..."
@@ -2196,11 +2332,11 @@ pquery_test(){
     rm -f ${RUNDIR}/${TRIAL}/startup_failure_thread-0.sql # Remove the earlier created fake (SELECT 1; only) file present for startup issues (server is started OK now)
     if [ ${THREADS} -eq 1 ]; then                       # Single-threaded run (1 client only)
       if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then   # Single-threaded query correctness run using a chunk from INFILE against two servers to then compare outcomes
-        echoit "Taking ${QC_NR_OF_STATEMENTS_PER_TRIAL} lines randomly from ${INFILE} as testcase for this query correctness trial..."
+        echoit "Taking ${QC_NR_OF_STATEMENTS_PER_TRIAL} lines randomly from the SQL of this trial as testcase for this query correctness trial..."
         # Make sure that the code below generates exactly 3 lines (DROP/CREATE/USE) -OR- change the "head -n3" and "sed '1,3d'" (both below) to match any updates made
         echo 'DROP DATABASE test;' > ${RUNDIR}/${TRIAL}/${TRIAL}.sql
         if [ "$(echo ${QC_PRI_ENGINE} | tr [:upper:] [:lower:])" == "rocksdb" -o "$(echo ${QC_SEC_ENGINE} | tr [:upper:] [:lower:])" == "rocksdb" ]; then
-          case "$(echo $((RANDOM % 4 + 1)))" in
+          case "$(${RANDOM_BIN} 1 4)" in
             1) echo 'CREATE DATABASE test DEFAULT CHARACTER SET="Binary" DEFAULT COLLATE="Binary";' >> ${RUNDIR}/${TRIAL}/${TRIAL}.sql ;;
             2) echo 'CREATE DATABASE test DEFAULT CHARACTER SET="utf8" DEFAULT COLLATE="utf8_bin";' >> ${RUNDIR}/${TRIAL}/${TRIAL}.sql ;;
             3) echo 'CREATE DATABASE test DEFAULT CHARACTER SET="latin1" DEFAULT COLLATE="latin1_bin";' >> ${RUNDIR}/${TRIAL}/${TRIAL}.sql ;;
@@ -2210,8 +2346,8 @@ pquery_test(){
           echo 'CREATE DATABASE test;' >> ${RUNDIR}/${TRIAL}/${TRIAL}.sql
         fi
         echo 'USE test;' >> ${RUNDIR}/${TRIAL}/${TRIAL}.sql
-        shuf --random-source=/dev/urandom ${INFILE} | head -n${QC_NR_OF_STATEMENTS_PER_TRIAL} >> ${RUNDIR}/${TRIAL}/${TRIAL}.sql
-        awk -v seed=$RANDOM 'BEGIN{srand();} {ORS="#@"int(999999999*rand())"\n"} {print $0}' ${RUNDIR}/${TRIAL}/${TRIAL}.sql > ${RUNDIR}/${TRIAL}/${TRIAL}.new
+        shuf --random-source=<(${RANDOM_BIN} --raw) ${TRIAL_SQL} | head -n${QC_NR_OF_STATEMENTS_PER_TRIAL} >> ${RUNDIR}/${TRIAL}/${TRIAL}.sql
+        awk -v seed=$(${RANDOM_BIN} 1 2147483647) 'BEGIN{srand(seed);} {ORS="#@"int(999999999*rand())"\n"} {print $0}' ${RUNDIR}/${TRIAL}/${TRIAL}.sql > ${RUNDIR}/${TRIAL}/${TRIAL}.new
         rm -f ${RUNDIR}/${TRIAL}/${TRIAL}.sql && mv ${RUNDIR}/${TRIAL}/${TRIAL}.new ${RUNDIR}/${TRIAL}/${TRIAL}.sql 2>&1 | tee -a /${WORKDIR}/pquery-run.log
         echoit "Further processing testcase into two testcases against primary (${QC_PRI_ENGINE}) and secondary (${QC_SEC_ENGINE}) engines..."
         if [ "$(echo ${QC_PRI_ENGINE} | tr [:upper:] [:lower:])" == "rocksdb" -o "$(echo ${QC_SEC_ENGINE} | tr [:upper:] [:lower:])" == "rocksdb" ]; then
@@ -2382,6 +2518,7 @@ pquery_test(){
         sed -i "s|ndbcluster|${QC_SEC_ENGINE}|gi" ${RUNDIR}/${TRIAL}/${TRIAL}.sql.${QC_SEC_ENGINE}
         SQL_FILE_1="${RUNDIR}/${TRIAL}/${TRIAL}.sql.${QC_PRI_ENGINE}"
         SQL_FILE_2="${RUNDIR}/${TRIAL}/${TRIAL}.sql.${QC_SEC_ENGINE}"
+        PQUERY_INFILE_LINES="$(wc -l < ${SQL_FILE_1})"  # pquery reads this per-engine file, not the whole trial SQL
         if [[ "${MDG}" -eq 0 && ${GRP_RPL} -eq 0 ]]; then
           echoit "Starting Primary pquery run for engine ${QC_PRI_ENGINE} (log stored in ${RUNDIR}/${TRIAL}/pquery1.log)..."
           if [ ${QUERY_CORRECTNESS_MODE} -ne 2 ]; then
@@ -2435,7 +2572,7 @@ pquery_test(){
         if [ ${QUERY_DURATION_TESTING} -eq 1 ]; then # Query duration testing run
           if [[ "${MDG}" -eq 0 && "${GRP_RPL}" -eq 0 ]]; then
             echoit "Starting pquery (log stored in ${RUNDIR}/${TRIAL}/pquery.log)..."
-            ${PQUERY_BIN} --infile=${INFILE} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --log-query-duration --user=root --socket=${SOCKET} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
+            ${PQUERY_BIN} --infile=${TRIAL_SQL} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --log-query-duration --user=root --socket=${SOCKET} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
             PQPID="$!"
             sleep 2.5  # It takes SAN builds, for example, about 2 seconds to finish an 'LSAN detected' error log entry
           else
@@ -2457,7 +2594,7 @@ pquery_test(){
               PQPID="$!"
             else  # Query duration testing run
               echoit "Starting pquery (log stored in ${RUNDIR}/${TRIAL}/pquery.log)..."
-              ${PQUERY_BIN} --infile=${INFILE} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --log-query-duration --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
+              ${PQUERY_BIN} --infile=${TRIAL_SQL} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --log-query-duration --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
               PQPID="$!"
             fi
           fi
@@ -2470,40 +2607,9 @@ pquery_test(){
               ${PQUERY_BIN} --infile=${PRELOAD_SQL} --database=test --threads=1 --queries-per-thread=99999999 --logdir=${RUNDIR}/${TRIAL}/preload --log-all-queries --log-failed-queries --no-shuffle --user=root --socket=${SOCKET} > ${RUNDIR}/${TRIAL}/preload/pquery_preload_sql.log 2>&1  # Do not start in background like other PQUERY_BIN calls in this script. Here we just want the preload to finish before executing other statements. Also, when started in the background without waiting for it results in 0 byte default.node.tld_thread-0.sql on some reason (unimportant as no background should be used, or when background is used, the process should be waited upon)
             fi
             # Standard/default (non-GRP-RPL non-Galera non-Query-duration-testing) pquery run
-            ## Pre-shuffle (if activated)
-            if [ "${PRE_SHUFFLE_SQL}" -gt 0 ]; then
-              PRE_SHUFFLE_TRIAL_ROUND=$[ ${PRE_SHUFFLE_TRIAL_ROUND} + 1 ]  # Reset to 1 each time PRE_SHUFFLE_TRIALS_PER_SHUFFLE is reached
-              ## Check pre-shuffle directory
-              while [ ! -d "${PRE_SHUFFLE_DIR}" ]; do
-                mkdir -p "${PRE_SHUFFLE_DIR}"
-                echoit "Warning: ${PRE_SHUFFLE_DIR} was created previously, but was found to be non-existing now. Recreated it, but this should NOT happen with normal usage. Please check (possible OOS?) the cause"
-                if [ -d "${PRE_SHUFFLE_DIR}" ]; then break; fi
-                sleep 10  # Perhaps OOS?
-              done
-              if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq 1 ]; then
-                pre_shuffle_setup
-                # Health-check the server(s) after pre_shuffle_setup, which can take tens of seconds (find+shuf+sed pipeline on /). During that window master+slave sit idle. If something killed mariadbd in that window (background-thread issue, external signal, OOM-killer), pquery would launch against a dead server and exit silently on 250-consecutive-failures with no observable cause in pquery-run.log. Only runs on the first trial of each shuffle round (PRE_SHUFFLE_TRIAL_ROUND=1) — trials reusing the cached shuffle have no idle window so the ping would be noise. Diagnostic-only: flow is unchanged.
-                if ! ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET} ping > /dev/null 2>&1; then
-                  echoit "Warning: master (${SOCKET}) is not responding to ping immediately after pre_shuffle_setup. Server died during the pre-shuffle idle window. Trial's pquery will produce no useful output; check ${RUNDIR}/${TRIAL}/log/master.err for cause."
-                fi
-                if [ ${REPLICATION} -eq 1 ] && [ ! -z "${SLAVE_SOCKET}" ] && ! ${BASEDIR}/bin/mysqladmin -uroot -S${SLAVE_SOCKET} ping > /dev/null 2>&1; then
-                  echoit "Warning: slave (${SLAVE_SOCKET}) is not responding to ping immediately after pre_shuffle_setup. Server died during the pre-shuffle idle window. Check ${RUNDIR}/${TRIAL}/log/slave.err for cause."
-                fi
-              else
-                echoit "Re-using pre-shuffled SQL ${INFILE_SHUFFLED} for Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
-              fi
-              if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} ]; then
-                PRE_SHUFFLE_TRIAL_ROUND=0  # Next trial will reshuffle the SQL
-              fi
-              # Pre-shuffled trial
-              echoit "Starting pquery (log stored in ${RUNDIR}/${TRIAL}/pquery.log)..."
-              ${PQUERY_BIN} --infile=${INFILE_SHUFFLED} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --user=root --socket=${SOCKET} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
-              PQPID="$!"
-            else  # Standard non-shuffled trial
-              echoit "Starting pquery (log stored in ${RUNDIR}/${TRIAL}/pquery.log)..."
-              ${PQUERY_BIN} --infile=${INFILE} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --user=root --socket=${SOCKET} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
-              PQPID="$!"
-            fi
+            echoit "Starting pquery (log stored in ${RUNDIR}/${TRIAL}/pquery.log)..."
+            ${PQUERY_BIN} --infile=${TRIAL_SQL} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --user=root --socket=${SOCKET} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
+            PQPID="$!"
           else
             # Preload SQL if the PRELOAD feature is enabled (this SQL will be prepended to the trial's SQL later)
             if [ "${PRELOAD}" == "1" -a ! -z "${PRELOAD_SQL}" ]; then
@@ -2511,24 +2617,13 @@ pquery_test(){
               mkdir -p ${RUNDIR}/${TRIAL}/preload
               ${PQUERY_BIN} --infile=${PRELOAD_SQL} --database=test --threads=1 --queries-per-thread=99999999 --logdir=${RUNDIR}/${TRIAL}/preload --log-all-queries --log-failed-queries --no-shuffle --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/preload/pquery_preload_sql.log 2>&1  # Do not start in background... (ref similar comment elsewhere in this script)
             fi
-            ## Check pre-shuffle directory
-            if [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
-              if [ ! -d "${PRE_SHUFFLE_DIR}" ]; then
-                echoit "PRE_SHUFFLE_SQL_DIR ('${PRE_SHUFFLE_DIR}') is no longer available. Was it deleted? Attempting to recreate"
-                mkdir -p "${PRE_SHUFFLE_DIR}"
-                if [ ! -d "${PRE_SHUFFLE_DIR}" ]; then
-                  echoit "PRE_SHUFFLE_SQL_DIR ('${PRE_SHUFFLE_DIR}') could not be recreated. Turning off SQL pre-shuffling for now. Please fix whatever is going wrong"
-                  PRE_SHUFFLE_SQL=0
-                fi
-              fi
-            fi
             if [[ "${MDG_CLUSTER_RUN}" -eq 1 ]]; then
               for i in $(seq 1 ${NR_OF_NODES}); do
                 cat << EOF >> ${RUNDIR}/${TRIAL}/pquery-cluster.cfg
 [node${i}.md.galera]
 database = test
 address = localhost
-infile = ${INFILE}
+infile = ${TRIAL_SQL}
 logdir = ${RUNDIR}/${TRIAL}
 socket = ${RUNDIR}/${TRIAL}/node${i}/node${i}_socket.sock
 user = root
@@ -2560,30 +2655,9 @@ EOF
               ${PQUERY_BIN} --config-file=${RUNDIR}/${TRIAL}/pquery-cluster.cfg > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
               PQPID="$!"
             else
-              ## Pre-shuffle (if activated). Note: PRE_SHUFFLE_SQL=3/4 (generator-mix) are intentionally NOT handled in this MDG/GRP_RPL non-cluster path; they fall through to the standard non-shuffled trial below and run against the pure generator output. Supported only in the standard non-cluster single/multi-threaded paths.
-              if [ "${PRE_SHUFFLE_SQL}" == "1" -o "${PRE_SHUFFLE_SQL}" == "2" ]; then
-                PRE_SHUFFLE_TRIAL_ROUND=$[ ${PRE_SHUFFLE_TRIAL_ROUND} + 1 ]  # Reset to 1 each time PRE_SHUFFLE_TRIALS_PER_SHUFFLE is reached
-                if [ ! -d "${PRE_SHUFFLE_DIR}" ]; then
-                  mkdir -p "${PRE_SHUFFLE_DIR}"
-                  echoit "Warning: ${PRE_SHUFFLE_DIR} was created previously, but was found to be non-existing now. Recreated it, but this should NOT happen with normal usage. Please check"
-                fi
-                if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq 1 ]; then
-                  pre_shuffle_setup
-                else
-                  echoit "Re-using pre-shuffled SQL ${INFILE_SHUFFLED} for Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
-                fi
-                if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} ]; then
-                  PRE_SHUFFLE_TRIAL_ROUND=0  # Next trial will reshuffle the SQL
-                fi
-                # Pre-shuffled trial
-                echoit "Starting pquery (log stored in ${RUNDIR}/${TRIAL}/pquery.log)..."
-                ${PQUERY_BIN} --infile=${INFILE_SHUFFLED} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
-                PQPID="$!"
-              else  # Standard non-shuffled trial
-                echoit "Starting pquery (log stored in ${RUNDIR}/${TRIAL}/pquery.log)..."
-                ${PQUERY_BIN} --infile=${INFILE} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
-                PQPID="$!"
-              fi
+              echoit "Starting pquery (log stored in ${RUNDIR}/${TRIAL}/pquery.log)..."
+              ${PQUERY_BIN} --infile=${TRIAL_SQL} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
+              PQPID="$!"
               #${PQUERY_BIN} --infile=${INFILE} --database=test --threads=${THREADS} --queries-per-thread=${QUERIES_PER_THREAD} --logdir=${RUNDIR}/${TRIAL} --log-all-queries --log-failed-queries --log-query-duration --user=root --socket=${SOCKET1} > ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
               #PQPID="$!"
               #echoit "Assert: GRP_RPL_CLUSTER_RUN=${GRP_RPL_CLUSTER_RUN} and MDG_CLUSTER_RUN=${MDG_CLUSTER_RUN}"
@@ -2593,8 +2667,9 @@ EOF
         fi
       fi
     else
-      # Multi-threaded run using a chunk from INFILE (${THREADS} clients)
+      # Multi-threaded run using a chunk of this trial's SQL (${THREADS} clients)
       if [ ${PQUERY3} -eq 1 ]; then
+        PQUERY_INFILE_LINES=  # pquery3 builds its own SQL from the metadata, so there is no input file to compare the executed count against
         if [ "${TRIAL}" == "1" ]; then
           echoit "Creating metadata randomly using random seed ${SEED} ..."
         else
@@ -2616,36 +2691,9 @@ EOF
         $CMD >> ${RUNDIR}/${TRIAL}/pquery.log 2>&1 &
         PQPID="$!"
       else  # PQUERY3!=1
-        ## Pre-shuffle (if activated)
-        if [ "${PRE_SHUFFLE_SQL}" -gt 0 ]; then
-          ## Check pre-shuffle directory
-          if [ ! -d "${PRE_SHUFFLE_DIR}" ]; then
-            echoit "PRE_SHUFFLE_SQL_DIR ('${PRE_SHUFFLE_DIR}') is no longer available. Was it deleted? Attempting to recreate"
-            mkdir -p "${PRE_SHUFFLE_DIR}"
-            if [ ! -d "${PRE_SHUFFLE_DIR}" ]; then
-              echoit "PRE_SHUFFLE_SQL_DIR ('${PRE_SHUFFLE_DIR}') could not be recreated. Turning off SQL pre-shuffling for now. Please fix whatever is going wrong"
-              PRE_SHUFFLE_SQL=0
-            fi
-          fi
-          PRE_SHUFFLE_TRIAL_ROUND=$[ ${PRE_SHUFFLE_TRIAL_ROUND} + 1 ]  # Reset to 1 each time PRE_SHUFFLE_TRIALS_PER_SHUFFLE is reached
-          if [ ! -d "${PRE_SHUFFLE_DIR}" ]; then
-            mkdir -p "${PRE_SHUFFLE_DIR}"
-            echoit "Warning: ${PRE_SHUFFLE_DIR} was created previously, but was found to be non-existing now. Recreated it, but this should NOT happen with normal usage. Please check"
-          fi
-          if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq 1 ]; then
-            pre_shuffle_setup
-          else
-            echoit "Re-using pre-shuffled SQL ${INFILE_SHUFFLED} for Trial ${PRE_SHUFFLE_TRIAL_ROUND}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}"
-          fi
-          if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} ]; then
-            PRE_SHUFFLE_TRIAL_ROUND=0  # Next trial will reshuffle the SQL
-          fi
-          echoit "Taking ${MULTI_THREADED_TESTC_LINES} lines randomly from the pre-shuffled SQL as testcase for this multi-threaded trial"
-          shuf --random-source=/dev/urandom ${INFILE_SHUFFLED} | head -n${MULTI_THREADED_TESTC_LINES} > ${RUNDIR}/${TRIAL}/${TRIAL}.sql
-        else
-          echoit "Taking ${MULTI_THREADED_TESTC_LINES} lines randomly from ${INFILE} as testcase for this multi-threaded trial"
-          shuf --random-source=/dev/urandom ${INFILE} | head -n${MULTI_THREADED_TESTC_LINES} > ${RUNDIR}/${TRIAL}/${TRIAL}.sql
-        fi
+        echoit "Taking ${MULTI_THREADED_TESTC_LINES} lines randomly from the SQL of this trial as testcase for this multi-threaded trial"
+        shuf --random-source=<(${RANDOM_BIN} --raw) ${TRIAL_SQL} | head -n${MULTI_THREADED_TESTC_LINES} > ${RUNDIR}/${TRIAL}/${TRIAL}.sql
+        PQUERY_INFILE_LINES="$(wc -l < ${RUNDIR}/${TRIAL}/${TRIAL}.sql)"  # pquery reads this chunk, not the whole trial SQL
         SQL_FILE="${RUNDIR}/${TRIAL}/${TRIAL}.sql"  # In contrast with single threaded runs, we want to save the input SQL file as it may be easier to reproduce from the original multi-threaded input SQL (which can be reduced and/or replayed in various ways including the multi* scripts as generated by startup.sh in BASEDIR's) than from the queries logged by pquery (per thread), though neither is a given. Reducer.sh will handle various scenario's as well depending on how it is setup per-reduction.
         if [[ "${MDG}" -eq 0 && "${GRP_RPL}" -eq 0 ]]; then
           echoit "Starting pquery (log stored in ${RUNDIR}/${TRIAL}/pquery.log)..."
@@ -2797,14 +2845,6 @@ EOF
     echoit "Cleaning up & saving results if needed..."
   fi
   sleep 2 # Delay to ensure core was written completely (if any)
-  # First cleanup any temporary SQL if PRE_SHUFFLE_TRIAL_ROUND=0 (i.e. the number of PRE_SHUFFLE_TRIALS_PER_SHUFFLE trials was completed)
-  if [ ! -z "${INFILE_SHUFFLED}" -a -r "${INFILE_SHUFFLED}" -a ! -d "${INFILE_SHUFFLED}" ]; then
-    if [ ${PRE_SHUFFLE_TRIAL_ROUND} -eq 0 ]; then
-      echoit "Deleting pre-shuffle SQL file ${INFILE_SHUFFLED} as ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE}/${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} trials were completed"
-      rm -f "${INFILE_SHUFFLED}"
-      INFILE_SHUFFLED=
-    fi
-  fi
   # It takes SAN builds about 2 seconds to finish an 'LSAN detected' error log entry AFTER shutdown
   if [[ "${BASEDIR}" == *"SAN"* || "${BASEDIR}" == *"san"* || "${BASEDIR}" == *"San"* ]]; then
     sleep 3  # Correct. Must be >= 2.5
@@ -3148,6 +3188,16 @@ EOF
       else
         echoit "pquery run details: ${FAILED_QUERIES_OUTPUT}"
       fi
+      # How much of the input SQL the trial actually used. A small input against many executed queries means
+      # the threads ran the same statements over and again, so the run covers less SQL than it could
+      EXEC_TOTAL="$(echo "${FAILED_QUERIES_OUTPUT}" | grep --binary-files=text -om1 '[0-9]\+/[0-9]\+ queries failed' | sed 's|.*/||;s| .*||')"
+      if [ -n "${EXEC_TOTAL}" ] && [ "${EXEC_TOTAL}" -gt 0 ] && [ "${PQUERY_INFILE_LINES:-0}" -gt 0 ]; then
+        EXEC_RATIO="$(awk -v i=${PQUERY_INFILE_LINES} -v e=${EXEC_TOTAL} 'BEGIN{printf "%.2f", i*100/e}')"
+        EXEC_COLOR="$(awk -v r=${EXEC_RATIO} 'BEGIN{print (r>=75)?"GREEN":((r>=35)?"ORANGE":"RED")}')"
+        echoit "pquery input SQL vs runtime exec ratio: ${PQUERY_INFILE_LINES}/${EXEC_TOTAL}=${EXEC_RATIO}%" "${EXEC_COLOR}"
+        EXEC_RATIO=; EXEC_COLOR=
+      fi
+      EXEC_TOTAL=
     fi
     FAILED_QUERIES_OUTPUT=
   fi
@@ -3560,19 +3610,14 @@ EOF
       removetrial
     fi
   fi
-  # Per-batch cleanup of the generator output file. Re-used across
-  # GENERATE_NEW_QUERIES_EVERY_X_TRIALS trials, then regenerated. Delete once
-  # the batch is done (next trial would regenerate) so it doesn't linger
-  # in-tree under generatorcpp/. The exit-time rm still covers interrupted runs.
-  if [ ${USE_GENERATOR} -eq 1 ] && [ "${GENERATE_NEW_QUERIES_EVERY_X_TRIALS:-0}" -gt 0 ]; then
-    if [ $(( (TRIAL + 1) % GENERATE_NEW_QUERIES_EVERY_X_TRIALS )) -eq 0 ] || [ ${TRIAL} -ge ${TRIALS} ]; then
-      rm -f ${SCRIPT_PWD}/generatorcpp/out${RANDOMD}*.sql ${SCRIPT_PWD}/generatorcpp/out${RANDOMD}.sql.part* ${SCRIPT_PWD}/generatorcpp/out${RANDOMD}.sql.combined 2>/dev/null
-    fi
+  # The generated pools are rewritten at the start of every trial, so the copy from this trial is of no
+  # further use. Delete it so it does not linger in-tree under generatorcpp/ or revgen/. The exit-time
+  # rm still covers an interrupted run.
+  if [ ${USE_GENERATOR} -eq 1 ]; then
+    rm -f ${SCRIPT_PWD}/generatorcpp/out${RANDOMD}*.sql ${SCRIPT_PWD}/generatorcpp/out${RANDOMD}.sql.part* 2>/dev/null
   fi
-  if [ ${USE_REVGEN} -eq 1 ] && [ "${REVGEN_NEW_QUERIES_EVERY_X_TRIALS:-0}" -gt 0 ]; then
-    if [ $(( (TRIAL + 1) % REVGEN_NEW_QUERIES_EVERY_X_TRIALS )) -eq 0 ] || [ ${TRIAL} -ge ${TRIALS} ]; then
-      rm -f ${SCRIPT_PWD}/revgen/outrev${RANDOMD}*.sql ${SCRIPT_PWD}/revgen/outrev${RANDOMD}.sql.part* 2>/dev/null
-    fi
+  if [ ${USE_REVGEN} -eq 1 ]; then
+    rm -f ${SCRIPT_PWD}/revgen/outrev${RANDOMD}*.sql ${SCRIPT_PWD}/revgen/outrev${RANDOMD}.sql.part* 2>/dev/null
   fi
 }
 
@@ -3689,45 +3734,46 @@ else
   SLAVE_EXTRA=
 fi
 
-# Filter SQL from the main input file (Not possible for PRE_SHUFFLE_SQL=2 as that involves many files, however this is done from within the PRE_SHUFFLE_SQL=2 section directly. For USE_GENERATOR=1 / USE_REVGEN=1, filtering is done per-trial right after each generator/revgen invocation, not here.)
-if [[ ${FILTER_SQL} -eq 1 ]]; then
-  if [ "${USE_GENERATOR}" -ne 1 ] && [ "${USE_REVGEN}" -ne 1 ] && [ "${PRE_SHUFFLE_SQL}" == "0" -o "${PRE_SHUFFLE_SQL}" == "1" ]; then
-    echoit "SQL filter is enabled, filtering all SQL lines in ${SCRIPT_PWD}/filter.sql from the input file"
-    BEFORE_FILTER_LINES_NR="$(wc -l ${INFILE} | awk '{print $1}')"
-    grep --binary-files=text -vif ${SCRIPT_PWD}/filter.sql ${INFILE} > ${WORKDIR}/filtered_infile.sql
-    INFILE=${WORKDIR}/filtered_infile.sql
-    AFTER_FILTER_LINES_NR="$(wc -l ${INFILE} | awk '{print $1}')"
-    echoit "SQL filter: Filtered $[ ${BEFORE_FILTER_LINES_NR} -${AFTER_FILTER_LINES_NR} ] lines from the input file"
-    BEFORE_FILTER_LINES_NR=
-    AFTER_FILTER_LINES_NR=
-    if [ ! -d "${RUNDIR}" ]; then mkdir -p ${RUNDIR}; fi  # In case the filtering took a long time and tmpfs_clean.sh cleaned up the RUNDIR directory already. Note this does not affect the filtered infile (filtered_infile.sql), which is the WORKDIR, not RUNDIR
+# Measure the input file once, for the per-trial window in emit_trial_sources(). A file larger than the
+# line cap is read from a random offset each trial, so a run sees the whole file over its trials instead
+# of the first PQUERY_MAX_SQL_LINES lines every time. The configured input file itself is never changed.
+INFILE_LINES=0
+INFILE_WINDOW_MAX_OFFSET=1
+INFILE_ASM_KB=0  # What this source can add to one trial's SQL, for the diskspace check in assemble_trial_sql()
+if [ "${USE_INFILE}" -eq 1 ]; then
+  INFILE_LINES="$(wc -l < ${INFILE})"
+  if [ "${INFILE_LINES}" -lt 1 ]; then
+    echoit "Assert: the SQL input file (${INFILE}) holds no lines"
+    exit 1
+  fi
+  INFILE_ASM_KB=$(( $(stat -c %s ${INFILE}) / 1024 + 1 ))
+  if [ "${INFILE_LINES}" -gt "${PQUERY_MAX_SQL_LINES}" ]; then
+    # Leave room for a full window: stop the random offset one window short of the end of the file. The
+    # bytes per line are rounded up, so the room reserved is not short and a trial gets its full window.
+    # A window can still come out a little short where the lines around it run longer than the average
+    INFILE_WINDOW_BYTES=$(( ( ( $(stat -c %s ${INFILE}) + INFILE_LINES - 1 ) / INFILE_LINES ) * PQUERY_MAX_SQL_LINES ))
+    INFILE_WINDOW_MAX_OFFSET=$(( $(stat -c %s ${INFILE}) - INFILE_WINDOW_BYTES ))
+    [ "${INFILE_WINDOW_MAX_OFFSET}" -lt 1 ] && INFILE_WINDOW_MAX_OFFSET=1
+    # Only one window of it reaches a trial, so the diskspace check must not ask for the whole file
+    INFILE_ASM_KB=$(( INFILE_WINDOW_BYTES / 1024 + 1 ))
+    echoit "The SQL input file holds ${INFILE_LINES} lines, more than PQUERY_MAX_SQL_LINES=${PQUERY_MAX_SQL_LINES}. Each trial reads a window of ${PQUERY_MAX_SQL_LINES} lines from a random offset in it"
   fi
 fi
 
-SQL_INPUT_TEXT=
-if [ ${USE_GENERATOR} -eq 1 -a ${USE_REVGEN} -eq 1 ]; then
-  SQL_INPUT_TEXT="Using SQL Generator + revgen (combined fresh each trial)"
-elif [ ${USE_GENERATOR} -eq 1 ]; then
-  if [ ${USE_INFILE} -eq 0 ]; then
-    SQL_INPUT_TEXT="Using SQL Generator"
-  else
-    SQL_INPUT_TEXT="Using SQL Generator combined with SQL file ${INFILE}"
-  fi
-elif [ ${USE_REVGEN} -eq 1 ]; then
-  if [ ${USE_INFILE} -eq 0 ]; then
-    SQL_INPUT_TEXT="Using revgen (reverse grammar generator)"
-  else
-    SQL_INPUT_TEXT="Using revgen (reverse grammar generator) combined with SQL file ${INFILE}"
-  fi
-elif [ "${PRE_SHUFFLE_SQL}" == "1" ]; then
-  echoit "PRE_SHUFFLE_SQL=1: This script will randomly pre-shuffle ${PRE_SHUFFLE_MIN_SQL_LINES} lines of SQL of ${INFILE} ($(wc -l ${INFILE} | awk '{print $1}') lines) into a temporary file in ${PRE_SHUFFLE_DIR} and reuse this file for ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} trial(s)"
-  SQL_INPUT_TEXT="PRE_SHUFFLE_SQL: 1"
-elif [ "${PRE_SHUFFLE_SQL}" == "2" ]; then
-  echoit "PRE_SHUFFLE_SQL=2: This script will randomly pre-shuffle ${PRE_SHUFFLE_MIN_SQL_LINES} lines of SQL (from all available SQL testcases) into a temporary file in ${PRE_SHUFFLE_DIR} and reuse this file for ${PRE_SHUFFLE_TRIALS_PER_SHUFFLE} trial(s)"
-  SQL_INPUT_TEXT="PRE_SHUFFLE_SQL: 2"
-else
-  SQL_INPUT_TEXT="SQL file used: ${INFILE} ($(wc -l ${INFILE} | awk '{print $1}') lines)"
+# The all-disk source: index every SQL file on the disk now, so no trial has to search the disk again
+ALL_DISK_SQL_INDEX="${WORKDIR}/all_disk_sql.index"
+ALL_DISK_SQL_POOL="${TRIAL_SQL_DIR}/${RANDOMD}_all_disk.sql"
+ALL_DISK_SQL_LINES=0
+if [ "${USE_ALL_DISK_SQL}" -eq 1 ]; then
+  all_disk_sql_index
 fi
+
+SQL_INPUT_TEXT=
+if [ ${USE_GENERATOR} -eq 1 ]; then SQL_INPUT_TEXT="SQL Generator (${QUERIES_PER_GENERATOR_RUN} queries per trial)"; fi
+if [ ${USE_REVGEN} -eq 1 ]; then SQL_INPUT_TEXT="${SQL_INPUT_TEXT}${SQL_INPUT_TEXT:+ + }revgen (${QUERIES_PER_REVGEN_RUN} queries per trial)"; fi
+if [ ${USE_INFILE} -eq 1 ]; then SQL_INPUT_TEXT="${SQL_INPUT_TEXT}${SQL_INPUT_TEXT:+ + }SQL file ${INFILE} (${INFILE_LINES} lines)"; fi
+if [ ${USE_ALL_DISK_SQL} -eq 1 ]; then SQL_INPUT_TEXT="${SQL_INPUT_TEXT}${SQL_INPUT_TEXT:+ + }all SQL on disk (${QUERIES_PER_ALL_DISK_RUN} lines, new every ${ALL_DISK_SQL_NEW_QUERIES_EVERY_X_TRIALS} trials)"; fi
+SQL_INPUT_TEXT="Sources: ${SQL_INPUT_TEXT}"
 echoit "Valgrind run: $(if [ "${VALGRIND_RUN}" == "1" ]; then echo -n 'TRUE'; else echo -n 'FALSE'; fi) | pquery timeout: ${PQUERY_RUN_TIMEOUT} | ${SQL_INPUT_TEXT} $(if [ ${THREADS} -ne 1 ]; then echo -n "| Testcase size (chunked from infile): ${MULTI_THREADED_TESTC_LINES}"; fi)"
 echoit "pquery Binary: ${PQUERY_BIN}"
 if [ "${MYINIT}" != "" ]; then echoit "MYINIT: ${MYINIT}"; fi
@@ -4000,6 +4046,10 @@ else
 fi
 echoit "Done. Attempting to cleanup the pquery rundir ${RUNDIR}..."
 rm -Rf ${RUNDIR}
+# The last trial's SQL and the all-disk pool are the only ones left: every earlier trial's file was
+# deleted as the next was written, and the generated pools are deleted at the end of each trial
+echoit "Done. Attempting to cleanup the per-trial SQL of this run..."
+rm -f ${TRIAL_SQL_DIR}/${RANDOMD}_*
 echoit "The results of this run can be found in the workdir ${WORKDIR}..."
 echoit "Done. Exiting $0 with exit code 0..."
 exit 0
