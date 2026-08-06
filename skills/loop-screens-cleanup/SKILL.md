@@ -45,7 +45,7 @@ Two runtime END rules on top of the bracket:
 
 Detection signals (per screen, from a `hardcopy -h` dump):
 - **bracket** = last `[*]` or `[]` in the dump (default `[]` if none).
-- **finished** = the trial's main reducer process is gone. The main reducer runs for the whole reduction; only subreducers and mariadbd instances come and go. Match it by path - its cmdline is `<workdir>/reducer<N>.sh` (exe `reducercpp/reducer`) and never contains `/dev/shm/<epoch>`, so an epoch-based `pgrep` cannot see it. A shell prompt as the last non-blank line (`\$ *$`, e.g. `host:/data/NNN$`) is the visual confirmation.
+- **finished** = the trial's main reducer process is gone. The main reducer runs for the whole reduction; only subreducers and mariadbd instances come and go. Match it by path - its cmdline is `<workdir>/reducer<N>.sh` (exe `reducercpp/reducer`) and never contains `/dev/shm/<epoch>`, so an epoch-based `pgrep` cannot see it. A shell prompt as the last non-blank line (`\$ *$`, e.g. `host:/data/NNN$`) is the visual confirmation. Match on the cmdline, not on `readlink /proc/<pid>/exe` - that read comes back empty often enough to drop a live reducer from the list.
 - **still reducing** = bracket `[*]` AND the main reducer is alive.
 - Zero processes on `/dev/shm/<epoch>` never means finished. The main reducer is invisible to that match, and a live reducer sits at zero epoch procs between server restarts and after rotating to a fresh epoch mid-run - so ending on that signal kills healthy reducers.
 
@@ -80,23 +80,63 @@ Detection signals (per screen, from a `hardcopy -h` dump):
 
    Build the **PRESERVE set** = the epochs of every `LEAVE` screen. These must never be killed or removed.
 
-4. **Show the plan and reap.** Present the END/LEAVE table first, then for each `END` screen with `<end-extent>=reap`:
+   Two traps in that extraction:
+
+   - **`pgrep -f` over-matches.** The pattern `reducer<N>.sh` also hits the screen's own `SCREEN -admS`
+     line and its `bash -c` wrapper, so a plain count never reaches 0. Only a process whose whole
+     cmdline is `/data/<workdir>/reducer<N>.sh` is the real main reducer. Get the true list once, up front:
+
+     ```
+     for p in $(pgrep -f 'reducer[0-9]+\.sh'); do
+       c=$(tr '\0' ' ' </proc/$p/cmdline 2>/dev/null)
+       case "$c" in /data/*reducer*.sh*) echo "$p $c";; esac
+     done
+     ```
+
+   - **`hardcopy` wraps long lines**, so an epoch can be cut mid-digits and come out at 17 or 18 digits.
+     Treat the extracted value as a prefix and resolve it against the real directories; accept it only
+     when exactly one matches. A screen whose dump gives no epoch at all is not finished - re-dump it.
+
+     ```
+     ls -1d /dev/shm/17* | sed 's|/dev/shm/||' | sort > /tmp/shmdirs.txt
+     RES=$(grep -E "^${EPOCH}" /tmp/shmdirs.txt); [ "$(echo $RES | wc -w)" = 1 ] || RES=UNRESOLVED
+     ```
+
+4. **Show the plan and reap.** Present the END/LEAVE table first, then for each `END` screen with `<end-extent>=reap`.
+
+   **Quit the screen before any kill.** The screen runs `bash -c ./reducer<N>.sh ... ; <pge loops> ; bash`.
+   Killing the reducer while that wrapper lives only advances the wrapper to its next `pge` step, which
+   starts a fresh reducer under a new PID and a new epoch. Quit first, and the wrapper goes with it.
 
    ```
    MYPID=$$
-   # the main reducer first: it carries no epoch, so the passes below cannot see it,
-   # and while it lives it keeps spawning fresh subreducers
-   pgrep -f "$WD/reducer$N\.sh" | grep -vx "$MYPID" | xargs -r kill -9
-   # pass 1: kill that trial's procs (skip PRESERVE epochs and own PID)
-   PIDS=$(pgrep -f "/dev/shm/$EPOCH" | grep -vx "$MYPID")
-   echo "$PIDS" | xargs -r kill -9
-   sleep 2
-   # pass 2 (straggler sweep): children reparented to PID 1 survive a parent SIGKILL
-   pgrep -f "/dev/shm/$EPOCH" | grep -vx "$MYPID" | xargs -r kill -9
-   # remove the trial's shm workdir, then quit the screen
-   [ -d "/dev/shm/$EPOCH" ] && rm -rf "/dev/shm/$EPOCH"
+   # 1. quit every END screen, then confirm no main reducer survived
    screen -S "$SES" -X quit
+   sleep 3
+   # 2. pass 1: kill that trial's procs (skip PRESERVE epochs and own PID)
+   pgrep -f "/dev/shm/$EPOCH" | grep -vx "$MYPID" | xargs -r kill -9
+   sleep 2
+   # 3. pass 2 (straggler sweep): children reparented to PID 1 survive a parent SIGKILL
+   pgrep -f "/dev/shm/$EPOCH" | grep -vx "$MYPID" | xargs -r kill -9
+   # 4. remove the trial's shm workdir if it is still there
+   [ -d "/dev/shm/$EPOCH" ] && rm -rf "/dev/shm/$EPOCH"
    ```
+
+   A dying reducer removes its own `/dev/shm/<epoch>`, so step 4 is usually a no-op. Keep it as the fallback.
+
+   **Sweep the rotation epochs afterwards.** A reducer rotates to a fresh epoch during its run, so
+   the last one it created can appear only after the screen is gone, holding live `mariadbd` on a
+   directory that is already unlinked. Re-list `/dev/shm/17*` at the end and map each one to its owner:
+
+   ```
+   for d in /dev/shm/17*; do
+     printf '%s  %s  procs=%s\n' "${d#/dev/shm/}" \
+       "$(grep -ohE '/data/[0-9]+/[0-9]+' $d/reducer.log 2>/dev/null | sort -u | head -1)" \
+       "$(pgrep -cf "$d")"
+   done
+   ```
+
+   Anything owned by an `END` trial gets the same two kill passes. Anything owned by a `LEAVE` trial stays.
 
 5. **Verify:**
 
@@ -104,8 +144,14 @@ Detection signals (per screen, from a `hardcopy -h` dump):
    screen -ls | grep -oE '[0-9]+\.s[0-9]+'                          # only LEAVE screens remain
    pgrep -fc '/dev/shm/<preserve-epoch>'                            # LEAVE reducer still alive
    ls -d /dev/shm/<preserve-epoch>                                  # LEAVE shm intact
-   pgrep -af '<reaped-epoch>' | grep -iE 'mariadbd|subreducer|pquery'   # expect none
+   ls -1d /dev/shm/17*                                              # only PRESERVE dirs left
+   df -h /dev/shm                                                   # the space actually came back
+   pgrep -af 'bin/mariadbd' | grep -v '<preserve-epoch>'            # see below
    ```
+
+   The last check will still list `mariadbd` from the live `pr<N>` / `ge<N>` runs and from any MTR run.
+   Those sit under a 6-digit `/dev/shm/<workdir>/` path, not a 19-digit epoch, and are out of scope. Only
+   a `mariadbd` on a 19-digit epoch is reducer waste.
 
    A residual `pgrep` match on a reaped epoch whose only hits are `bash` with parent PID = `claude` is the agent's own tool processes echoing the epoch on their command line - a false positive, not reducer waste. Confirm by filtering for `mariadbd|subreducer|pquery`.
 
@@ -113,7 +159,7 @@ Detection signals (per screen, from a `hardcopy -h` dump):
 
 - Kills and `rm -rf /dev/shm/<epoch>` are pre-authorised only for epochs owned by an `END` screen. NEVER touch a PRESERVE-set epoch.
 - Always exclude the agent's own PID (`$$`) from kills, and match the full epoch path (`/dev/shm/<19-digit>`) so a partial digit-run can never collide with a PRESERVE epoch.
-- Out of scope: `/dev/shm/178*` reducer dirs with **no owning screen** and zero live procs. These are orphan leftovers from reducers whose screens are already gone; report them with a size total and let the user decide - do not delete unprompted. A wholesale `/dev/shm` wipe is `~/ka` territory and is user-only.
+- Out of scope: `/dev/shm/178*` reducer dirs with **no owning screen** and zero live procs. These are orphan leftovers from reducers whose screens are already gone; report them with a size total and let the user decide - do not delete unprompted. A wholesale `/dev/shm` wipe is `~/ka` territory and is user-only. Read `<dir>/reducer.log` for the owning `/data/<workdir>/<trial>` before calling one an orphan - a rotation epoch of a trial this run just ended looks exactly the same from the outside, and that one IS in scope.
 - Build screens (`opt_and_dbg_build`, `*_san_build`), `pts-*` interactive shells, and ad-hoc named screens (`memory`, `my_cleanup_script`, `ds_r_o`) are never ended by this skill.
 
 ## Try-harder reproduction before ending a `[]` screen

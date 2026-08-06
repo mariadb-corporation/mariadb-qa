@@ -1,4 +1,4 @@
-# compare.py — MariaDB vs PostgreSQL row-set comparator
+# compare.py - MariaDB vs PostgreSQL row-set comparator
 
 For every comparable `SELECT` in a MariaDB MTR `.test` file, the tool
 runs the query on both MariaDB and PostgreSQL (translating MariaDB
@@ -50,7 +50,7 @@ python3 compare.py \
     --pg-db postgres \
     --pg-user "$USER" \
     --report ~/fj-pg-check/some.pg_diff.md \
-    --report-title "some.test — MariaDB vs PostgreSQL" \
+    --report-title "some.test - MariaDB vs PostgreSQL" \
     --reset \
     --fresh
 ```
@@ -112,9 +112,9 @@ Without `--reset`, the run uses whatever state the databases are in.
 
 ## Exit code
 
-- `0` — every row set either matched or fell into an `expected:`
+- `0` - every row set either matched or fell into an `expected:`
   classification.
-- `1` — at least one `bug:`, `semantic`, or `translator:` entry in
+- `1` - at least one `bug:`, `semantic`, or `translator:` entry in
   the report.
 
 ## Reading the report
@@ -122,7 +122,7 @@ Without `--reset`, the run uses whatever state the databases are in.
 Each entry has this shape:
 
 
-### [classification] Section <N> — line <L>
+### [classification] Section <N> - line <L>
 _Context:_ <preceding --echo comment from the test file>
 
 **Setup (MariaDB and PostgreSQL):**
@@ -153,7 +153,7 @@ _Context:_ <preceding --echo comment from the test file>
 | Tag | Meaning |
 |---|---|
 | `[matches]` | Both engines accepted the query and returned the same row set. |
-| `[expected: ...]` | A known dialect divergence — see the suffix.  Not a bug. |
+| `[expected: ...]` | A known dialect divergence - see the suffix.  Not a bug. |
 | `[translator: ...]` | The translated SQL produced a syntax error on PG.  The translator needs a new rewrite or an existing rewrite is producing invalid PG. |
 | `[semantic]` | Both engines ran but returned different row sets, not matching any known expected category.  Worth investigating. |
 
@@ -162,16 +162,16 @@ matches, so the most interesting differences are at the top.
 
 Known `[expected: ...]` categories:
 
-- **PG enforces strict GROUP BY** — `select *, agg(...) ... group by col`
+- **PG enforces strict GROUP BY** - `select *, agg(...) ... group by col`
   is allowed in MariaDB but not in PG.
-- **PG only supports equi-condition FULL JOIN** — PG rejects FULL JOIN
+- **PG only supports equi-condition FULL JOIN** - PG rejects FULL JOIN
   whose ON clause is not merge- or hash-joinable (`is null`, `<=>`,
   etc.).
-- **PG strict typing (no implicit int<->varchar)** — implicit numeric
+- **PG strict typing (no implicit int<->varchar)** - implicit numeric
   to text comparison errors on PG.
-- **collation (MariaDB default is case-insensitive)** — string equality
+- **collation (MariaDB default is case-insensitive)** - string equality
   matches `'world' = 'WORLD'` in MariaDB, not in PG.
-- **decimal precision formatting** — same number, different trailing
+- **decimal precision formatting** - same number, different trailing
   zeros (e.g. `15.0000` vs `15.0000000000000000`).
 
 ### Author-annotated expected hints
@@ -203,7 +203,7 @@ The translator lives in `translate_for_pg(sql)` near the top of
 `compare.py`.  Each rule is a regex substitution that appends a note
 to the `Translation.notes` list when it fires.  If your test file
 hits a MariaDB construct PG rejects, add a rule there and re-run.
-Keep rules narrow — broad regex rewrites tend to misfire on unrelated
+Keep rules narrow - broad regex rewrites tend to misfire on unrelated
 SQL.
 
 ## Layout

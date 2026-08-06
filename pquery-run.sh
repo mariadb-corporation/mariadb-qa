@@ -84,17 +84,64 @@ export MSAN_OPTIONS=abort_on_error=1:poison_in_dtor=0
 
 # Print/Output function
 echoit() {
-  local ECHOIT_COLOR= ECHOIT_RESET=
-  case "${2}" in  # An optional second argument colours the line on screen. The log file always holds the plain text
-    GREEN) ECHOIT_COLOR=$'\e[32m'; ECHOIT_RESET=$'\e[0m';;
-    ORANGE) ECHOIT_COLOR=$'\e[33m'; ECHOIT_RESET=$'\e[0m';;
-    RED) ECHOIT_COLOR=$'\e[31m'; ECHOIT_RESET=$'\e[0m';;
+  local ECHOIT_STYLE="${2}" ECHOIT_COLOR= ECHOIT_DIM=$'\e[2m' ECHOIT_RESET=$'\e[0m' ECHOIT_VAL= ECHOIT_FRAC= ECHOIT_EMPH= ECHOIT_MSG="$1"
+  if [ -z "${ECHOIT_STYLE}" ]; then  # No style was passed, so classify the message. An explicit second argument always wins
+    case "$1" in
+      *'*** NEW '*'BUG ***'*)                            ECHOIT_STYLE=NEW;;
+      'Bug found'*)                                      ECHOIT_STYLE=BUG; ECHOIT_EMPH='Bug found';;
+      'SAN Bug found'*)                                  ECHOIT_STYLE=BUG; ECHOIT_EMPH='SAN Bug found';;
+      'Error log bug found'*)                            ECHOIT_STYLE=BUG; ECHOIT_EMPH='Error log bug found';;
+      'This is an already known'*|'Deleting trial as'*)   ECHOIT_STYLE=DIM;;
+      Assert*|*'[ERROR]'*|*Aborting*|*'failed to start'*) ECHOIT_STYLE=ALERT;;  # After the bug and known bug lines, whose UniqueID can hold one of these words
+      *'====== TRIAL #'*)                                ECHOIT_STYLE=TRIAL;;
+      'Saving Trial:'*|'Saving full trial outcome'*)     ECHOIT_STYLE=GREEN;;
+      *'coredump detected'*|*'shut down within'*|*'shutdown within'*) ECHOIT_STYLE=ORANGE;;
+      'No Valgrind errors detected'*)                    ECHOIT_STYLE=DIMGREEN;;  # Ahead of the rule below, as this one is a clean result
+      *' detected'*)                                     ECHOIT_STYLE=BUG;;  # A sanitizer, Valgrind, hang or SIGKILL finding, which carries no UniqueID
+      Warning*|*'WARNING'*|*'Error:'*|*'no point in continuing'*|*'cannot be both active'*) ECHOIT_STYLE=ORANGE;;  # A framework problem worth reading
+      *'No core present'*|*'was cut at'*|*'is missing or not executable'*|*' failed.'*|*'ERROR_LOG_SCAN_ISSUE is present'*) ECHOIT_STYLE=ORANGE;;  # Rare, and each one changes what the trial means
+      *'pquery run details:'*)  # Tiered on the share of queries the server accepted. Random SQL makes a
+        # mid-teens share a healthy trial and 30% a very good one, so orange means the server rejects more
+        # than usual, and red means it rejects nearly everything
+        ECHOIT_VAL="${1##*\(}"  # The share pquery reports, for example 7.50% were successful
+        if [[ "${ECHOIT_VAL}" =~ ^([0-9]+)(\.([0-9]+))?% ]]; then
+          ECHOIT_FRAC="${BASH_REMATCH[3]}00"  # The tiers carry two decimals, so compare in hundredths of a percent
+          ECHOIT_VAL=$(( 10#${BASH_REMATCH[1]} * 100 + 10#${ECHOIT_FRAC:0:2} ))
+          if [ ${ECHOIT_VAL} -ge 1500 ]; then ECHOIT_STYLE=GREEN; elif [ ${ECHOIT_VAL} -ge 750 ]; then ECHOIT_STYLE=ORANGE; else ECHOIT_STYLE=RED; fi
+        fi;;
+      'Input SQL: '*)  # Tiered on the seconds spent building the per-trial SQL, which is time not spent testing
+        ECHOIT_VAL="${1##*built in }"
+        if [[ "${ECHOIT_VAL}" =~ ^([0-9]+) ]]; then
+          if [ ${BASH_REMATCH[1]} -ge 60 ]; then ECHOIT_STYLE=ALERT
+          elif [ ${BASH_REMATCH[1]} -ge 25 ]; then ECHOIT_STYLE=RED
+          elif [ ${BASH_REMATCH[1]} -ge 10 ]; then ECHOIT_STYLE=ORANGE
+          else ECHOIT_STYLE=GREEN; fi
+        fi;;
+      Workdir:*|'RR Tracing'*|*'Start Timeout'*|'Replication testing:'*|'Valgrind run:'*|'pquery Binary:'*|MYSAFE:*|MYEXTRA:*) ECHOIT_STYLE=HEAD;;
+      *) if [ "${TRIALS_STARTED}" == "1" ]; then ECHOIT_STYLE=DIM; fi;;  # A routine step inside the trial loop
+    esac
+  fi
+  case "${ECHOIT_STYLE}" in  # The log file always holds the plain text
+    GREEN) ECHOIT_COLOR=$'\e[32m';;    # A healthy measurement, or a trial saved
+    ORANGE) ECHOIT_COLOR=$'\e[33m';;   # Attention, but no crash
+    RED) ECHOIT_COLOR=$'\e[31m';;      # A crash, assert or sanitizer report
+    BUG) ECHOIT_COLOR=$'\e[94m';;      # A UniqueID for a crash, assert or sanitizer report
+    DIM) ECHOIT_COLOR=$'\e[2m';;       # A routine step
+    DIMGREEN) ECHOIT_COLOR=$'\e[2;32m';;  # A healthy measurement on a line that should stay quiet
+    HEAD) ECHOIT_COLOR=$'\e[1m';;      # Run configuration
+    TRIAL) ECHOIT_COLOR=$'\e[1;36m';;  # Trial separator
+    NEW) ECHOIT_COLOR=$'\e[1;32m';;    # A bug not in the known bug lists
+    ALERT) ECHOIT_COLOR=$'\e[1;31m';;  # A framework problem, or a measurement far outside its band
   esac
+  if [ ! -t 1 ]; then ECHOIT_COLOR=; ECHOIT_DIM=; ECHOIT_RESET=; fi  # Plain text whenever stdout is not a terminal
+  if [ -n "${ECHOIT_EMPH}" ] && [ -n "${ECHOIT_COLOR}" ]; then  # Bold the lead-in words, keeping the colour of the line
+    ECHOIT_MSG="${ECHOIT_MSG/${ECHOIT_EMPH}/$'\e[1m'${ECHOIT_EMPH}$'\e[22m'}"
+  fi
   if [ "${ELIMINATE_KNOWN_BUGS}" == "1" ]; then
-    echo "${ECHOIT_COLOR}[$(date +'%T')] [$SAVED SAVED] [${ALREADY_KNOWN} DUPS] $1${ECHOIT_RESET}"
+    echo "${ECHOIT_DIM}[$(date +'%T')] [$SAVED SAVED] [${ALREADY_KNOWN} DUPS]${ECHOIT_RESET} ${ECHOIT_COLOR}${ECHOIT_MSG}${ECHOIT_RESET}"
     if [ ${WORKDIRACTIVE} -eq 1 ]; then echo "[$(date +'%T')] [$SAVED SAVED] [${ALREADY_KNOWN} DUPS] $1" >> /${WORKDIR}/pquery-run.log; fi
   else
-    echo "${ECHOIT_COLOR}[$(date +'%T')] [$SAVED] $1${ECHOIT_RESET}"
+    echo "${ECHOIT_DIM}[$(date +'%T')] [$SAVED]${ECHOIT_RESET} ${ECHOIT_COLOR}${ECHOIT_MSG}${ECHOIT_RESET}"
     if [ ${WORKDIRACTIVE} -eq 1 ]; then echo "[$(date +'%T')] [$SAVED SAVED] $1" >> /${WORKDIR}/pquery-run.log; fi
   fi
 }
@@ -102,6 +149,17 @@ echoit() {
 duration(){  # $1=EPOCHREALTIME as it was when the work started. Gives the seconds since, with two decimals
   local DUR_US=$(( ${EPOCHREALTIME/[.,]/} - ${1/[.,]/} ))  # EPOCHREALTIME always holds six decimals, so this is microseconds
   printf '%d.%02d' $(( DUR_US / 1000000 )) $(( ( DUR_US % 1000000 ) / 10000 ))
+}
+
+duration_style(){  # $1=seconds as duration() gives them. The echoit style for a server start or shutdown wait
+  # $2=the wait limit in seconds when it is not the standard 35, so a longer window scales the bands with it.
+  # An rr traced shutdown gets 240 seconds instead of 35, which makes its bands 48, 137 and 205 seconds
+  local DS_SEC="${1%%.*}" DS_ORANGE=7 DS_RED=20 DS_ALERT=30
+  if [ -n "${2}" ] && [ "${2}" -ne 35 ]; then
+    DS_ORANGE=$(( 7 * ${2} / 35 )); DS_RED=$(( 20 * ${2} / 35 )); DS_ALERT=$(( 30 * ${2} / 35 ))
+  fi
+  if [ ${DS_SEC} -ge ${DS_ALERT} ]; then echo ALERT; elif [ ${DS_SEC} -ge ${DS_RED} ]; then echo RED
+  elif [ ${DS_SEC} -ge ${DS_ORANGE} ]; then echo ORANGE; else echo DIMGREEN; fi
 }
 
 # Read configuration
@@ -591,15 +649,11 @@ all_disk_sql_collect(){  # $1=output file, $2=lines to collect. Randomly samples
     [ -z "${FILE_LINES}" ] && continue
     [ "${FILE_LINES}" -lt 1 ] && continue
     TAKE=$(( $(${RANDOM_BIN} ${FILE_LINES}) + 1 ))  # Random part of the file: 1 line up to all of them, each equally likely
+    [ "${TAKE}" -gt "$(( WANT - COLLECTED ))" ] && TAKE=$(( WANT - COLLECTED ))  # Never ask for more than the collection still needs: on a multi-GB file, sampling millions of lines to keep tens of thousands costs minutes and gigabytes of memory
     ADDED="$(shuf --random-source=<(${RANDOM_BIN} --raw) -n ${TAKE} "${ADS_FILE}" | grep --binary-files=text -hivE "${ADV_FILTER_LIST}" | tee -a ${OUTF} | wc -l)"
     COLLECTED=$(( COLLECTED + ADDED ))
   done < <(grep "^${SET_TAG}	" ${ALL_DISK_SQL_INDEX} | cut -f2- | shuf --random-source=<(${RANDOM_BIN} --raw))
-  # The last file read usually takes the total past the target, so cut it back to the exact number
-  if [ "${COLLECTED}" -gt "${WANT}" ]; then
-    truncate -s "$(head -n ${WANT} ${OUTF} | wc -c)" ${OUTF}
-    COLLECTED=${WANT}
-  fi
-  ALL_DISK_SQL_LINES=${COLLECTED}
+  ALL_DISK_SQL_LINES=${COLLECTED}  # The per-file cap keeps this at the budget or under it, so the pool needs no trim
 }
 
 # The clean-up applied to every source: drop the file name prefixes and the outcome markers that SQL
@@ -680,8 +734,15 @@ assemble_trial_sql(){  # Builds TRIAL_SQL: the one SQL file this trial gives to 
       assemble_abort "applying the filter ${SCRIPT_PWD}/filter.sql to ${TRIAL_SQL} failed. Check that the filter file can still be read, and the free space in ${TRIAL_SQL_DIR}"
     fi
     ASM_LINES="$(wc -l < ${TRIAL_SQL})"
-    echoit "Applied filter ${SCRIPT_PWD}/filter.sql (${FILTERED_LINES} lines filtered) in $(duration ${FILTER_DUR_START}) seconds"
-    FILTER_DUR_START=
+    # The share of the assembled SQL the filter removes. A high share means much of it never runs
+    FILTER_TOTAL=$(( ASM_LINES + FILTERED_LINES ))
+    FILTER_SHARE=0  # In tenths of a percent, so the line can carry one decimal
+    if [ ${FILTER_TOTAL} -gt 0 ]; then FILTER_SHARE=$(( FILTERED_LINES * 1000 / FILTER_TOTAL )); fi
+    if [ $(( FILTER_SHARE / 10 )) -ge 25 ]; then FILTER_STYLE=RED
+    elif [ $(( FILTER_SHARE / 10 )) -ge 15 ]; then FILTER_STYLE=ORANGE
+    else FILTER_STYLE=DIMGREEN; fi
+    echoit "Applied filter ${SCRIPT_PWD}/filter.sql (${FILTERED_LINES} of ${FILTER_TOTAL} lines filtered = $(( FILTER_SHARE / 10 )).$(( FILTER_SHARE % 10 ))%) in $(duration ${FILTER_DUR_START}) seconds" "${FILTER_STYLE}"
+    FILTER_DUR_START=; FILTER_TOTAL=; FILTER_SHARE=; FILTER_STYLE=
   fi
   if [ "${ASM_LINES}" -eq 0 ]; then
     assemble_abort "the SQL assembled for this trial (${TRIAL_SQL}) holds 0 lines. Check the sources in use, and any filter in use"
@@ -815,7 +876,7 @@ elif [ "${QUERY_CORRECTNESS_TESTING}" -eq 1 ]; then
   echoit "MODE: Query Correctness Testing"
 elif [ "${MARIADB_BINLOG_RECOVERY_TESTING}" -eq 1 ]; then
   echoit "MODE: mariadb-binlog Recovery Testing"
-  echoit "Note: BINLOG_RECOVERY_ERROR markers can capture 'expected' replay errors (master failed on a statement, the error is encoded in the binlog, replay re-fires it). --force --binary-mode (set by the framework) suppresses most. BINLOG_CHECKSUM_DIFF markers indicate the binlog replay produced a different DB state than the original — these are the more likely real bugs. Review each saved trial individually."
+  echoit "Note: BINLOG_RECOVERY_ERROR markers can capture 'expected' replay errors (master failed on a statement, the error is encoded in the binlog, replay re-fires it). --force --binary-mode (set by the framework) suppresses most. BINLOG_CHECKSUM_DIFF markers indicate the binlog replay produced a different DB state than the original - these are the more likely real bugs. Review each saved trial individually."
   if [ "${REPLICATION}" == "1" ]; then
     echoit "Assert: mariadb-binlog recovery testing is not compatible with replication testing (REPLICATION=1}, yet; feel free to implement it"
     exit 1
@@ -1030,7 +1091,7 @@ ctrl-c() {
   fi
   if [ -d ${RUNDIR}/${TRIAL}/ ]; then
     echoit "Done. Moving the trial $0 was currently working on to workdir as ${WORKDIR}/${TRIAL}/..."
-    mv ${RUNDIR}/${TRIAL}/ ${WORKDIR}/ 2>&1 | tee -a /${WORKDIR}/pquery-run.log
+    while read -r MV_OUTPUT; do echoit "Trial move: ${MV_OUTPUT}" ORANGE; done < <(mv ${RUNDIR}/${TRIAL}/ ${WORKDIR}/ 2>&1)
   fi
   if [ $USE_GENERATOR -eq 1 -o $USE_REVGEN -eq 1 ]; then
     echoit "Attempting to cleanup generator/revgen temporary files..."
@@ -1129,7 +1190,9 @@ savetrial() {  # Only call this if we definitely want to save a trial
     fi
   fi
   echoit "Saving Trial: Moving rundir from ${RUNDIR}/${TRIAL} to ${WORKDIR}/${TRIAL}"
-  mv ${RUNDIR}/${TRIAL}/ ${WORKDIR}/ 2>&1 | tee -a /${WORKDIR}/pquery-run.log
+  # A rundir in tmpfs and a workdir on disk make this a copy and unlink, so a temporary file the server
+  # removes while the move runs is reported here. Routed through echoit to keep one stamped line per event
+  while read -r MV_OUTPUT; do echoit "Trial move: ${MV_OUTPUT}" ORANGE; done < <(mv ${RUNDIR}/${TRIAL}/ ${WORKDIR}/ 2>&1)
   chmod -R +rX ${WORKDIR}/${TRIAL}/
   if [ "$PMM_CLEAN_TRIAL" == "1" ]; then
     echoit "Removing mysql instance (pq${RANDOMD}-${TRIAL}) from pmm-admin"
@@ -1249,9 +1312,18 @@ handle_bugs() {
         HAS_ERROR_LOG_SCAN_ISSUE=1
       fi
       if [ "${IS_KNOWN_BUG}" = "1" ] && [ "${HAS_ERROR_LOG_SCAN_ISSUE}" != "1" ]; then  # known/filtered bug seen, and no unfiltered error log bug present: delete
-        echoit "This is an already known and logged, non-fixed bug: ${FINDBUG}"
-        echoit "Deleting trial as ELIMINATE_KNOWN_BUGS=1, bug was already logged and is still open"
+        echoit "This is an already known and logged, non-fixed bug: $(echo "${FINDBUG}" | tr -s ' ')"  # The known bug lists are column aligned, so the run of spaces is squeezed to keep the ticket on screen
         ALREADY_KNOWN=$[ ${ALREADY_KNOWN} + 1]
+        # The share of all classified crashes that were already known. A high share means the run keeps
+        # re-finding the same open bugs, so the known bug lists need pruning or the input needs changing
+        DUP_TOTAL=$(( ALREADY_KNOWN + NEWBUGS ))
+        DUP_SHARE=$(( ALREADY_KNOWN * 100 / DUP_TOTAL ))
+        if [ ${DUP_TOTAL} -lt 10 ]; then DUP_STYLE=DIM  # Too few classified crashes for the share to carry a colour
+        elif [ ${DUP_SHARE} -ge 90 ]; then DUP_STYLE=RED
+        elif [ ${DUP_SHARE} -ge 75 ]; then DUP_STYLE=ORANGE
+        else DUP_STYLE=DIMGREEN; fi
+        echoit "Deleting trial as ELIMINATE_KNOWN_BUGS=1, bug was already logged and is still open (${ALREADY_KNOWN} known/${DUP_TOTAL} found = ${DUP_SHARE}% dups)" "${DUP_STYLE}"
+        DUP_TOTAL=; DUP_SHARE=; DUP_STYLE=
         TRIAL_TO_SAVE=0
       elif [ "${IS_KNOWN_BUG}" = "1" ] && [ "${HAS_ERROR_LOG_SCAN_ISSUE}" = "1" ]; then  # known UniqueID, but an unfiltered error log bug was flagged: keep the trial so the error log bug gets reduced
         echoit "new_text_string.sh produced a KNOWN UniqueID, but ERROR_LOG_SCAN_ISSUE is present: keeping trial for the unfiltered error log bug"
@@ -1718,7 +1790,7 @@ pquery_test(){
   # Foonly idiom: bare `wait $PID` in the main shell starts blocking BEFORE the
   # backgrounded subshell's `sleep 0.2` + kill -9 fires. When the PID dies, our
   # wait consumes the exit status, so bash's deferred SIGCHLD handler has
-  # nothing left to report — suppressing the otherwise-annoying 'Killed' line.
+  # nothing left to report - suppressing the otherwise-annoying 'Killed' line.
   # 2>/dev/null swallows the rare "not a child of this shell" message that
   # bash prints if a captured PID was inherited from a defunct previous trial.
   # A short kill -0 fallback poll handles those non-child PIDs (wait returns
@@ -2120,6 +2192,7 @@ pquery_test(){
       fi
     fi
     FAILEDSTARTABORT=0
+    START_WAIT="${EPOCHREALTIME}"  # For the startup time on the server started line below
     for X in $(seq 0 ${MYSQLD_START_TIMEOUT}); do
       sleep 1
       if ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET} ping > /dev/null 2>&1; then
@@ -2207,14 +2280,15 @@ pquery_test(){
     # Check if mysqld/mariadbd is alive and if so, set ISSTARTED=1 so pquery will run
     if ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET} ping > /dev/null 2>&1; then
       ISSTARTED=1
+      START_DUR="$(duration ${START_WAIT})"
       if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
-        echoit "Primary Server started ok. Client: $(echo ${BIN} | sed 's|/mysqld|/mysql|;s|/mariadbd|/mariadb|') -uroot -S${SOCKET}"
+        echoit "Primary Server started ok in ${START_DUR}s. Client: $(echo ${BIN} | sed 's|/mysqld|/mysql|;s|/mariadbd|/mariadb|') -uroot -S${SOCKET}" "$(duration_style ${START_DUR})"
         if ${BASEDIR}/bin/mysqladmin -uroot -S${RUNDIR}/${TRIAL}/socket2.sock ping > /dev/null 2>&1; then
           echoit "Secondary server started ok. Client: $(echo ${BIN} | sed 's|/mysqld|/mysql|;s|/mariadbd|/mariadb|') -uroot -S${SOCKET}"
           ${BASEDIR}/bin/mysql -uroot -S${RUNDIR}/${TRIAL}/socket2.sock -e "CREATE DATABASE IF NOT EXISTS test;" > /dev/null 2>&1
         fi
       else
-        echoit "Server started ok. Client: $(echo ${BIN} | sed 's|/mysqld|/mysql|;s|/mariadbd|/mariadb|') -uroot -S${SOCKET}"
+        echoit "Server started ok in ${START_DUR}s. Client: $(echo ${BIN} | sed 's|/mysqld|/mysql|;s|/mariadbd|/mariadb|') -uroot -S${SOCKET}" "$(duration_style ${START_DUR})"
         ${BASEDIR}/bin/mysql -uroot -S${SOCKET} -e "CREATE DATABASE IF NOT EXISTS test;" > /dev/null 2>&1
       fi
       if [[ ${REPLICATION} -eq 1 ]]; then
@@ -2809,10 +2883,10 @@ EOF
           kill -9 ${MPID2} > /dev/null 2>&1
           for X in $(seq 1 4); do kill -0 ${MPID2} 2>/dev/null || break; sleep 1; done  # see comment at the corresponding poll at end of this script for why this replaces `timeout … wait`
         ) &
-        # Foonly idiom in main shell — bare wait consumes the SIGKILL exit so
+        # Foonly idiom in main shell - bare wait consumes the SIGKILL exit so
         # bash never prints 'Killed' for MPID2. See KILLPID site for full notes.
         wait ${MPID2} 2>/dev/null
-        for X in $(seq 1 5); do kill -0 ${MPID2} 2>/dev/null || break; sleep 1; done    # fallback if MPID2 wasn't reaped by wait (shouldn't happen — MPID2 is a direct child)
+        for X in $(seq 1 5); do kill -0 ${MPID2} 2>/dev/null || break; sleep 1; done    # fallback if MPID2 wasn't reaped by wait (shouldn't happen - MPID2 is a direct child)
       else
         echoit "Server (PID: ${MPID} | Socket: ${SOCKET}) failed to start after ${MYSQLD_START_TIMEOUT} seconds. Will issue extra kill -9 to ensure it's gone..."
       fi
@@ -2821,10 +2895,10 @@ EOF
         kill -9 ${MPID} > /dev/null 2>&1
         for X in $(seq 1 4); do kill -0 ${MPID} 2>/dev/null || break; sleep 1; done  # see comment at the corresponding poll at end of this script for why this replaces `timeout … wait`
       ) &
-      # Foonly idiom in main shell — bare wait consumes the SIGKILL exit so
+      # Foonly idiom in main shell - bare wait consumes the SIGKILL exit so
       # bash never prints 'Killed' for MPID. See KILLPID site for full notes.
       wait ${MPID} 2>/dev/null
-      for X in $(seq 1 5); do kill -0 ${MPID} 2>/dev/null || break; sleep 1; done    # fallback if MPID wasn't reaped by wait (shouldn't happen — MPID is a direct child)
+      for X in $(seq 1 5); do kill -0 ${MPID} 2>/dev/null || break; sleep 1; done    # fallback if MPID wasn't reaped by wait (shouldn't happen - MPID is a direct child)
       sleep 2
       sync
     elif [[ "${MDG}" -eq 1 ]]; then
@@ -2929,13 +3003,22 @@ EOF
       if [ ${QUERY_CORRECTNESS_TESTING} -ne 1 ]; then
         # This shutdown in the main shutdown done for every standard/default options pquery trial
         TO_EXIT_CODE=
+        SD_WAIT="${EPOCHREALTIME}"  # For the shutdown time reported below
+        SD_LIMIT=35  # The shutdown window, which sets the bands the time is judged against
         if [ "${RR_TRACING}" == "1" ]; then
+          SD_LIMIT=240
           timeout --signal=9 240s ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET} shutdown > /dev/null 2>&1 # Proper/clean shutdown attempt (up to 240 sec wait for rr) + see NOTE** above
           TO_EXIT_CODE=$?
         else
           timeout --signal=9 35s ${BASEDIR}/bin/mysqladmin -uroot -S${SOCKET} shutdown > /dev/null 2>&1 # Proper/clean shutdown attempt (up to 35 sec wait) + see NOTE** above
           TO_EXIT_CODE=$?
         fi
+        if [ ${TO_EXIT_CODE} -ne 137 ]; then  # A timeout is reported by the paths below, so report the time only when the server did shut down
+          SD_DUR="$(duration ${SD_WAIT})"
+          echoit "Server shut down in ${SD_DUR}s" "$(duration_style ${SD_DUR} ${SD_LIMIT})"
+          SD_DUR=
+        fi
+        SD_WAIT=; SD_LIMIT=
         if [ ${TO_EXIT_CODE} -eq 137 ]; then
           # 137 = mysqladmin was SIGKILLed at the shutdown timeout, i.e. shutdown did not complete.
           # This is a genuine shutdown hang ONLY when no coredump was produced. A crash during
@@ -3048,7 +3131,7 @@ EOF
       # Single 5s budget shared by both PIDs (matches the original `timeout 5s
       # wait MPID SLAVE_MPID` intent). Both are parent-shell children, so
       # subshell `wait` would error "not a child", and `timeout … wait` can't
-      # run a shell builtin in any shell — so the prior form was a no-op.
+      # run a shell builtin in any shell - so the prior form was a no-op.
       # After SIGKILL the kernel reaps in microseconds; the budget is rarely
       # consumed in practice.
       for X in $(seq 1 5); do
@@ -3177,9 +3260,9 @@ EOF
   if [ ${ISSTARTED} -eq 1 ]; then  # Do not try and print pquery stats when mysqld/mariadbd failed to start
     FAILED_QUERIES_OUTPUT=
     if [ -d ${RUNDIR}/${TRIAL} ]; then
-      FAILED_QUERIES_OUTPUT="$(grep -i 'SUMMARY.*queries failed' ${RUNDIR}/${TRIAL}/*.sql ${RUNDIR}/${TRIAL}/*.log 2>/dev/null | sed 's|.*:||')"
+      FAILED_QUERIES_OUTPUT="$(grep -i 'SUMMARY.*queries failed' ${RUNDIR}/${TRIAL}/*.sql ${RUNDIR}/${TRIAL}/*.log 2>/dev/null | sed 's|.*:||;s|^[ \t]*||')"
     elif [ -d ${WORKDIR}/${TRIAL} ]; then
-      FAILED_QUERIES_OUTPUT="$(grep -i 'SUMMARY.*queries failed' ${WORKDIR}/${TRIAL}/*.sql ${WORKDIR}/${TRIAL}/*.log 2>/dev/null | sed 's|.*:||')"
+      FAILED_QUERIES_OUTPUT="$(grep -i 'SUMMARY.*queries failed' ${WORKDIR}/${TRIAL}/*.sql ${WORKDIR}/${TRIAL}/*.log 2>/dev/null | sed 's|.*:||;s|^[ \t]*||')"
     fi
     if [ ! -z "${FAILED_QUERIES_OUTPUT}" ]; then
       if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
@@ -3280,7 +3363,7 @@ EOF
       break
     fi
     BINLOG_BASENAME="$(ls -1 ${RUNDIR}/${TRIAL}/data.ORIGINAL/*.idx | grep --binary-files=text -vi 'relay' | head -n1 | sed 's|.*/||;s|.idx||;s|[0]\+[0-9]\+|0*|')"
-    # { cmd1 | cmd2 ; } >file 2>&1 — the brace group makes the redirect apply to BOTH ends of the pipeline, so mariadb-binlog's stderr (decode errors / "ERROR: ..." / "WARNING: ...") is captured alongside the mariadb client's stderr (replay "ERROR N at line ..."). A plain `cmd1 | cmd2 >file 2>&1` only captures cmd2's descriptors.
+    # { cmd1 | cmd2 ; } >file 2>&1 - the brace group makes the redirect apply to BOTH ends of the pipeline, so mariadb-binlog's stderr (decode errors / "ERROR: ..." / "WARNING: ...") is captured alongside the mariadb client's stderr (replay "ERROR N at line ..."). A plain `cmd1 | cmd2 >file 2>&1` only captures cmd2's descriptors.
     echo "{ ${BASEDIR}/bin/mariadb-binlog \$(ls -1 ${RUNDIR}/${TRIAL}/data.ORIGINAL/${BINLOG_BASENAME} | grep -v idx | sort -n) | ${BASEDIR}/bin/mariadb -A -uroot -S${RUNDIR}/${TRIAL}/socket.sock --force --binary-mode test ; } >${RUNDIR}/${TRIAL}/binlog_recovery_result.txt 2>&1" > ${RUNDIR}/${TRIAL}/binlog_recovery_cmd.sh
     echo "# Reference command, indentical to the full used command in binlog_recovery_cmd.sh" > ${RUNDIR}/${TRIAL}/local_binlog_recovery
     echo "# For manual use in /test/MD..." >> ${RUNDIR}/${TRIAL}/local_binlog_recovery
@@ -3651,7 +3734,7 @@ echo "CREATE USER root@'%';" > ${WORKDIR}/root-access.sql
 echo "GRANT ALL ON *.* TO root@'%';" >> ${WORKDIR}/root-access.sql
 echo "FLUSH PRIVILEGES;" >> ${WORKDIR}/root-access.sql
 if [[ "${MDG}" -eq 0 && "${GRP_RPL}" -eq 0 ]]; then
-  ONGOING="Workdir: ${WORKDIR} | Rundir: ${RUNDIR} | Basedir: ${BASEDIR} "
+  ONGOING="Workdir: ${WORKDIR} | Rundir: ${RUNDIR} | Basedir: ${BASEDIR}"
   echoit "${ONGOING}"
 elif [[ "${MDG}" -eq 1 ]]; then
   ONGOING="Workdir: ${WORKDIR} | Rundir: ${RUNDIR} | Basedir: ${BASEDIR} | MDG Mode: TRUE"
@@ -3774,7 +3857,7 @@ if [ ${USE_REVGEN} -eq 1 ]; then SQL_INPUT_TEXT="${SQL_INPUT_TEXT}${SQL_INPUT_TE
 if [ ${USE_INFILE} -eq 1 ]; then SQL_INPUT_TEXT="${SQL_INPUT_TEXT}${SQL_INPUT_TEXT:+ + }SQL file ${INFILE} (${INFILE_LINES} lines)"; fi
 if [ ${USE_ALL_DISK_SQL} -eq 1 ]; then SQL_INPUT_TEXT="${SQL_INPUT_TEXT}${SQL_INPUT_TEXT:+ + }all SQL on disk (${QUERIES_PER_ALL_DISK_RUN} lines, new every ${ALL_DISK_SQL_NEW_QUERIES_EVERY_X_TRIALS} trials)"; fi
 SQL_INPUT_TEXT="Sources: ${SQL_INPUT_TEXT}"
-echoit "Valgrind run: $(if [ "${VALGRIND_RUN}" == "1" ]; then echo -n 'TRUE'; else echo -n 'FALSE'; fi) | pquery timeout: ${PQUERY_RUN_TIMEOUT} | ${SQL_INPUT_TEXT} $(if [ ${THREADS} -ne 1 ]; then echo -n "| Testcase size (chunked from infile): ${MULTI_THREADED_TESTC_LINES}"; fi)"
+echoit "Valgrind run: $(if [ "${VALGRIND_RUN}" == "1" ]; then echo -n 'TRUE'; else echo -n 'FALSE'; fi) | pquery timeout: ${PQUERY_RUN_TIMEOUT} | ${SQL_INPUT_TEXT}$(if [ ${THREADS} -ne 1 ]; then echo -n " | Testcase size (chunked from infile): ${MULTI_THREADED_TESTC_LINES}"; fi)"
 echoit "pquery Binary: ${PQUERY_BIN}"
 if [ "${MYINIT}" != "" ]; then echoit "MYINIT: ${MYINIT}"; fi
 if [ "${MYSAFE}" != "" ]; then echoit "MYSAFE: ${MYSAFE}"; fi
@@ -4025,6 +4108,7 @@ fi
 
 # Start actual pquery testing
 echoit "Starting pquery testing iterations..."
+TRIALS_STARTED=1  # From here on, echoit dims a routine step, so the trial results stand out on screen
 COUNT=0
 for X in $(seq 1 ${TRIALS}); do
   pquery_test

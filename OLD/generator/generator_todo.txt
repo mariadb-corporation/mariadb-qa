@@ -1,5 +1,5 @@
 ================================================================================
-generator_todo.txt — Sequenced / chained-equivalent SQL coverage (parked)
+generator_todo.txt - Sequenced / chained-equivalent SQL coverage (parked)
 ================================================================================
 
 PURPOSE
@@ -46,7 +46,7 @@ PROPOSED FUTURE SOLUTIONS
 -------------------------
 Listed in increasing complexity / decreasing operational simplicity.
 
-  Solution A — Preload via mariadb client (recommended)
+  Solution A - Preload via mariadb client (recommended)
     Maintain a static `seq_init.sql` containing the CREATE PROCEDURE /
     TRIGGER / EVENT bodies that cases 4196 / 4198 / 4199 / 4201 would emit.
     Load it once per trial via the mariadb client (which honours DELIMITER):
@@ -63,7 +63,7 @@ Listed in increasing complexity / decreasing operational simplicity.
     no per-trial overhead; single static asset to maintain.
     Cons: one new shell-level setup step and one new tracked artefact.
 
-  Solution B — Single-statement bodies only
+  Solution B - Single-statement bodies only
     Rewrite every CREATE PROCEDURE / TRIGGER / EVENT below with a single-
     statement body (no internal semicolons). Examples:
 
@@ -80,13 +80,13 @@ Listed in increasing complexity / decreasing operational simplicity.
     still useful for stored-routine dispatch coverage but stop adding
     sequence-level state changes.
 
-  Solution C — Patch pquery to honour DELIMITER (or a `--delim-aware` flag)
+  Solution C - Patch pquery to honour DELIMITER (or a `--delim-aware` flag)
     The cleanest long-term answer; pquery becomes capable of consuming the
     output as-is, no preload required. Effort lives in C++ rather than the
     framework. Out of scope for this generator change but flagged for the
     pquery roadmap.
 
-  Solution D — Anonymous compound blocks only (4200, 4203 subset)
+  Solution D - Anonymous compound blocks only (4200, 4203 subset)
     BEGIN NOT ATOMIC … END is in principle a single parser statement, but
     pquery's `;`-splitting truncates it the same way as procedure bodies.
     Without DELIMITER awareness this cannot be reactivated either, even
@@ -109,7 +109,7 @@ When Solution A, B, or C is in place:
 PARKED DISPATCHER CASES (preserve verbatim)
 ================================================================================
 
-# Case 4196 — CREATE OR REPLACE PROCEDURE with sequenced body
+# Case 4196 - CREATE OR REPLACE PROCEDURE with sequenced body
 # Single CREATE statement; body internally chains.
 4196) case $(($RANDOM % 14 + 1)) in
         1) REPLY="CREATE OR REPLACE PROCEDURE p_seq_savepoint() BEGIN SAVEPOINT sp1; INSERT INTO t1 (c1) VALUES (1); SAVEPOINT sp2; INSERT INTO t1 (c1) VALUES (2); ROLLBACK TO sp2; RELEASE SAVEPOINT sp1; END";;
@@ -129,7 +129,7 @@ PARKED DISPATCHER CASES (preserve verbatim)
         *) >&2 echo "[gen-assert] seq procedure"; REPLY="Assert: invalid random case selection in seq procedure case";;
       esac;;
 
-# Case 4197 — CALL pre-defined procedures (one-line statements)
+# Case 4197 - CALL pre-defined procedures (one-line statements)
 # Safe under pquery as a single statement, but requires Solution A so the
 # referenced procedures exist on the server.
 4197) case $(($RANDOM % 14 + 1)) in
@@ -150,7 +150,7 @@ PARKED DISPATCHER CASES (preserve verbatim)
         *) >&2 echo "[gen-assert] seq call"; REPLY="Assert: invalid random case selection in seq call case";;
       esac;;
 
-# Case 4198 — CREATE OR REPLACE TRIGGER with sequenced body
+# Case 4198 - CREATE OR REPLACE TRIGGER with sequenced body
 # Fires on subsequent DML against the registered table.
 4198) case $(($RANDOM % 8 + 1)) in
         1) REPLY="CREATE OR REPLACE TRIGGER tr_seq_audit BEFORE INSERT ON t1 FOR EACH ROW BEGIN SET @inserted = NEW.c1; INSERT INTO t2 (c1) VALUES (NEW.c1 + 1000); END";;
@@ -164,7 +164,7 @@ PARKED DISPATCHER CASES (preserve verbatim)
         *) >&2 echo "[gen-assert] seq trigger"; REPLY="Assert: invalid random case selection in seq trigger case";;
       esac;;
 
-# Case 4199 — CREATE OR REPLACE EVENT with sequenced body
+# Case 4199 - CREATE OR REPLACE EVENT with sequenced body
 # Fires per schedule when SHEDULING_ENABLED; the CREATE itself is one statement.
 4199) case $(($RANDOM % 6 + 1)) in
         1) REPLY="CREATE OR REPLACE EVENT e_seq_clean ON SCHEDULE EVERY 1 HOUR DISABLE DO BEGIN DELETE FROM t1 WHERE c1 < -1000 LIMIT 100; OPTIMIZE TABLE t1; END";;
@@ -176,7 +176,7 @@ PARKED DISPATCHER CASES (preserve verbatim)
         *) >&2 echo "[gen-assert] seq event"; REPLY="Assert: invalid random case selection in seq event case";;
       esac;;
 
-# Case 4200 — BEGIN NOT ATOMIC anonymous compound block
+# Case 4200 - BEGIN NOT ATOMIC anonymous compound block
 # Single parser statement carrying an internal sequence at top level.
 4200) case $(($RANDOM % 6 + 1)) in
         1) REPLY="BEGIN NOT ATOMIC INSERT INTO t1 (c1) VALUES (1); INSERT INTO t1 (c1) VALUES (2); SELECT COUNT(*) FROM t1 WHERE c1 IN (1,2); END";;
@@ -188,7 +188,7 @@ PARKED DISPATCHER CASES (preserve verbatim)
         *) >&2 echo "[gen-assert] compound stmt"; REPLY="Assert: invalid random case selection in compound stmt case";;
       esac;;
 
-# Case 4201 — Advanced sequenced procedures (XA cycles + handler-guarded chains)
+# Case 4201 - Advanced sequenced procedures (XA cycles + handler-guarded chains)
 # Single CREATE statement containing XA in the body (MariaDB 10.5+).
 4201) case $(($RANDOM % 12 + 1)) in
         1) xid; local _x=$REPLY; REPLY="CREATE OR REPLACE PROCEDURE p_xa_cycle() BEGIN XA START ${_x}; INSERT INTO t1 (c1) VALUES (1); XA END ${_x}; XA PREPARE ${_x}; XA COMMIT ${_x}; END";;
@@ -206,7 +206,7 @@ PARKED DISPATCHER CASES (preserve verbatim)
         *) >&2 echo "[gen-assert] advanced seq procedure"; REPLY="Assert: invalid random case selection in advanced seq procedure case";;
       esac;;
 
-# Case 4202 — Actual exercise of pre-created procs / triggers / events
+# Case 4202 - Actual exercise of pre-created procs / triggers / events
 # CALL invocations + trigger-firing DML + event toggles. Each emitted REPLY
 # is a single statement, but presupposes the CREATEs above were preloaded.
 4202) case $(($RANDOM % 16 + 1)) in
@@ -238,7 +238,7 @@ PARKED DISPATCHER CASES (preserve verbatim)
         *) >&2 echo "[gen-assert] sequenced exercise"; REPLY="Assert: invalid random case selection in sequenced exercise case";;
       esac;;
 
-# Case 4203 — BEGIN NOT ATOMIC anonymous compound with XA / advanced chains
+# Case 4203 - BEGIN NOT ATOMIC anonymous compound with XA / advanced chains
 # Top-level single statement; XA inside compound is supported in MariaDB 10.5+.
 4203) case $(($RANDOM % 6 + 1)) in
         1) xid; local _x=$REPLY; REPLY="BEGIN NOT ATOMIC XA START ${_x}; INSERT INTO t1 (c1) VALUES (1); XA END ${_x}; XA PREPARE ${_x}; XA COMMIT ${_x}; END";;

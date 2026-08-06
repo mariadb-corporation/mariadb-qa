@@ -1,4 +1,4 @@
-/data/watchdog/ai_queue/ — how to process the queue
+/data/watchdog/ai_queue/ - how to process the queue
 ====================================================
 
 watchdog.sh drops pointer directories here when it cannot mechanically

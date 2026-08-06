@@ -246,6 +246,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|__GI___nptl_deallocate_tsd|__GI___nptl_deallocate_tsd|start_thread|clone3                                                                                              ## MDEV-40651
+SIGSEGV|store_duckdb_field_in_mysql_format|ha_duckdb::rnd_next|handler::ha_rnd_next|rr_sequential                                                                              ## MDEV-40651
 SIGSEGV|collect_indexed_vcols_for_table|collect_indexed_vcols_for_join|substitute_indexed_vcols_for_join|JOIN::optimize_inner                                                  ## MDEV-40633
 doc_id == src_node->last_doc_id|SIGABRT|ut_dbg_assertion_failed|fts_optimize_compact|fts_optimize_words|fts_optimize_index                                                     ## MDEV-40621
 *start|SIGABRT|fts_decode_vlc|fts_optimize_node|fts_optimize_word|fts_optimize_compact                                                                                         ## MDEV-40621
