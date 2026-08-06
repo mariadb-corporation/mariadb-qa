@@ -247,6 +247,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 
 ##### CURRENT BUGS (Search key: Mac) #####
 #SIGSEGV|__GI___nptl_deallocate_tsd|__GI___nptl_deallocate_tsd|start_thread|clone3                                                                                              ## MDEV-40651 (filtering ftm; may be a generic/dud DuckDB stack)
+SIGSEGV|Dynamic_array<sp_type_def*>::elements|sp_type_def_list::find_type_def|sp_pcontext::find_type_def|LEX::find_type_def                                                    ## MDEV-40654
+SIGSEGV|sp_type_def_list::find_type_def|sp_pcontext::find_type_def|MYSQLparse|parse_sql                                                                                        ## MDEV-40654
+pkg|SIGABRT|is_package_public_routine_quick|Sp_handler::sp_resolve_package_routine_implicit|Sp_handler::sp_resolve_package_routine|Create_sp_func::create_with_db              ## MDEV-40654
+pkg|SIGABRT|is_package_public_routine_quick|Sp_handler::sp_resolve_package_routine_implicit|Sql_path::resolve|Create_sp_func::create_with_db                                   ## MDEV-40654
 SIGSEGV|store_duckdb_field_in_mysql_format|ha_duckdb::rnd_next|handler::ha_rnd_next|rr_sequential                                                                              ## MDEV-40651
 SIGSEGV|collect_indexed_vcols_for_table|collect_indexed_vcols_for_join|substitute_indexed_vcols_for_join|JOIN::optimize_inner                                                  ## MDEV-40633
 doc_id == src_node->last_doc_id|SIGABRT|ut_dbg_assertion_failed|fts_optimize_compact|fts_optimize_words|fts_optimize_index                                                     ## MDEV-40621
