@@ -627,7 +627,7 @@ all_disk_sql_index(){  # Builds ALL_DISK_SQL_INDEX: every *.sql file on disk, on
   if [ ! -s "${ALL_DISK_SQL_INDEX}" ]; then
     assemble_abort "USE_ALL_DISK_SQL=1, yet no SQL file was found on the disk. The index (${ALL_DISK_SQL_INDEX}) is empty"
   fi
-  echoit "USE_ALL_DISK_SQL=1: indexing took $(duration ${IDX_START}) seconds. The index holds $(grep -c '^P' ${ALL_DISK_SQL_INDEX}) paths in the home/SQL/TESTCASES set and $(grep -c '^A' ${ALL_DISK_SQL_INDEX}) in the whole-disk set"
+  echoit "USE_ALL_DISK_SQL=1: indexing took $(duration ${IDX_START})s. The index holds $(grep -c '^P' ${ALL_DISK_SQL_INDEX}) paths in the home/SQL/TESTCASES set and $(grep -c '^A' ${ALL_DISK_SQL_INDEX}) in the whole-disk set"
 }
 
 all_disk_sql_collect(){  # $1=output file, $2=lines to collect. Randomly samples SQL from the files in ALL_DISK_SQL_INDEX
@@ -706,9 +706,11 @@ assemble_trial_sql(){  # Builds TRIAL_SQL: the one SQL file this trial gives to 
       if [ "${ALL_DISK_SQL_LINES}" -eq 0 ]; then
         assemble_abort "collecting SQL from the disk index gave 0 lines. Check ${ALL_DISK_SQL_INDEX} and whether the files it lists can be read"
       fi
-      echoit "Collected ${ALL_DISK_SQL_LINES} lines (${ALL_DISK_SQL_POOL}) in $(duration ${ADS_START}) seconds"
+      echoit "Collected ${ALL_DISK_SQL_LINES} lines (${ALL_DISK_SQL_POOL}) in $(duration ${ADS_START})s"
+      ALL_DISK_SQL_POOL_TRIAL=1  # How many trials this pool has served, so the re-use line can show where the cadence stands
     else
-      echoit "Re-using the all-disk SQL pool ${ALL_DISK_SQL_POOL} (${ALL_DISK_SQL_LINES} lines). A new one is collected every ${ALL_DISK_SQL_NEW_QUERIES_EVERY_X_TRIALS} trials"
+      ALL_DISK_SQL_POOL_TRIAL=$(( ALL_DISK_SQL_POOL_TRIAL + 1 ))
+      echoit "Reusing all-disk SQL pool ${ALL_DISK_SQL_POOL} (${ALL_DISK_SQL_LINES} lines). Trial ${ALL_DISK_SQL_POOL_TRIAL}/${ALL_DISK_SQL_NEW_QUERIES_EVERY_X_TRIALS}."
     fi
   fi
   [ ${USE_GENERATOR} -eq 1 ] && ASM_KB=$(( ASM_KB + $(stat -c %s ${GEN_OUTFILE}) / 1024 ))
@@ -736,12 +738,12 @@ assemble_trial_sql(){  # Builds TRIAL_SQL: the one SQL file this trial gives to 
     ASM_LINES="$(wc -l < ${TRIAL_SQL})"
     # The share of the assembled SQL the filter removes. A high share means much of it never runs
     FILTER_TOTAL=$(( ASM_LINES + FILTERED_LINES ))
-    FILTER_SHARE=0  # In tenths of a percent, so the line can carry one decimal
-    if [ ${FILTER_TOTAL} -gt 0 ]; then FILTER_SHARE=$(( FILTERED_LINES * 1000 / FILTER_TOTAL )); fi
-    if [ $(( FILTER_SHARE / 10 )) -ge 25 ]; then FILTER_STYLE=RED
-    elif [ $(( FILTER_SHARE / 10 )) -ge 15 ]; then FILTER_STYLE=ORANGE
+    FILTER_SHARE=0  # In hundredths of a percent, so the line can carry two decimals
+    if [ ${FILTER_TOTAL} -gt 0 ]; then FILTER_SHARE=$(( FILTERED_LINES * 10000 / FILTER_TOTAL )); fi
+    if [ $(( FILTER_SHARE / 100 )) -ge 25 ]; then FILTER_STYLE=RED
+    elif [ $(( FILTER_SHARE / 100 )) -ge 15 ]; then FILTER_STYLE=ORANGE
     else FILTER_STYLE=DIMGREEN; fi
-    echoit "Applied filter ${SCRIPT_PWD}/filter.sql (${FILTERED_LINES} of ${FILTER_TOTAL} lines filtered = $(( FILTER_SHARE / 10 )).$(( FILTER_SHARE % 10 ))%) in $(duration ${FILTER_DUR_START}) seconds" "${FILTER_STYLE}"
+    echoit "Applied filter ${SCRIPT_PWD}/filter.sql: ${FILTERED_LINES}/${FILTER_TOTAL} lines filtered ($(( FILTER_SHARE / 100 )).$(printf '%02d' $(( FILTER_SHARE % 100 )))%) in $(duration ${FILTER_DUR_START})s" "${FILTER_STYLE}"
     FILTER_DUR_START=; FILTER_TOTAL=; FILTER_SHARE=; FILTER_STYLE=
   fi
   if [ "${ASM_LINES}" -eq 0 ]; then
@@ -774,7 +776,7 @@ assemble_trial_sql(){  # Builds TRIAL_SQL: the one SQL file this trial gives to 
       sed -i "/^\x01/{${SE_SWAP_SED}};s|^\x01||" ${TRIAL_SQL}
     fi
     SE_SWAP_SED=
-    echoit "STORAGE_ENGINE_SWAP: Swapping ${STORAGE_ENGINE_SWAP_PERCENTAGE}% of in-SQL storage engines to ${STORAGE_ENGINE_SWAP} took $(duration ${STORAGE_ENGINE_SWAP_DUR_START}) seconds"
+    echoit "STORAGE_ENGINE_SWAP: Swapping ${STORAGE_ENGINE_SWAP_PERCENTAGE}% of in-SQL storage engines to ${STORAGE_ENGINE_SWAP} took $(duration ${STORAGE_ENGINE_SWAP_DUR_START})s"
     STORAGE_ENGINE_SWAP_DUR_START=
   fi
   # Interleave post-storage-engine-swap to ensure not modifying CREATE TABLE ... ENGINE=... statements in interleave SQL
@@ -793,7 +795,7 @@ assemble_trial_sql(){  # Builds TRIAL_SQL: the one SQL file this trial gives to 
     if [ "${INTERLEAVE_FIN_LINES}" -eq 0 ]; then
       assemble_abort "INTERLEAVE interleaving failed: the resulting outfile, (${TRIAL_SQL}) contains 0 lines"
     fi
-    echoit "INTERLEAVE: Interleaving into ${TRIAL_SQL} complete ($(( INTERLEAVE_FIN_LINES - ASM_LINES )) interleaved lines added) in $(duration ${INTERLEAVE_DUR_START}) seconds"
+    echoit "INTERLEAVE: Interleaving into ${TRIAL_SQL} done ($(( INTERLEAVE_FIN_LINES - ASM_LINES )) lines added) in $(duration ${INTERLEAVE_DUR_START})s"
     INTERLEAVE_FIN_LINES=
     INTERLEAVE_DUR_START=
   fi
@@ -802,7 +804,7 @@ assemble_trial_sql(){  # Builds TRIAL_SQL: the one SQL file this trial gives to 
     SWAP_CREATE_TABLE_NAMES_TO_T1_START="${EPOCHREALTIME}"
     echoit "SWAP_CREATE_TABLE_NAMES_TO_T1 Active: changing all CREATE TABLE table names to t1"
     sed -i 's|CREATE TABLE\([^(]*\)\+(|CREATE TABLE \1 (|gi;s|[ \t][ \t]\+| |g;s|CREATE TABLE [^ ]\+ |CREATE TABLE t1 |gi' ${TRIAL_SQL}
-    echoit "SWAP_CREATE_TABLE_NAMES_TO_T1: Swapping CREATE TABLE table names to t1 took $(duration ${SWAP_CREATE_TABLE_NAMES_TO_T1_START}) seconds"
+    echoit "SWAP_CREATE_TABLE_NAMES_TO_T1: Swapping CREATE TABLE table names to t1 took $(duration ${SWAP_CREATE_TABLE_NAMES_TO_T1_START})s"
     SWAP_CREATE_TABLE_NAMES_TO_T1_START=
   fi
   # The following needs to be the last step in the process (ref above for reason)
@@ -843,13 +845,13 @@ assemble_trial_sql(){  # Builds TRIAL_SQL: the one SQL file this trial gives to 
     sed -i "s|t1[ \t]*,[ \t]*t1|t1|gi" ${TRIAL_SQL}  # SELECT, DROP TABLE, etc. provision
     sed -i "s|([ \t]*t1[ \t]*,[ \t]*t[0-9]\+[ \t]*)|(t2,t3)|gi;s|([ \t]*t1[ \t]*,[ \t]*t[0-9]\+[ \t]*,[ \t]*t[0-9]\+[ \t]*)|(t2,t3)|gi" ${TRIAL_SQL}  # CREATE TABLE...UNION provision
     # A few other minor provisions can be made: CREATE TABLE...SELECT, [LEFT etc.] JOIN (w/o aliases), etc.
-    echoit "ALL_NAMES_SWAP: Swapping all table names to t1 took $(duration ${SWAP_ALL_TABLE_NAMES_TO_T1_START}) seconds"
+    echoit "ALL_NAMES_SWAP: Swapping all table names to t1 took $(duration ${SWAP_ALL_TABLE_NAMES_TO_T1_START})s"
     SWAP_ALL_TABLE_NAMES_TO_T1_START=
   fi
   cap_sql_lines "${TRIAL_SQL}" "the assembled SQL"  # Last: the interleave and the swaps run above and can add lines
   TRIAL_SQL_LINES="$(wc -l < ${TRIAL_SQL})"
   PQUERY_INFILE_LINES="${TRIAL_SQL_LINES}"  # The lines in the file pquery reads, for the input against executed ratio after the trial ran. A multi-threaded or query correctness trial hands pquery a smaller file, and sets this again
-  echoit "Input SQL: ${TRIAL_SQL} (${TRIAL_SQL_LINES} lines) built in $(duration ${ASM_START}) seconds"
+  echoit "Input SQL: ${TRIAL_SQL} (${TRIAL_SQL_LINES} lines) built in $(duration ${ASM_START})s"
 }
 
 # Main startup
@@ -2282,13 +2284,13 @@ pquery_test(){
       ISSTARTED=1
       START_DUR="$(duration ${START_WAIT})"
       if [ ${QUERY_CORRECTNESS_TESTING} -eq 1 ]; then
-        echoit "Primary Server started ok in ${START_DUR}s. Client: $(echo ${BIN} | sed 's|/mysqld|/mysql|;s|/mariadbd|/mariadb|') -uroot -S${SOCKET}" "$(duration_style ${START_DUR})"
+        echoit "Primary server started (${START_DUR}s) Client: $(echo ${BIN} | sed 's|/mysqld|/mysql|;s|/mariadbd|/mariadb|') -uroot -S${SOCKET}" "$(duration_style ${START_DUR})"
         if ${BASEDIR}/bin/mysqladmin -uroot -S${RUNDIR}/${TRIAL}/socket2.sock ping > /dev/null 2>&1; then
           echoit "Secondary server started ok. Client: $(echo ${BIN} | sed 's|/mysqld|/mysql|;s|/mariadbd|/mariadb|') -uroot -S${SOCKET}"
           ${BASEDIR}/bin/mysql -uroot -S${RUNDIR}/${TRIAL}/socket2.sock -e "CREATE DATABASE IF NOT EXISTS test;" > /dev/null 2>&1
         fi
       else
-        echoit "Server started ok in ${START_DUR}s. Client: $(echo ${BIN} | sed 's|/mysqld|/mysql|;s|/mariadbd|/mariadb|') -uroot -S${SOCKET}" "$(duration_style ${START_DUR})"
+        echoit "Server started (${START_DUR}s) Client: $(echo ${BIN} | sed 's|/mysqld|/mysql|;s|/mariadbd|/mariadb|') -uroot -S${SOCKET}" "$(duration_style ${START_DUR})"
         ${BASEDIR}/bin/mysql -uroot -S${SOCKET} -e "CREATE DATABASE IF NOT EXISTS test;" > /dev/null 2>&1
       fi
       if [[ ${REPLICATION} -eq 1 ]]; then

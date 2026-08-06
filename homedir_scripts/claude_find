@@ -9,7 +9,9 @@
 # The pattern is a Python regex (re.search, case-insensitive) and is matched
 # against the raw JSONL lines as well as the extracted message text content.
 # Output: one row per matching session, sorted by hit count descending:
-#   <sid8>  MM-DD HH:MM  <cwd>  <first user prompt>   [N hits]
+#   <sid8>  <screen>  MM-DD HH:MM  <N hits>  <cwd>  <first user prompt>
+# <screen> is the screen id to reattach with: screen -d -r <screen>. It is "-"
+# when the session has no live claude process, or that process is not in screen.
 # Created by Roel Van de Paar, MariaDB (with Claude Code assistance)
 
 PROJECTS_DIR="${HOME}/.claude/projects"
@@ -35,12 +37,23 @@ if [ -z "$PATTERN" ]; then
 fi
 
 python3 - "$PROJECTS_DIR" "$PATTERN" "$SHOW_ALL" <<'PYEOF'
-import json, os, re, sys, time
+import datetime, json, os, re, subprocess, sys, time
 
 projects_dir = sys.argv[1]
 pattern_str = sys.argv[2]
 show_all = sys.argv[3] == "1"
 TOP_N = 13
+
+CLK_TCK = os.sysconf("SC_CLK_TCK")
+BOOT_TIME = 0
+try:
+    for _line in open("/proc/stat"):
+        if _line.startswith("btime"):
+            BOOT_TIME = int(_line.split()[1])
+            break
+except OSError:
+    pass
+START_CACHE = {}
 
 try:
     pattern = re.compile(pattern_str, re.IGNORECASE)
@@ -80,6 +93,113 @@ def extract_text(obj):
                     parts.append(t)
         return "\n".join(parts)
     return ""
+
+def hit_field(hits):
+    """Fixed-width hit count, sized for up to 999."""
+    return f"{hits:>3} hit{'s' if hits != 1 else ''}"
+
+def proc_stat(pid):
+    """(comm, ppid, start_time_epoch) for a pid, or None."""
+    try:
+        raw = open(f"/proc/{pid}/stat").read()
+    except OSError:
+        return None
+    close = raw.rfind(")")
+    if close < 0:
+        return None
+    comm = raw[raw.find("(") + 1:close]
+    fields = raw[close + 2:].split()
+    try:
+        return comm, fields[1], BOOT_TIME + int(fields[19]) / CLK_TCK
+    except (IndexError, ValueError):
+        return None
+
+def screen_of(pid):
+    """The screen session id a pid runs under, by walking its parents."""
+    for _ in range(40):
+        st = proc_stat(pid)
+        if not st:
+            return None
+        comm, ppid, _ = st
+        if comm.lower() == "screen":
+            return pid
+        if ppid in ("0", "1"):
+            return None
+        pid = ppid
+    return None
+
+def session_start(path):
+    """Epoch of the first timestamped record in a session log."""
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as fh:
+            for i, line in enumerate(fh):
+                if i > 15:
+                    break
+                try:
+                    ts = json.loads(line).get("timestamp")
+                except Exception:
+                    continue
+                if ts:
+                    return datetime.datetime.fromisoformat(
+                        ts.replace("Z", "+00:00")).timestamp()
+    except OSError:
+        pass
+    return None
+
+def live_screens(all_sessions):
+    """Map session id -> screen id, for sessions a live claude is running.
+
+    A resumed session carries its id on the command line, so that mapping is
+    exact. A session started plain does not, and is matched on its directory
+    plus the closest start time.
+    """
+    by_dir = {}
+    for _, sid, path in all_sessions:
+        by_dir.setdefault(os.path.dirname(path), []).append((sid, path))
+    try:
+        ps = subprocess.run(["ps", "-eo", "pid,args"],
+                            capture_output=True, text=True).stdout
+    except OSError:
+        return {}
+    exact, guess, started = {}, {}, {}
+    for line in ps.splitlines():
+        parts = line.split(None, 1)
+        if len(parts) != 2 or os.path.basename(parts[1].split()[0]) != "claude":
+            continue
+        pid, args = parts
+        st = proc_stat(pid)
+        if not st:
+            continue
+        proc_start = st[2]
+        argv = args.split()
+        if "--resume" in argv:
+            i = argv.index("--resume")
+            if i + 1 < len(argv):
+                sid = argv[i + 1]
+                if sid not in exact or proc_start > started.get(sid, 0):
+                    exact[sid] = screen_of(pid)
+                    started[sid] = proc_start
+            continue
+        try:
+            cwd = os.readlink(f"/proc/{pid}/cwd")
+        except OSError:
+            continue
+        best = None
+        for sid, path in by_dir.get(
+                os.path.join(projects_dir, cwd.replace(os.sep, "-")), []):
+            if path not in START_CACHE:
+                START_CACHE[path] = session_start(path)
+            begin = START_CACHE[path]
+            if begin is None:
+                continue
+            delta = abs(begin - proc_start)
+            if delta <= 600 and (best is None or delta < best[0]):
+                best = (delta, sid)
+        if best and (best[1] not in guess or best[0] < guess[best[1]][0]):
+            guess[best[1]] = (best[0], screen_of(pid))
+    out = {sid: scr for sid, (_, scr) in guess.items() if scr}
+    out.update({sid: scr for sid, scr in exact.items() if scr})
+    return out
 
 def first_user_prompt(path):
     cwd, text = "", ""
@@ -124,6 +244,8 @@ def count_matches(path):
         pass
     return hits
 
+screens = live_screens(sessions)
+
 rows = []
 for mtime, sid, path in sessions:
     hits = count_matches(path)
@@ -133,18 +255,21 @@ for mtime, sid, path in sessions:
     ts = time.strftime("%m-%d %H:%M", time.localtime(mtime))
     cwd_short = cwd.replace(os.path.expanduser("~"), "~") if cwd else "?"
     prompt_line = " ".join(prompt.split())[:80] if prompt else "(no user prompt)"
-    rows.append((sid, ts, cwd_short, prompt_line, hits))
+    rows.append((sid, screens.get(sid, "-"), ts, cwd_short, prompt_line, hits))
 
 if not rows:
     print(f"No sessions matched /{pattern_str}/i.", file=sys.stderr)
     sys.exit(4)
 
-rows.sort(key=lambda r: r[4], reverse=True)
+rows.sort(key=lambda r: r[5], reverse=True)
 shown = rows if show_all else rows[:TOP_N]
 
-cwd_w = min(40, max((len(r[2]) for r in shown), default=10))
-for sid, ts, cwd_short, prompt_line, hits in shown:
-    print(f"{sid[:8]}  {ts}  {cwd_short:<{cwd_w}.{cwd_w}}  {prompt_line}   [{hits} hit{'s' if hits != 1 else ''}]")
+cwd_w = min(40, max((len(r[3]) for r in shown), default=10))
+scr_w = max((len(r[1]) for r in shown), default=1)
+hit_w = max([8] + [len(hit_field(r[5])) for r in shown])
+for sid, scr, ts, cwd_short, prompt_line, hits in shown:
+    print(f"{sid[:8]}  {scr:<{scr_w}}  {ts}  {hit_field(hits):<{hit_w}}  "
+          f"{cwd_short:<{cwd_w}.{cwd_w}}  {prompt_line}")
 
 print("", file=sys.stderr)
 print(f"{len(rows)} session(s) matched /{pattern_str}/i.", file=sys.stderr)

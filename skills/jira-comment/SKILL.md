@@ -30,7 +30,7 @@ Write the way a senior developer writes a review comment:
 
 - Lead with the answer or conclusion in the first line.
 - Put the evidence in `{code}` / `{noformat}` blocks (code snippets, a small aligned table), not in prose.
-- Short declarative lines. No multi-sentence prose paragraphs, no teaching prose, no restating what the dev already said.
+- Short declarative sentences. No teaching prose, no restating what the dev already said. Short means few words, not a wrapped line: see the no-hard-wrap rule below.
 - Close with one short, direct question.
 - No tickboxes, no status-icon markers, no `(/)` `(x)` `(!)`, no emoji.
 
@@ -40,6 +40,7 @@ Target the whole comment at well under 15 lines. If it needs more, file a separa
 
 Follow `~/mariadb-qa/skills/_shared/jira_markup.md` (Jira wiki markup, `{{monospace}}`, single `*bold*`, hyphen-escape in `MDEV-`/`MENT-` keys and before a leading `--` option (`{{\--ssl-crl}}`), no leading `#`, timeless prose, full CS/ES version names). Two comment-specific reminders:
 
+- Never hard-wrap a prose line. Jira treats every newline as a forced line break, so a paragraph wrapped at 78 or 80 columns renders as a column of short, broken lines, and a sentence cut in the middle reads as an error. Write each paragraph as one long line and let the browser wrap it. Blank lines between paragraphs are correct and stay. This overrides the general short-line habit; a Jira comment is the exception. Inside `{code}` and `{noformat}` the line breaks are real content, so keep one statement per line there.
 - Tester-to-dev tone: professional, neutral, brief, factual. No hyperbole ("obviously / clearly / unfortunately"), no idioms.
 - Username casing: `[~handle]` mentions use the lowercase Jira username/key (e.g. `[~some_user]`), never the capitalised display form. If matching a comment's author programmatically, note `author.name` is capitalised (`Some_user`) while the key is lowercase (`some_user`) - compare `author.key`, not `author.name`.
 - When the comment surfaces a concern produced via an LLM analysis (not direct code reading), say so in one short sentence ("I ran the patch through an LLM-based analysis as a sanity check; the following surfaced:") so the dev knows they are evaluating an LLM-surfaced concern, not a tested reproducer.
@@ -84,6 +85,7 @@ Could you confirm whether {{ha_innodb.cc:5260}} needs the same guard?
 - No em-dash inside the comment content (only the two display-only delimiter lines use them).
 - Hyphen escaped inside `MDEV-` / `MENT-` issue keys and before a leading `--` option (`{{\--ssl-crl}}`); nowhere else.
 - No leading `#` in any prose line.
+- No hard-wrapped prose. Every paragraph outside `{code}` / `{noformat}` is one unbroken line. Check with `awk 'length>0 && length<70' <file>` and confirm each short line is a deliberate one, not a wrap.
 - No tickboxes, status icons, or emoji.
 - One file:line citation per concern, in a code/noformat block where possible.
 - Leads with the conclusion; closes with one short question.

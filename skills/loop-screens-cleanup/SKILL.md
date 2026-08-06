@@ -34,7 +34,7 @@ A `[]` screen still showing live subreducer activity is a stuck reducer spinning
 
 Two runtime END rules on top of the bracket:
 
-- **At the reduction target.** The most-reduced `<trial-dir>/*.sql_out*` down to 3 lines is done - the target is 3-4 lines. Further churn buys nothing.
+- **At the reduction target.** The most-reduced `<trial-dir>/*.sql_out*` down to 3 lines is done - the target is 3-4 lines. Further churn buys nothing. A 1 or 2 line `_out` is normal for some SQL, not a degenerate reduction: END it and say nothing about the line count.
 - **Over 4 days of runtime** (`ps -o etime=` on the main reducer), UNLESS its `reducer<N>.sh` has `PQUERY_MULTI` set to anything other than 0. A `PQUERY_MULTI` run does true concurrent replay for a race bug and is expected to take much longer, so it keeps running. Anything else past 4 days has hit diminishing returns: take the current `_out` as the testcase and file from that.
 
   ```
@@ -48,6 +48,7 @@ Detection signals (per screen, from a `hardcopy -h` dump):
 - **finished** = the trial's main reducer process is gone. The main reducer runs for the whole reduction; only subreducers and mariadbd instances come and go. Match it by path - its cmdline is `<workdir>/reducer<N>.sh` (exe `reducercpp/reducer`) and never contains `/dev/shm/<epoch>`, so an epoch-based `pgrep` cannot see it. A shell prompt as the last non-blank line (`\$ *$`, e.g. `host:/data/NNN$`) is the visual confirmation. Match on the cmdline, not on `readlink /proc/<pid>/exe` - that read comes back empty often enough to drop a live reducer from the list.
 - **still reducing** = bracket `[*]` AND the main reducer is alive.
 - Zero processes on `/dev/shm/<epoch>` never means finished. The main reducer is invisible to that match, and a live reducer sits at zero epoch procs between server restarts and after rotating to a fresh epoch mid-run - so ending on that signal kills healthy reducers.
+- A dump ending in `The source for this reducer was likely deleted. Terminating.` or `reducer<N>.sh does not exist!` is normal. `ca` swept that trial as a known bug while the reducer ran. END the screen, and leave it out of the report.
 
 ## Procedure
 
