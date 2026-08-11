@@ -246,6 +246,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|LEX::sp_package_spec_check_cyclic_dependency|LEX::set_field_type_typedef_package_spec|ORAparse|parse_sql                                                               ## MDEV-40721
 #SIGSEGV|__GI___nptl_deallocate_tsd|__GI___nptl_deallocate_tsd|start_thread|clone3                                                                                              ## MDEV-40651 (filtering ftm; may be a generic/dud DuckDB stack)
 SIGSEGV|Dynamic_array<sp_type_def*>::elements|sp_type_def_list::find_type_def|sp_pcontext::find_type_def|LEX::find_type_def                                                    ## MDEV-40654
 SIGSEGV|sp_type_def_list::find_type_def|sp_pcontext::find_type_def|MYSQLparse|parse_sql                                                                                        ## MDEV-40654
