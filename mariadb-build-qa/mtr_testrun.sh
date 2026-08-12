@@ -44,6 +44,8 @@ fi
 TEMP="$(mktemp)"
 REPORT="${PWD}/report.log"  # b-style bug report output (analog of ~/b's report.log)
 export MTR_PRINT_CORE=no    # skip MTR's slow inline gdb; matrix stage uses ~/t + stack.sh on saved cores
+export DEBUGINFOD_URLS=     # Ubuntu sets this system-wide; llvm-symbolizer then stalls ~90s per MSAN
+                            # report waiting on the unreachable debuginfod host
 ./gendirs.sh "${3}" | grep 'MD' > ${TEMP}
 
 while read LINE; do
