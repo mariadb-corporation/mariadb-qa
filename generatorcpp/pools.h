@@ -1,5 +1,5 @@
 // Created by Roel Van de Paar, MariaDB
-// SQL fuzz generator data pools.
+// SQL generator data pools.
 #pragma once
 #include <array>
 #include <string_view>

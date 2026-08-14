@@ -45,7 +45,7 @@ check "missing value"    2 --queries
 # with a libc++abi message that names nothing - a typo in REVGEN_OPTIONS would
 # look like a crash.
 for f in --queries --depth --depth-max --max-chain --schema-every --seed \
-        --grants --chain-share \
+        --grants --chain-share --wild-cols \
          --threads --coverage; do
   for v in 99999999999999999999 abc 1.5 "12x"; do
     "$BIN" $f "$v" --output /dev/null >"$W/n.out" 2>"$W/n.err"
@@ -157,17 +157,73 @@ UNBAL=$(sed "s/'\([^']\|''\)*'//g; s/\"\([^\"]\|\"\"\)*\"//g" "$W/g.sql" |
 # The qualifier in "t1.*" names a table, so a column name there cannot resolve.
 # join() spaces the '.', which parses.
 has "qualified asterisk uses a table" "$W/g.sql" "\bt[0-9] \. \*"
-# The setup block must supply everything the identifier pools name.
-for obj in "CREATE TABLE IF NOT EXISTS t1" "CREATE TABLE IF NOT EXISTS t4" \
-           "CREATE OR REPLACE PROCEDURE sp1" "CREATE OR REPLACE FUNCTION f1" \
-           "CREATE OR REPLACE VIEW cv1" "CREATE SEQUENCE IF NOT EXISTS cs1" \
-           "UNLOCK TABLES" "BACKUP UNLOCK"; do
+# The setup block must supply everything the identifier pools name. The tables go
+# out every fourth interval, the rest at a lower rate, so the check that they are
+# all there runs over a file long enough to hold one of each.
+for obj in "CREATE TABLE IF NOT EXISTS t1" "CREATE TABLE IF NOT EXISTS t4" "COMMIT"; do
   has "setup has '$obj'" "$W/g.sql" "^$obj"
 done
+gen "$W/full.sql" --queries 4000 --depth 4 --seed 11 --threads 1
+for obj in "CREATE OR REPLACE PROCEDURE sp1" "CREATE OR REPLACE FUNCTION f1" \
+           "CREATE OR REPLACE VIEW cv1" "CREATE SEQUENCE IF NOT EXISTS cs1" \
+           "CREATE USER IF NOT EXISTS u1" "CREATE ROLE IF NOT EXISTS r1" \
+           "CREATE SERVER IF NOT EXISTS srv1" "CREATE EVENT IF NOT EXISTS ev1" \
+           "CREATE TRIGGER IF NOT EXISTS tr1" "CREATE INDEX IF NOT EXISTS ci1" \
+           "PREPARE s1 FROM" "SET NAMES utf8mb4"; do
+  has "setup has '$obj'" "$W/full.sql" "^$obj"
+done
+# The session reset puts back every system variable the walk can name, so a
+# variable added to one list and not the other is caught here.
+for v in $(sed -n '/^const char \*kSysVars\[\]/,/};/p' revgen.cpp |
+           grep -oE '"[a-z_]+"' | tr -d '"'); do
+  has "session reset covers $v" "$W/full.sql" "^SET SESSION .*$v = DEFAULT"
+  has "global reset covers $v"  "$W/full.sql" "^SET GLOBAL .*$v = DEFAULT"
+done
+# The two unlock lines undo what only --allow-locking lets the walk emit. Every
+# line of the block is a line that is not generated SQL, so by default they are
+# not in the file at all.
+hasnt "no UNLOCK TABLES by default" "$W/g.sql" "^UNLOCK TABLES"
+hasnt "no BACKUP UNLOCK by default" "$W/g.sql" "^BACKUP UNLOCK"
+gen "$W/gl.sql" --queries 2000 --depth 8 --seed 42 --allow-locking
+has "UNLOCK TABLES with --allow-locking" "$W/gl.sql" "^UNLOCK TABLES"
+has "BACKUP UNLOCK with --allow-locking" "$W/gl.sql" "^BACKUP UNLOCK"
+# The run connects to one database and has to stay there, so the block creates
+# none however the rest of it is built.
+hasnt "setup creates no database" "$W/g.sql" "^CREATE DATABASE"
 # Two of the four tables carry partitions and two do not.
 P=$(grep -cE "^CREATE TABLE IF NOT EXISTS t[0-9] .*PARTITION BY" "$W/g.sql")
 U=$(grep -cE "^CREATE TABLE IF NOT EXISTS t[0-9] " "$W/g.sql")
 [ "$P" -gt 0 ] && [ "$U" -gt "$P" ] && ok || bad "partitioned setup tables: $P of $U"
+# A PARTITION() clause is only ever put on one of the two that do: the server
+# refuses it on the others, and the walk cannot tell which table it named.
+PT=$(grep -oE "^CREATE TABLE IF NOT EXISTS t[0-9] .*PARTITION BY" "$W/g.sql" |
+     grep -oE "^CREATE TABLE IF NOT EXISTS t[0-9]" | grep -oE "t[0-9]$" | sort -u | tr -d 't\n')
+BADP=$(grep -oE "\bt[0-9] PARTITION\(" "$W/g.sql" | grep -oE "t[0-9]" | sort -u | tr -d 't\n' |
+       tr -d "$PT")
+[ -n "$PT" ] && [ -z "$BADP" ] && ok || bad "PARTITION() named on unpartitioned t$BADP"
+
+# The tables are built from the column definitions of the version under test, so
+# a run picks up a type that version added without a list here to maintain.
+gen "$W/cd1.sql" --queries 200 --depth 6 --seed 7 --threads 1 --wild-cols 0
+gen "$W/cd2.sql" --queries 200 --depth 6 --seed 8 --threads 1 --wild-cols 0
+D1=$(grep -m1 "^CREATE TABLE IF NOT EXISTS t1 " "$W/cd1.sql")
+D2=$(grep -m1 "^CREATE TABLE IF NOT EXISTS t1 " "$W/cd2.sql")
+if [ -n "$(ls ../yacc/*_coldefs.txt 2>/dev/null)" ]; then
+  [ -n "$D1" ] && [ "$D1" != "$D2" ] && ok || bad "two runs built the same t1 shape"
+else
+  skip "column definitions file not present"
+fi
+# Without the file the plain shapes carry the run, and the line says what is lost.
+"$BIN" --queries 200 --depth 6 --seed 7 --threads 1 --coldefs /nonexistent/coldefs.txt \
+  --output "$W/nocd.sql" >/dev/null 2>"$W/nocd.err"
+has "missing coldefs is not fatal" "$W/nocd.sql" "^CREATE TABLE IF NOT EXISTS t1 "
+has "missing coldefs is reported"  "$W/nocd.err" "no column definitions at"
+has "missing coldefs uses the plain shape" "$W/nocd.sql" \
+  "^CREATE TABLE IF NOT EXISTS t1 .*c2 VARCHAR\(100\) DEFAULT 'd'"
+
+# LIMIT and OFFSET take a number. The identifier form is read as a stored-program
+# variable and refused as undeclared.
+hasnt "LIMIT takes no identifier"  "$W/g.sql" "\b(LIMIT|OFFSET) +[a-z]+[0-9]"
 
 gen "$W/nos.sql" --queries 300 --depth 6 --seed 42 --schema-every 0
 hasnt "schema-every 0 = no setup" "$W/nos.sql" "^CREATE TABLE IF NOT EXISTS t1"
@@ -329,21 +385,22 @@ SC=$(grep -oE "structural [0-9]+/[0-9]+ \([0-9]+" "$W/cov.err" | grep -oE "\([0-
 [ -n "$SC" ] && [ "$SC" -ge 90 ] && ok || bad "structural coverage ${SC:-unknown}%, floor 90%"
 
 # Full-scale reach, release binary only (the same code runs 10-30x slower under
-# sanitizers, and the floor above already runs there): at 500,000 statements and
+# sanitizers, and the floor above already runs there): at 750,000 statements and
 # the production depth, the walk has to try 99%+ of the structural alternatives
-# and enter all but a handful of the rules. This is the distribution bar for a
-# whole fuzz run's input. A few rules sit behind a rare parent and need more
-# depth than production uses - measured 1 to 3 unentered across seeds at depth
-# 10, against 2 at depth 14 - so the allowance is 4, well under the dozens a
-# real reach regression costs.
+# and enter all but a handful of the rules. At 500,000 the figure swings 98.9 to
+# 99.4 across seeds, which says more about the seed than about the reach. This is the distribution bar for a
+# whole generator run's input. A few rules sit behind a rare parent and need more
+# depth than production uses - measured 1 to 5 unentered over eight seeds at
+# depth 10, against 2 at depth 14 - so the allowance is 5, well under the dozens
+# a real reach regression costs.
 if [ "$(basename "$BIN")" = "revgen" ]; then
-  "$BIN" --queries 500000 --depth 10 --seed 21 --threads 4 --coverage 0 \
+  "$BIN" --queries 750000 --depth 10 --seed 21 --threads 4 --coverage 0 \
     --output /dev/null >/dev/null 2>"$W/full.err"
   FS=$(grep -oE "structural [0-9]+/[0-9]+ \([0-9.]+" "$W/full.err" | grep -oE "[0-9.]+$")
   NE=$(grep -oE "rules never entered \([0-9]+" "$W/full.err" | grep -oE "[0-9]+$")
   awk -v s="${FS:-0}" 'BEGIN{exit !(s+0 >= 99)}' && ok \
     || bad "full-scale structural coverage ${FS:-unknown}%, floor 99%"
-  [ "${NE:-99}" -le 4 ] && ok || bad "${NE:-unknown} rules never entered at 500k, allowed 4"
+  [ "${NE:-99}" -le 5 ] && ok || bad "${NE:-unknown} rules never entered at 500k, allowed 5"
 fi
 
 # Random literals are drawn fresh each time. Cache them by mistake - the terminal

@@ -1,0 +1,31 @@
+#!/bin/bash
+# Rename a screen session. Pass the current name (or part of it, or the PID)
+# and the new name. An exact name match wins over a partial one.
+
+if [ -z "${2}" ]; then
+  echo 'Assert: please pass the current screen name (or part of it) and the new name. No action was taken.'
+  exit 1
+fi
+
+LIST="$(screen -ls)"
+MATCH="$(printf '%s\n' "${LIST}" | awk -F'\t' -v P="${1}" '$2 ~ /^[0-9]+\./ { if (substr($2, index($2, ".") + 1) == P) print $2 }')"
+if [ -z "${MATCH}" ]; then
+  MATCH="$(printf '%s\n' "${LIST}" | awk -F'\t' -v P="${1}" '$2 ~ /^[0-9]+\./ { if (index($2, P)) print $2 }')"
+fi
+
+if [ -z "${MATCH}" ]; then
+  echo "Assert: no screen matches '${1}'. No action was taken."
+  exit 1
+fi
+if [ "$(printf '%s\n' "${MATCH}" | wc -l)" -gt 1 ]; then
+  echo "Assert: '${1}' matches more than one screen. No action was taken. Matches:"
+  printf '  %s\n' ${MATCH}
+  exit 1
+fi
+
+screen -S "${MATCH}" -X sessionname "${2}"
+if [ -z "$(screen -ls | awk -F'\t' -v N="${MATCH%%.*}.${2}" '$2 == N')" ]; then
+  echo "Assert: renaming '${MATCH#*.}' to '${2}' failed. Note that a screen name cannot contain a '/'."
+  exit 1
+fi
+echo "Renamed screen '${MATCH#*.}' to '${2}'"

@@ -10,6 +10,9 @@
 # against the raw JSONL lines as well as the extracted message text content.
 # Output: one row per matching session, sorted by hit count descending:
 #   <sid8>  <screen>  MM-DD HH:MM  <N hits>  <cwd>  <first user prompt>
+# The prompt column holds the first prompt the user typed. A Stop hook wrapper is
+# reduced to its condition text, and /compact, status? and continue lines are
+# passed over.
 # <screen> is the screen id to reattach with: screen -d -r <screen>. It is "-"
 # when the session has no live claude process, or that process is not in screen.
 # Created by Roel Van de Paar, MariaDB (with Claude Code assistance)
@@ -201,6 +204,20 @@ def live_screens(all_sessions):
     out.update({sid: scr for sid, scr in exact.items() if scr})
     return out
 
+STOP_HOOK_PREFIX = "A session-scoped Stop hook is now active with condition:"
+SKIP_PROMPTS = {"/compact", "status?", "status ?", "continue", "continue."}
+
+def unwrap_stop_hook(text):
+    """The user's own wording, taken out of the Stop hook wrapper around it."""
+    if not text.startswith(STOP_HOOK_PREFIX):
+        return text
+    body = text[len(STOP_HOOK_PREFIX):].lstrip()
+    if not body.startswith('"'):
+        return text
+    body = body[1:]
+    end = body.rfind('".')
+    return body[:end] if end > 0 else body
+
 def first_user_prompt(path):
     cwd, text = "", ""
     try:
@@ -217,6 +234,9 @@ def first_user_prompt(path):
                 candidate = extract_text(obj)
                 stripped = candidate.lstrip()
                 if stripped.startswith("<local-command-") or stripped.startswith("<command-") or stripped.startswith("<bash-"):
+                    continue
+                candidate = unwrap_stop_hook(stripped)
+                if " ".join(candidate.split()).lower() in SKIP_PROMPTS:
                     continue
                 if candidate.strip():
                     text = candidate

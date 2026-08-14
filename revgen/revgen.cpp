@@ -8,8 +8,10 @@
 // so a name a statement creates is a name a later statement can reference.
 // Literal tokens get random data; keyword tokens resolve to real SQL text via
 // the sibling lex.h symbol tables. Statement classes are weighted
-// (kVerbWeights) and kSetupSql is interjected at intervals, so the generated
-// DML has real tables to work on and the session recovers from held locks.
+// (kVerbWeights) and a setup block is interjected at intervals, so the
+// generated DML has real tables to work on and the session recovers. The
+// tables are built per run from the column definitions of the version under
+// test (build_setup, --coldefs), so the DML meets a different schema each time.
 //
 // Generation is multi-threaded. Output can be PREPARE-checked (drop
 // session-releasing / known-bad statements) and PREPARE-validated against a
@@ -18,6 +20,7 @@
 #include <algorithm>
 #include <atomic>
 #include <bit>
+#include <cctype>
 #include <chrono>
 #include <cstdint>
 #include <cstdio>
@@ -25,6 +28,7 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <map>
 #include <mutex>
@@ -169,51 +173,267 @@ const std::unordered_map<std::string, int> kVerbWeights = {
     {"replace", 6},     {"set", 6},     {"create", 6}, {"alter", 5},
     {"select_into", 4}, {"show", 2},    {"call", 2},   {"drop", 2}};
 
+// System variables a SET statement can name. Kept out of id_for so the session
+// reset below can put every one of them back to its default without a second
+// list to keep in step.
+const char *kSysVars[] = {"sort_buffer_size",   "join_buffer_size",
+                          "tmp_table_size",     "max_heap_table_size",
+                          "read_buffer_size",   "max_sort_length",
+                          "group_concat_max_len", "long_query_time"};
+constexpr size_t kSysVarCount = sizeof(kSysVars) / sizeof(kSysVars[0]);
+
 // Schema and session reset, interjected into the generated SQL. Two reasons it
 // is needed. A grammar walk cannot build a usable table: its CREATE TABLE
 // derivations almost never reach a plain column list, so t1/t2 would never
 // exist and the generated DML would have nothing to act on. And a walk freely
-// emits statements that leave the session unusable - a held table or backup
-// lock, an open read-only transaction - after which everything else fails. One
-// of these is emitted every --schema-every statements, using the t1/t2 and
-// c1/c2 names the identifier leaves produce.
-// Emitted as a block at every interval. A held table or backup lock rejects
-// every other table until it is released, and LOCK TABLES turns up about once
-// per 130 statements, so releasing has to be at least as frequent.
-const char *kResetSql[] = {"UNLOCK TABLES", "BACKUP UNLOCK", "COMMIT"};
-constexpr size_t kResetCount = sizeof(kResetSql) / sizeof(kResetSql[0]);
+// emits statements that leave the session unusable - an open transaction, a held
+// table or backup lock where locking is allowed - after which everything else
+// fails. What the block creates is named the way the identifier leaves name
+// things, so a generated statement resolves against it.
+//
+// Every line of the block is a line of the file that is not generated SQL, so
+// each one is emitted at the rate at which what it holds is destroyed:
+//
+//   every interval  COMMIT, and the two unlock lines where the walk can lock
+//   every 4th       the tables and their rows, which a generated DROP or ALTER
+//                   takes away, and the first round as well
+//   every 16th      the typed rows, the partitions, the routines, views and
+//                   sequences
+//   every 32nd      users, roles, servers, events, triggers, indexes, prepared
+//                   statements and the session settings, which a generated
+//                   statement rarely takes away
+//
+// The file is shuffled before it is used, so each line has to stand on its own:
+// everything is IF NOT EXISTS, OR REPLACE or IGNORE.
+struct Setup {
+  std::vector<std::string> every, tables, objects, floor;
+  bool partitioned[5] = {false, false, false, false, false};  // by table number
+  std::string part_table;  // one that is, for repair_partition_refs
+};
+Setup g_setup;
 
-const char *kSetupSql[] = {
-    "CREATE TABLE IF NOT EXISTS t1 (c1 INT NOT NULL AUTO_INCREMENT PRIMARY KEY, c2 VARCHAR(100) DEFAULT 'd', c3 TEXT DEFAULT 'd', c4 DECIMAL(10,2) DEFAULT 0, KEY(c2)) ENGINE=InnoDB PARTITION BY HASH(c1) (PARTITION p1, PARTITION p2)",
-    "CREATE TABLE IF NOT EXISTS t2 (c1 INT NOT NULL AUTO_INCREMENT PRIMARY KEY, c2 DATETIME DEFAULT NOW(), c3 BLOB DEFAULT 'd', c4 DOUBLE DEFAULT 0, KEY(c2)) ENGINE=InnoDB WITH SYSTEM VERSIONING",
-    "CREATE TABLE IF NOT EXISTS t3 (c1 INT NOT NULL AUTO_INCREMENT PRIMARY KEY, c2 CHAR(10) DEFAULT 'd', c3 VARCHAR(200) DEFAULT 'd', c4 BIGINT UNSIGNED DEFAULT 0, KEY(c2)) ENGINE=Aria PARTITION BY HASH(c1) (PARTITION p1, PARTITION p2)",
-    "CREATE TABLE IF NOT EXISTS t4 (c1 INT NOT NULL AUTO_INCREMENT PRIMARY KEY, c2 VARCHAR(50) DEFAULT 'd', c3 VARBINARY(64) DEFAULT 'd', c4 FLOAT DEFAULT 0, KEY(c2)) ENGINE=MyISAM",
-    "INSERT IGNORE INTO t1 (c2,c3,c4) VALUES ('a','x',1.5),('b','y',2.5),(REPEAT('c',90),NULL,3.5)",
-    "INSERT IGNORE INTO t2 (c2,c3,c4) VALUES (NOW(),'x',1.5),('2020-01-01 10:20:30',NULL,2.5)",
-    "INSERT IGNORE INTO t3 (c2,c3,c4) VALUES ('a','x',1),('b','y',2)",
-    "INSERT IGNORE INTO t4 (c2,c3,c4) VALUES ('a','x',1.5),('b','y',2.5)",
+// The leading word of a column definition says how the column can be used: a
+// large object needs a prefix length before it can be indexed, a spatial or
+// vector column needs its own index type, and each family takes its own literal.
+enum class ColKind { Num, Str, Lob, Temporal, Spatial, Json, Vector, Other };
+
+ColKind col_kind(const std::string &def) {
+  std::string w;
+  for (char c : def) {
+    if (std::isalnum((unsigned char)c) || c == '_')
+      w += (char)std::tolower((unsigned char)c);
+    else
+      break;
+  }
+  static const std::unordered_map<std::string, ColKind> k = {
+      {"int", ColKind::Num}, {"integer", ColKind::Num}, {"int4", ColKind::Num},
+      {"tinyint", ColKind::Num}, {"smallint", ColKind::Num},
+      {"mediumint", ColKind::Num}, {"bigint", ColKind::Num},
+      {"decimal", ColKind::Num}, {"dec", ColKind::Num}, {"fixed", ColKind::Num},
+      {"numeric", ColKind::Num}, {"number", ColKind::Num},
+      {"float", ColKind::Num}, {"double", ColKind::Num}, {"real", ColKind::Num},
+      {"bit", ColKind::Num}, {"bool", ColKind::Num}, {"boolean", ColKind::Num},
+      {"year", ColKind::Num}, {"serial", ColKind::Num},
+      {"char", ColKind::Str}, {"varchar", ColKind::Str},
+      {"varchar2", ColKind::Str}, {"nchar", ColKind::Str},
+      {"nvarchar", ColKind::Str}, {"national", ColKind::Str},
+      {"enum", ColKind::Str}, {"set", ColKind::Str}, {"uuid", ColKind::Str},
+      {"inet4", ColKind::Str}, {"inet6", ColKind::Str},
+      {"binary", ColKind::Str}, {"varbinary", ColKind::Str},
+      {"raw", ColKind::Str},
+      {"text", ColKind::Lob}, {"tinytext", ColKind::Lob},
+      {"mediumtext", ColKind::Lob}, {"longtext", ColKind::Lob},
+      {"clob", ColKind::Lob}, {"long", ColKind::Lob},
+      {"blob", ColKind::Lob}, {"tinyblob", ColKind::Lob},
+      {"mediumblob", ColKind::Lob}, {"longblob", ColKind::Lob},
+      {"date", ColKind::Temporal}, {"datetime", ColKind::Temporal},
+      {"timestamp", ColKind::Temporal}, {"time", ColKind::Temporal},
+      {"json", ColKind::Json}, {"vector", ColKind::Vector},
+      {"geometry", ColKind::Spatial}, {"point", ColKind::Spatial},
+      {"linestring", ColKind::Spatial}, {"polygon", ColKind::Spatial},
+      {"multipoint", ColKind::Spatial}, {"multilinestring", ColKind::Spatial},
+      {"multipolygon", ColKind::Spatial},
+      {"geometrycollection", ColKind::Spatial}};
+  auto it = k.find(w);
+  return it == k.end() ? ColKind::Other : it->second;
+}
+
+// Three values per family, so the seed rows hold something the column can
+// really store. A value the column refuses is a warning under INSERT IGNORE,
+// not a lost statement.
+const char *col_literal(ColKind k, int i) {
+  switch (k) {
+    case ColKind::Num: { static const char *v[] = {"1", "2", "-3"}; return v[i]; }
+    case ColKind::Str: { static const char *v[] = {"'a'", "'b'", "'cc'"}; return v[i]; }
+    case ColKind::Lob: { static const char *v[] = {"'x'", "'yy'", "REPEAT('z',90)"}; return v[i]; }
+    case ColKind::Temporal: { static const char *v[] = {"'2024-02-29 12:00:00'", "'1970-01-01 00:00:01'", "NOW()"}; return v[i]; }
+    case ColKind::Spatial: { static const char *v[] = {"POINT(1,1)", "POINT(2,2)", "POINT(0,0)"}; return v[i]; }
+    case ColKind::Json: { static const char *v[] = {"'{\"a\":1}'", "'[1,2]'", "'{}'"}; return v[i]; }
+    default: { static const char *v[] = {"NULL", "NULL", "NULL"}; return v[i]; }
+  }
+}
+
+// Plain shapes, emitted after the built ones. A built table the server refuses
+// still exists in this shape, so the DML that names it has something to work on.
+// Nothing here rules partitioning out: a table the walk names with a PARTITION()
+// clause has to carry partitions in this shape too, and a system-versioned table
+// cannot be partitioned by hash. System versioning is left to the built shapes.
+const char *kBaseTable[4] = {
+    "CREATE TABLE IF NOT EXISTS t1 (c1 INT NOT NULL AUTO_INCREMENT PRIMARY KEY, c2 VARCHAR(100) DEFAULT 'd', c3 TEXT DEFAULT 'd', c4 DECIMAL(10,2) DEFAULT 0, KEY(c2)) ENGINE=InnoDB",
+    "CREATE TABLE IF NOT EXISTS t2 (c1 INT NOT NULL AUTO_INCREMENT PRIMARY KEY, c2 DATETIME DEFAULT NOW(), c3 BLOB DEFAULT 'd', c4 DOUBLE DEFAULT 0, KEY(c2)) ENGINE=InnoDB",
+    "CREATE TABLE IF NOT EXISTS t3 (c1 INT NOT NULL AUTO_INCREMENT PRIMARY KEY, c2 CHAR(10) DEFAULT 'd', c3 VARCHAR(200) DEFAULT 'd', c4 BIGINT UNSIGNED DEFAULT 0, KEY(c2)) ENGINE=Aria",
+    "CREATE TABLE IF NOT EXISTS t4 (c1 INT NOT NULL AUTO_INCREMENT PRIMARY KEY, c2 VARCHAR(50) DEFAULT 'd', c3 VARBINARY(64) DEFAULT 'd', c4 FLOAT DEFAULT 0, KEY(c2)) ENGINE=MyISAM"};
+
+// One schema for this process: a trial then has a single shape its DML can rely
+// on, and separate trials get different ones. c1 is always the integer primary
+// key the generated DML leans on; c2 to c4 come from the column definitions of
+// the version under test, so a type that version added is covered without a list
+// here to maintain. wild_pct of them are derived from the grammar instead, which
+// reaches shapes no test file holds.
+void build_setup(const std::vector<std::string> &pool, Xoshiro256pp &rng,
+                 const std::function<std::string()> &wild_type, int wild_pct,
+                 const std::string &db, bool allow_locking, bool allow_use) {
+  g_setup.every.push_back("COMMIT");
+  if (allow_locking) {
+    g_setup.every.push_back("UNLOCK TABLES");
+    g_setup.every.push_back("BACKUP UNLOCK");
+  }
+
+  // Two of the four tables carry partitions. Naming a partitioned table in DML
+  // with a PARTITION() clause hits a known partitioning assert often enough that
+  // partitioning all four spent a third of the trials on it. Which two is picked
+  // per process, so no table is always the partitioned one.
+  unsigned pa = (unsigned)(rng() % 4), pb = (unsigned)(rng() % 4);
+  while (pb == pa) pb = (unsigned)(rng() % 4);
+  g_setup.partitioned[pa + 1] = g_setup.partitioned[pb + 1] = true;
+  g_setup.part_table = "t" + std::to_string(pa + 1);
+  static const char *kEngines[] = {"InnoDB", "InnoDB", "InnoDB", "InnoDB",
+                                   "InnoDB", "Aria",   "Aria",   "MyISAM",
+                                   "MyISAM", "MEMORY"};
+  static const char *kOptions[] = {"", "", "", "", "ROW_FORMAT=DYNAMIC",
+                                   "ROW_FORMAT=COMPACT", "ROW_FORMAT=REDUNDANT",
+                                   "CHECKSUM=1", "STATS_PERSISTENT=1",
+                                   "WITH SYSTEM VERSIONING"};
+  const std::string part = " PARTITION BY HASH(c1) (PARTITION p1, PARTITION p2)";
+
+  for (int t = 0; t < 4; ++t) {
+    const std::string tn = "t" + std::to_string(t + 1);
+    ColKind kind[3] = {ColKind::Str, ColKind::Lob, ColKind::Num};  // the plain shape
+    std::string sql = kBaseTable[t];
+    if (!pool.empty() || wild_type) {
+      std::string cols;
+      for (int c = 0; c < 3; ++c) {
+        std::string def;
+        if (wild_type && wild_pct > 0 && (int)(rng() % 100) < wild_pct)
+          def = wild_type();
+        if (def.empty() && !pool.empty()) def = pool[rng() % pool.size()];
+        if (def.empty()) def = "VARCHAR(100) DEFAULT 'd'";
+        kind[c] = col_kind(def);
+        cols += ", c" + std::to_string(c + 2) + " " + def;
+      }
+      sql = "CREATE TABLE IF NOT EXISTS " + tn +
+            " (c1 INT NOT NULL AUTO_INCREMENT PRIMARY KEY" + cols;
+      // An index on a large object needs a prefix length, and a spatial or
+      // vector column needs an index type of its own, so it goes without.
+      if (kind[0] != ColKind::Spatial && kind[0] != ColKind::Vector)
+        sql += ", KEY(c2" +
+               std::string((kind[0] == ColKind::Lob || kind[0] == ColKind::Json)
+                               ? "(8)" : "") + ")";
+      sql += ") ENGINE=" + std::string(kEngines[rng() % 10]);
+      const std::string opt = kOptions[rng() % 10];
+      if (!opt.empty()) sql += " " + opt;
+    }
+    if (g_setup.partitioned[t + 1]) sql += part;
+    g_setup.tables.push_back(sql);
+    // The plain shape behind the built one, so a table the server refuses still
+    // exists for the statements that name it, and rows that fit either.
+    const std::string base_sql =
+        kBaseTable[t] + (g_setup.partitioned[t + 1] ? part : std::string());
+    if (sql != base_sql) g_setup.tables.push_back(base_sql);
+    g_setup.tables.push_back("INSERT IGNORE INTO " + tn + " () VALUES (),(),()");
+    std::string vals[3];
+    for (int r = 0; r < 3; ++r)
+      vals[r] = std::string(col_literal(kind[0], r)) + "," +
+                col_literal(kind[1], r) + "," + col_literal(kind[2], r);
+    g_setup.objects.push_back("INSERT IGNORE INTO " + tn + " (c2,c3,c4) VALUES (" +
+                              vals[0] + "),(" + vals[1] + "),(" + vals[2] + ")");
     // A generated ALTER can coalesce or remove the partitions, and CREATE TABLE
-    // IF NOT EXISTS will not put them back on a table that still exists. Only
-    // t1 and t3 are partitioned: naming a partitioned table in DML with a
-    // PARTITION() clause hits a known partitioning assert often enough that
-    // partitioning all four tables spent a third of the trials on it, so two
-    // tables carry partitions and two do not.
-    "ALTER TABLE t1 PARTITION BY HASH(c1) (PARTITION p1, PARTITION p2)",
-    "ALTER TABLE t3 PARTITION BY HASH(c1) (PARTITION p1, PARTITION p2)",
-    "CREATE SEQUENCE IF NOT EXISTS cs1 START WITH 1 INCREMENT BY 1",
-    "CREATE SEQUENCE IF NOT EXISTS cs2 START WITH 100 INCREMENT BY 2",
-    // The identifier leaves name routines and views (sp1, f1, cv1) wherever
-    // the grammar has a slot for one, so without these every CALL and every
-    // function call comes back as "does not exist" and the whole statement is
-    // lost. One takes no argument and one takes an integer, so both call shapes
-    // resolve.
-    "CREATE OR REPLACE PROCEDURE sp1() SELECT c1, c2 FROM t1 LIMIT 3",
-    "CREATE OR REPLACE PROCEDURE sp2(a INT) SELECT c1 FROM t3 WHERE c1 > a LIMIT 3",
-    "CREATE OR REPLACE FUNCTION f1() RETURNS INT DETERMINISTIC RETURN 1",
-    "CREATE OR REPLACE FUNCTION f2(a INT) RETURNS INT DETERMINISTIC RETURN a + 1",
-    "CREATE OR REPLACE VIEW cv1 AS SELECT c1, c2, c3, c4 FROM t1",
-    "CREATE OR REPLACE VIEW cv2 AS SELECT c1, c2 FROM t3 WHERE c1 > 0"};
-constexpr size_t kSetupCount = sizeof(kSetupSql) / sizeof(kSetupSql[0]);
+    // IF NOT EXISTS will not put them back on a table that still exists.
+    if (g_setup.partitioned[t + 1])
+      g_setup.objects.push_back("ALTER TABLE " + tn + part);
+  }
+
+  g_setup.objects.push_back("CREATE SEQUENCE IF NOT EXISTS cs1 START WITH 1 INCREMENT BY 1");
+  g_setup.objects.push_back("CREATE SEQUENCE IF NOT EXISTS cs2 START WITH 100 INCREMENT BY 2");
+  // The identifier leaves name routines and views (sp1, f1, cv1) wherever the
+  // grammar has a slot for one, so without these every CALL and every function
+  // call comes back as "does not exist" and the whole statement is lost. One
+  // takes no argument and one takes an integer, so both call shapes resolve.
+  g_setup.objects.push_back("CREATE OR REPLACE PROCEDURE sp1() SELECT c1, c2 FROM t1 LIMIT 3");
+  g_setup.objects.push_back("CREATE OR REPLACE PROCEDURE sp2(a INT) SELECT c1 FROM t3 WHERE c1 > a LIMIT 3");
+  g_setup.objects.push_back("CREATE OR REPLACE FUNCTION f1() RETURNS INT DETERMINISTIC RETURN 1");
+  g_setup.objects.push_back("CREATE OR REPLACE FUNCTION f2(a INT) RETURNS INT DETERMINISTIC RETURN a + 1");
+  g_setup.objects.push_back("CREATE OR REPLACE VIEW cv1 AS SELECT c1, c2, c3, c4 FROM t1");
+  g_setup.objects.push_back("CREATE OR REPLACE VIEW cv2 AS SELECT c1, c2 FROM t3 WHERE c1 > 0");
+
+  // The rest of what the identifier leaves name. Without these a statement that
+  // names a user, a role, a server, an event, a trigger, an index or a prepared
+  // statement is refused before it runs. No database: the run connects to one
+  // and has to stay there, which is why the grammar walk has database DDL pruned.
+  g_setup.floor.push_back("CREATE USER IF NOT EXISTS u1");
+  g_setup.floor.push_back("CREATE USER IF NOT EXISTS u2");
+  g_setup.floor.push_back("CREATE ROLE IF NOT EXISTS r1");
+  g_setup.floor.push_back("CREATE ROLE IF NOT EXISTS r2");
+  g_setup.floor.push_back("CREATE SERVER IF NOT EXISTS srv1 FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'localhost')");
+  g_setup.floor.push_back("CREATE SERVER IF NOT EXISTS srv2 FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'localhost')");
+  // Disabled: an event that fires during the run runs SQL nothing asked for, and
+  // the crash it lands in belongs to no statement in the file.
+  g_setup.floor.push_back("CREATE EVENT IF NOT EXISTS ev1 ON SCHEDULE EVERY 1 HOUR DISABLE DO SELECT 1");
+  g_setup.floor.push_back("CREATE EVENT IF NOT EXISTS ev2 ON SCHEDULE EVERY 1 DAY DISABLE DO SELECT 2");
+  g_setup.floor.push_back("CREATE TRIGGER IF NOT EXISTS tr1 BEFORE INSERT ON t1 FOR EACH ROW SET @a = NEW.c1");
+  g_setup.floor.push_back("CREATE TRIGGER IF NOT EXISTS tr2 AFTER UPDATE ON t3 FOR EACH ROW SET @b = NEW.c1");
+  // Both index names on every table, because an index hint names one without
+  // regard to the table it sits on. On c1: it is the one column every shape has,
+  // and it is indexable in all of them.
+  for (int t = 1; t <= 4; ++t)
+    for (const char *ci : {"ci1", "ci2"})
+      g_setup.floor.push_back("CREATE INDEX IF NOT EXISTS " + std::string(ci) +
+                              " ON t" + std::to_string(t) + "(c1)");
+  g_setup.floor.push_back("PREPARE s1 FROM 'SELECT 1'");
+  g_setup.floor.push_back("PREPARE s2 FROM 'SELECT c1 FROM t1 LIMIT 1'");
+  // Session state a generated SET can leave behind. SET NAMES is the one that
+  // matters most: it changes the encoding of everything the connection carries
+  // from there on.
+  if (allow_use) g_setup.floor.push_back("USE " + db);
+  g_setup.floor.push_back("SET NAMES utf8mb4");
+  std::string ses = "SET SESSION ", glo = "SET GLOBAL ";
+  for (size_t i = 0; i < kSysVarCount; ++i) {
+    ses += std::string(i ? ", " : "") + kSysVars[i] + " = DEFAULT";
+    glo += std::string(i ? ", " : "") + kSysVars[i] + " = DEFAULT";
+  }
+  g_setup.floor.push_back(ses);
+  g_setup.floor.push_back(glo);
+}
+
+// The walk names a table and then a PARTITION() clause on it, with no way to
+// know whether that table has partitions: two of the four do. Point the clause
+// at one that does, rather than lose the statement to "PARTITION () clause on
+// non partitioned table".
+void repair_partition_refs(std::string &sql) {
+  if (g_setup.part_table.size() != 2) return;
+  const std::string tag = " PARTITION(";
+  for (size_t p = sql.find(tag); p != std::string::npos;
+       p = sql.find(tag, p + 1)) {
+    if (p < 2 || sql[p - 2] != 't') continue;
+    const char d = sql[p - 1];
+    if (d < '1' || d > '4' || g_setup.partitioned[d - '0']) continue;
+    if (p >= 3) {
+      const char b = sql[p - 3];
+      if (std::isalnum((unsigned char)b) || b == '_' || b == '.') continue;
+    }
+    sql[p - 1] = g_setup.part_table[1];
+  }
+}
 
 // A statement holding any of these is derived again instead. Each one either ends
 // the session, stops the server, stalls the run, or sets a variable to a value that
@@ -981,6 +1201,10 @@ class Generator {
     // instead caught "PARTITION BY", where the name that follows is a grouping
     // expression, not a partition - a window's "OVER p2" came from that.
     for (const char *n : {"part_name", "sub_name"}) role_of_[n] = Role::Partition;
+    // The name in an index hint - USE KEY(x), FORCE INDEX(x) - is an index. The
+    // INDEX spelling types itself off INDEX_SYM, the KEY spelling cannot: KEY_SYM
+    // also heads the column list of a key definition, where the names are columns.
+    role_of_["key_usage_element"] = Role::Index;
     role_of_["collation_name"] = Role::Collation;
     role_of_["charset_name"] = Role::Charset;
     role_of_["sp_name"] = Role::Proc;
@@ -1117,13 +1341,7 @@ class Generator {
       static const char *v[] = {"a", "b", "c"};
       return v[rng_() % 3];
     }
-    if (r == Role::SysVar) {
-      static const char *v[] = {"sort_buffer_size",   "join_buffer_size",
-                                "tmp_table_size",     "max_heap_table_size",
-                                "read_buffer_size",   "max_sort_length",
-                                "group_concat_max_len", "long_query_time"};
-      return v[rng_() % 8];
-    }
+    if (r == Role::SysVar) return kSysVars[rng_() % kSysVarCount];
     if (r == Role::ExplainFormat) {
       static const char *v[] = {"TRADITIONAL", "JSON"};
       return v[rng_() % 2];
@@ -1831,7 +2049,7 @@ struct Validator {
   std::mutex *fails_mu = nullptr;
   uint64_t total = 0, dropped = 0, lost = 0, other = 0, skipped = 0;
   // Statements that parse but the server still refuses: unknown column, wrong
-  // argument count, and so on. They cost a fuzz run as much as a parse error
+  // argument count, and so on. They cost a generator run as much as a parse error
   // does, and only the error code says which kind, so each code is counted and
   // keeps one example.
   std::map<unsigned, std::pair<uint64_t, std::string>> other_by_err;
@@ -1854,7 +2072,15 @@ struct Validator {
   bool init(const std::string &sock, const std::string &database,
             std::FILE *log, std::mutex *mu) {
     socket_path = sock; db = database; fails = log; fails_mu = mu;
-    return reconnect();
+    if (!reconnect()) return false;
+    // PREPARE resolves names, so the schema on this server decides the verdict.
+    // Without the block the tables are missing here and every statement naming
+    // one is reported as a failure it will not have in a real run, while the
+    // failures behind it go unseen.
+    for (const std::vector<std::string> *v :
+         {&g_setup.tables, &g_setup.objects, &g_setup.floor})
+      for (const std::string &s : *v) mysql_real_query(conn, s.c_str(), s.size());
+    return true;
   }
   bool keep(const std::string &sql) {  // true: keep, false: drop (parse error)
     ++total;
@@ -1902,9 +2128,15 @@ void usage() {
       "  --chain-share N  percent of the time a rule chains into itself rather than\n"
       "                  moving on, where it can do either; lower leaves more depth\n"
       "                  for the bottom of an expression (default 30)\n"
-      "  --schema-every N  interject the setup/reset block (t1-t4 plus lock and\n"
-      "                  transaction release) every N statements (default 25, 0 off);\n"
-      "                  the schema itself is rebuilt every fourth interval\n"
+      "  --schema-every N  interject the setup/reset block (t1-t4 plus the session\n"
+      "                  reset) every N statements (default 25, 0 off); the tables\n"
+      "                  are put back every fourth interval, the routines and views\n"
+      "                  every eighth, the rest every thirty-second\n"
+      "  --coldefs PATH  column definitions the t1-t4 shapes are built from, one per\n"
+      "                  line (default: sibling of --yacc, e.g. 13.1_coldefs.txt;\n"
+      "                  written by yacc/harvest_coldefs.sh). Missing: plain shapes\n"
+      "  --wild-cols N   percent of columns whose type is derived from the grammar\n"
+      "                  rather than taken from --coldefs (default 12, 0 off)\n"
       "  --start SYM     start symbol (default verb_clause)\n"
       "  --seed N        base RNG seed (default: random)\n"
       "  --threads N     generation threads (default: nproc/4)\n"
@@ -1949,6 +2181,8 @@ int main(int argc, char **argv) {
   std::string probe;
   int depth_max = 0;  // 0: every statement uses --depth
   long schema_every = 25;
+  std::string coldefs_path;
+  int wild_cols = 12;
   std::string start = "verb_clause";
   std::optional<uint64_t> seed;
   unsigned threads = 0;
@@ -1991,6 +2225,8 @@ int main(int argc, char **argv) {
     else if (a == "--queries") queries = (long)num(a, need(i));
     else if (a == "--depth") depth = (int)std::clamp(num(a, need(i)), 0LL, 2000LL);
     else if (a == "--schema-every") schema_every = (long)num(a, need(i));
+    else if (a == "--coldefs") coldefs_path = need(i);
+    else if (a == "--wild-cols") wild_cols = (int)num(a, need(i));
     else if (a == "--max-chain") max_chain = (int)std::clamp(num(a, need(i)), 1LL, 1000LL);
     else if (a == "--chain-share") chain_share = (int)std::clamp(num(a, need(i)), 1LL, 99LL);
     else if (a == "--grants") grants = (int)std::clamp(num(a, need(i)), 0LL, 100LL);
@@ -2045,9 +2281,18 @@ int main(int argc, char **argv) {
     std::string prefix = (pos != std::string::npos) ? base.substr(0, pos) : "";
     lex = yp.parent_path().string() + "/" + prefix + "lex.h";
   }
+  if (coldefs_path.empty()) {  // version-matched sibling: 13.1_sql_yacc.yy -> 13.1_coldefs.txt
+    std::filesystem::path yp(yacc);
+    std::string bn = yp.filename().string();
+    auto pos = bn.rfind("sql_yacc.yy");
+    std::string prefix = (pos != std::string::npos) ? bn.substr(0, pos) : "";
+    coldefs_path = yp.parent_path().string() + "/" + prefix + "coldefs.txt";
+  }
   // --depth, --depth-max, --max-chain and --threads are clamped where they are
   // read; only these two are left to bound here.
   if (schema_every < 0) schema_every = 0;
+  if (wild_cols < 0) wild_cols = 0;
+  if (wild_cols > 100) wild_cols = 100;
   if (queries <= 0) { std::cerr << "revgen: --queries must be > 0\n"; return 2; }
   if (!std::filesystem::exists(yacc)) {
     std::cerr << "revgen: yacc grammar not found: " << yacc
@@ -2113,6 +2358,11 @@ int main(int argc, char **argv) {
     g.prune_production("limit_clause", {"EXAMINED_SYM"});
     // '?' only binds in a prepared statement; these run directly.
     g.prune_production("param_marker", {"PARAM_MARKER"});
+    // LIMIT and OFFSET take an identifier as their count, which the server reads
+    // as a stored-program variable and refuses as undeclared. It was the single
+    // largest class of statement the server accepted grammatically and then
+    // refused, at one in ten. The number alternatives stay.
+    g.prune_production("limit_option", {"ident_cli"});
     // The lexer only returns NOT2_SYM for the NOT keyword under
     // HIGH_NOT_PRECEDENCE (sql_lex.cc), so under the default sql_mode nothing
     // produces it. Both rules that offer it have a working alternative - NOT_SYM
@@ -2308,9 +2558,51 @@ int main(int argc, char **argv) {
     t.seed_full();
     base = t.next();
   }
+
+  // Column definitions for the table shapes. A missing file is not fatal: the
+  // plain shapes cover it, with a line saying what was lost.
+  std::vector<std::string> coldefs;
+  {
+    std::ifstream cf(coldefs_path);
+    for (std::string l; std::getline(cf, l);) {
+      while (!l.empty() && (l.back() == '\r' || l.back() == ' ' || l.back() == '\t'))
+        l.pop_back();
+      if (!l.empty() && l[0] != '#') coldefs.push_back(l);
+    }
+    if (coldefs.empty())
+      std::cerr << "revgen: no column definitions at " << coldefs_path
+                << "\n  t1-t4 keep their plain shapes; write the file with "
+                << (home ? home : "$HOME") << "/mariadb-qa/yacc/harvest_coldefs.sh\n";
+  }
+
+  // One schema for the whole process, built before any thread starts: the threads
+  // write into one file, so a shape picked per thread would leave three of every
+  // four tables in another thread's shape.
+  Xoshiro256pp schema_rng(base ^ 0x5EEDULL);
+  if (full_entropy) schema_rng.seed_full();
+  Generator schema_gen(g, kw, base ^ 0xC01DEF5ULL, max_chain, chain_share, grants,
+                       full_entropy);
+  const bool has_field_type = g.is_nonterminal("field_type");
+  std::function<std::string()> wild_type;
+  if (has_field_type && wild_cols > 0)
+    wild_type = [&]() -> std::string {
+      // A derived type is a full column definition on its own, and it reaches
+      // types and combinations no test file holds. The rule takes its type name
+      // from the identifier pool as well, so a derivation can come out as a name
+      // with a length after it; one whose first word is not a type the server
+      // has is derived again.
+      for (int try_n = 0; try_n < 6; ++try_n) {
+        std::string t = schema_gen.generate(std::string("field_type"), 5);
+        if (!schema_gen.truncated() && col_kind(t) != ColKind::Other) return t;
+      }
+      return std::string();
+    };
+  build_setup(coldefs, schema_rng, wild_type, wild_cols, db, allow_locking || allow_unsafe,
+              allow_unsafe);
   std::cerr << "revgen: queries=" << queries << " threads=" << threads
             << " depth=" << depth << " start=" << start
             << " yacc=" << yacc
+            << " coldefs=" << coldefs.size()
             << (validate ? " validate=on" : "") << "\n";
 
   std::string base_part = output == "-"
@@ -2359,20 +2651,28 @@ int main(int argc, char **argv) {
       const long gap_lo = std::max(1L, schema_every * 4 / 5);
       const long gap_span = std::max(1L, schema_every * 2 / 5);
       auto next_gap = [&]() { return gap_lo + (long)(srng() % (uint64_t)gap_span); };
-      long next_schema = schema_every ? next_gap() : 0;
+      long next_schema = 0;  // the first block goes out before any generated statement
+      long added = 0;
+      // A tier that does not fit in what is left of this thread's count is left
+      // out rather than written past it: the framework takes --queries as this
+      // source's share of the trial SQL, so the file has to hold to it.
+      auto emit_block = [&](const std::vector<std::string> &v) {
+        if ((long)v.size() > n - emitted - added) return;
+        for (const std::string &s : v) { buf += s; buf += ";\n"; }
+        added += (long)v.size();
+      };
       while (emitted < n && attempts < cap) {
         ++attempts;
-        if (next_schema && emitted >= next_schema) {
-          // Releases have to keep pace with LOCK TABLES, which the walk emits
-          // about once per 130 statements. Rebuilding the schema is only needed
-          // when a generated DROP or ALTER has taken a table away, so it runs at
-          // a quarter of that rate.
-          for (size_t k = 0; k < kResetCount; ++k) { buf += kResetSql[k]; buf += ";\n"; }
-          long added = (long)kResetCount;
-          if (++reset_round % 4 == 0) {
-            for (size_t k = 0; k < kSetupCount; ++k) { buf += kSetupSql[k]; buf += ";\n"; }
-            added += (long)kSetupCount;
-          }
+        if (schema_every && emitted >= next_schema) {
+          // Each tier at the rate at which what it holds is destroyed. The
+          // tables also go out on the first round, so even a run of a few
+          // statements has something for its DML to work on.
+          ++reset_round;
+          added = 0;
+          emit_block(g_setup.every);
+          if (reset_round == 1 || reset_round % 4 == 0) emit_block(g_setup.tables);
+          if (reset_round % 16 == 0) emit_block(g_setup.objects);
+          if (reset_round % 32 == 0) emit_block(g_setup.floor);
           next_schema = emitted + next_gap();
           if (buf.size() >= (1 << 16)) { f.write(buf.data(), buf.size()); buf.clear(); }
           emitted += added;
@@ -2383,6 +2683,7 @@ int main(int argc, char **argv) {
         // mid-derivation. Emitting it only adds a parse failure; derive another.
         if (gen.truncated()) { ++a_cut; continue; }
         if (skip_statement(q)) { ++a_skipped; continue; }
+        repair_partition_refs(q);
         if (q.find_first_not_of(" \t\n") == std::string::npos) continue;
         if (val && !v.keep(q)) continue;
         buf += q; buf += ";\n";
@@ -2451,7 +2752,7 @@ int main(int argc, char **argv) {
                 << (100.0 * (judged - a_drop) / judged) << "% (of preparable); "
                 << "1064 logged to " << fails_path << "\n";
     // What the server rejects for a reason other than syntax, worst first. A
-    // fuzz run loses these statements as surely as the unparseable ones, so
+    // generator run loses these statements as surely as the unparseable ones, so
     // this is the list to work down.
     if (!all_other_err.empty()) {
       std::vector<std::pair<unsigned, std::pair<uint64_t, std::string>>> top(

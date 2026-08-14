@@ -1,6 +1,6 @@
 #!/bin/bash
 # Crash-resilient LLVM coverage harness for the SQL generator (proposal #1).
-# Profraw flushes only on clean exit, and fuzz SQL can crash mariadbd -- so we run
+# Profraw flushes only on clean exit, and generated SQL can crash mariadbd -- so we run
 # the corpus in chunks, clean-shutdown (flush) after each, restart on crash, and
 # merge every per-instance profraw. Datadir persists across restarts (schema deepens).
 set -u

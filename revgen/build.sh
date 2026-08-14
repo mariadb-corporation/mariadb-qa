@@ -12,7 +12,7 @@
 set -e
 cd "$(dirname "$0")"
 # libc++ avoids the gcc-14 libstdc++ <unicode.h> incompatibility with clang.
-FLAGS="-std=c++20 -stdlib=libc++ -Wall -Wextra -pthread"
+FLAGS="-std=c++20 -stdlib=libc++ -Wall -Wextra -pthread -Wl,--build-id=sha1"
 LIBS="-lmysqlclient"
 # The release binary is committed and has to run on machines whose shared
 # libc++ is older than the build box's, so its C++ runtime links statically.
@@ -75,7 +75,7 @@ msan_build() {
   clang++ -std=c++20 -Wall -Wextra -pthread -O1 -g -fno-omit-frame-pointer \
     -fsanitize=memory -fsanitize-memory-track-origins=2 \
     -nostdinc++ -isystem $MSAN_LIBS/include/c++/v1 \
-    -L$MSAN_LIBS -Wl,-rpath,$MSAN_LIBS \
+    -L$MSAN_LIBS -Wl,-rpath,$MSAN_LIBS -Wl,--build-id=sha1 \
     -o revgen_msan revgen.cpp -lc++ -lc++abi $LIBS
   echo "built revgen_msan"
   [ -n "${SKIP_TESTS}" ] || REVGEN_TEST_NO_CLIENT=1 ./test.sh ./revgen_msan

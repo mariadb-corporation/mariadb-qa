@@ -1,0 +1,24 @@
+#!/bin/bash
+# Start a new screen session and attach to it. A name passed as the first
+# option is used as-is. Without one, the name is built from the current
+# directory (/data/123456 becomes data-123456, any other directory uses its
+# own name) and a number is added, counting up per screen started there.
+
+if [ ! -z "${1}" ]; then
+  exec screen -S "${1}"
+fi
+
+if [[ "${PWD}" =~ ^/data/[0-9]+$ ]]; then
+  NAME="data-${PWD##*/}"
+elif [ "${PWD}" = "${HOME}" ]; then
+  NAME='home'
+else
+  NAME="${PWD##*/}"
+fi
+NAME="$(printf '%s' "${NAME}" | tr -cs 'a-zA-Z0-9_-' '-' | sed 's|^-\+||;s|-\+$||')"
+if [ -z "${NAME}" ]; then
+  NAME='screen'
+fi
+
+LAST="$(screen -ls | grep -oE "[0-9]+\.${NAME}-[0-9]+" | sed "s|.*\.${NAME}-||" | sort -n | tail -n1)"
+exec screen -S "${NAME}-$(( ${LAST:-0} + 1 ))"

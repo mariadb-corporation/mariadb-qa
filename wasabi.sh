@@ -290,7 +290,7 @@ build_cycle(){
 }
 
 # =============== SQL generation ===============
-# Generate fresh fuzzed SQL via ~/mariadb-qa/generatorcpp/generator. The C++ generator
+# Generate fresh SQL via ~/mariadb-qa/generatorcpp/generator. The C++ generator
 # writes directly to the target path (--output) so no per-instance dir copy is needed.
 # Output lands at ${WASABI_DIR}/sql/wasabi_input.sql.
 generate_sql(){

@@ -3,7 +3,7 @@
 Reverse SQL generator driven by the MariaDB bison grammar. It reads a
 `sql_yacc.yy`, derives random statements top-down from the grammar rules up to a
 depth budget, fills identifiers and literals with names typed by the slot they
-sit in, interjects a small schema so the generated DML has something to work on,
+sit in, interjects a schema so the generated DML has something to work on,
 and (optionally) PREPARE-validates each statement against a live server.
 
 ## Build
@@ -70,8 +70,16 @@ Flags:
                     a single alternative. Default 2, 0 disables. Counted per
                     path, so a widened subtree cannot widen again.
 - `--schema-every N` interject the setup/reset block every N statements.
-                    Default 25, 0 disables. The schema itself is rebuilt every
-                    fourth interval.
+                    Default 25, 0 disables. The tables go back every fourth
+                    interval, the routines and views every sixteenth, the rest
+                    every thirty-second.
+- `--coldefs PATH`  column definitions the `t1`-`t4` shapes are built from, one
+                    per line. Default: sibling of `--yacc`, so
+                    `13.1_sql_yacc.yy` pairs with `13.1_coldefs.txt`. Written by
+                    `yacc/harvest_coldefs.sh`. Missing: the plain shapes carry
+                    the run.
+- `--wild-cols N`   percent of columns whose type is derived from the grammar
+                    rather than taken from `--coldefs`. Default 12, 0 disables.
 - `--start SYM`     start symbol. Default `verb_clause`.
 - `--seed N`        base RNG seed. Default: random. Threads derive from it.
 - `--threads N`     generation threads. Default: nproc/4.
@@ -199,16 +207,32 @@ apart when both route through `sp_name`.
 `--names` lists every production with an identifier leaf, so the role table can
 be checked against the whole grammar instead of a guessed subset.
 
-The setup block (`kSetupSql`) creates `t1`-`t4` across InnoDB, Aria and MyISAM
-with one system-versioned table, procedures, functions, views and sequences, and
-is re-emitted every fourth interval. A grammar walk cannot build a usable table
-of its own: its `CREATE TABLE` derivations almost never reach a plain column
-list. Two of the four tables carry partitions and two do not - partitioning all
-four spent a third of the trials on one known partitioning assert.
+The setup block creates everything those names refer to. A grammar walk cannot
+build a usable table of its own: its `CREATE TABLE` derivations almost never
+reach a plain column list.
 
-The reset block (`kResetSql`) releases a held table lock, backup lock and
-transaction every interval. A walk freely emits statements that leave the session
-unusable, after which everything else fails.
+`t1`-`t4` are built once per run rather than written out here. `c1` is always the
+integer primary key the generated DML leans on; `c2` to `c4` take a real column
+definition from `--coldefs`, which `yacc/harvest_coldefs.sh` takes from the test
+suite of the version under test and checks against a server of that version. A
+type the version added is therefore covered without a list here to maintain. One
+column in eight has its type derived from the grammar instead (`--wild-cols`),
+which reaches shapes no test file holds; about one built table in six is refused
+by the server, and the plain shape emitted behind it carries those. The engine,
+the table options and which two of the four tables carry partitions are picked
+per run too, so separate trials meet separate schemas while one trial keeps a
+single shape. Partitioning all four spent a third of the trials on one known
+partitioning assert, so two carry partitions and two do not, and a `PARTITION()`
+clause the walk puts on one of the others is moved to one that has them.
+
+Every line of the block is a line of the file that is not generated SQL, so each
+one goes out at the rate at which what it holds is destroyed: `COMMIT` every
+interval, the tables and their rows every fourth, the routines, views, sequences
+and typed rows every sixteenth, and the users, roles, servers, events, triggers,
+indexes, prepared statements and session settings every thirty-second. The two
+unlock lines are only emitted with `--allow-locking`, which is what lets the walk
+hold a lock in the first place. The file is shuffled before it is used, so every
+line stands on its own: `IF NOT EXISTS`, `OR REPLACE` or `IGNORE` throughout.
 
 ## Validation
 
@@ -221,7 +245,7 @@ kept.
 
 After the rate, the run prints those other rejections clustered by error code,
 worst first, with one example message each. A statement the server refuses for a
-bad date is as lost to a fuzz run as an unparseable one, and only the code says
+bad date is as lost to a generator run as an unparseable one, and only the code says
 which kind, so this is the list to work down. Two things it shows that the rate
 alone hides. A value the server does not know masks whatever is wrong further
 along: with `COLLATE i1` the statement stops at "Unknown collation", and with a

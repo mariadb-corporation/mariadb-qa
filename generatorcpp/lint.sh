@@ -1,6 +1,6 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
-# Lint checker for the C++ SQL fuzz generator (generator.cpp + pools.h).
+# Lint checker for the C++ SQL generator (generator.cpp + pools.h).
 #
 # Mirrors build.sh's toolchain (clang / libc++ / C++20) and MariaDB basedir pick,
 # so a clean lint matches a clean build. The default mode is -fsyntax-only: it parses

@@ -350,8 +350,11 @@ case "$MODE" in
        + (if ($fv|length) > 0 then {fixVersions: $fv}         else {} end)
        + (if ($ev|length) > 0 then {customfield_13204: $ev}   else {} end)
        + (if ($lb|length) > 0 then {labels: $lb}              else {} end)')"
-    [ "$(printf '%s' "$upd" | jq 'length')" -gt 0 ] || die "--edit needs at least one --affects-version/--fix-version/--es-version/--label"
-    payload="$(jq -n --argjson u "$upd" '{update: $u}')"
+    if [ -n "$ASSIGNEE" ]; then fld_json="$(jq -n --arg a "$ASSIGNEE" '{assignee:{name:$a}}')"; else fld_json='{}'; fi
+    [ "$(printf '%s' "$upd" | jq 'length')" -gt 0 ] || [ "$(printf '%s' "$fld_json" | jq 'length')" -gt 0 ] || die "--edit needs at least one --affects-version/--fix-version/--es-version/--label/--assignee"
+    payload="$(jq -n --argjson u "$upd" --argjson f "$fld_json" \
+      '(if ($u|length) > 0 then {update: $u} else {} end)
+       + (if ($f|length) > 0 then {fields: $f} else {} end)')"
     echo "=== Edit (additive) : PUT $JIRA_URL/rest/api/2/issue/$EDIT_KEY ===" >&2
     echo "=== Update payload ===" >&2
     printf '%s\n' "$payload" | jq . >&2

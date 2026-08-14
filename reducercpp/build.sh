@@ -32,6 +32,7 @@ COMMON_FLAGS=(
   -stdlib=libc++
   -pthread
   -Wall -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function -Wno-unused-parameter
+  -Wl,--build-id=sha1        # stamps an ID a core can be matched back to
 )
 
 REL_FLAGS=(

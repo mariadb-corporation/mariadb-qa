@@ -1,6 +1,6 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
-# Build script for the C++ port of the MariaDB SQL fuzz generator.
+# Build script for the C++ port of the MariaDB SQL generator.
 # Clang+libc++ is the canonical toolchain (gcc's separate `as` step OOMs on the
 # multi-GB sanitizer-instrumented .s output of this single-TU 22 MB file; clang has
 # an integrated assembler and uses far less peak RSS).
@@ -56,6 +56,7 @@ COMMON_FLAGS=(
   -stdlib=libc++             # libc++ avoids gcc-14 libstdc++ header incompat (`++this` in <unicode.h>)
   -pthread
   -Wall -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function
+  -Wl,--build-id=sha1        # stamps an ID a core can be matched back to
 )
 
 REL_FLAGS=(

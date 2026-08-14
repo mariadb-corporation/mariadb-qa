@@ -1,0 +1,1315 @@
+BIGINT
+BIGINT DEFAULT -1
+bigint default -9223372036854775808
+bigint default NULL
+bigint not null
+bigint not null default 0
+BIGINT NULL
+BIGINT NULL COMMENT 'This is a BIGINT column'
+BIGINT SIGNED NOT NULL
+BIGINT SIGNED NULL
+BIGINT UNSIGNED
+bigint unsigned not null
+BIGINT UNSIGNED NULL
+BIGINT UNSIGNED ZEROFILL NOT NULL
+BIGINT UNSIGNED ZEROFILL NULL
+bigint zerofill
+BIGINT ZEROFILL NOT NULL
+BIGINT ZEROFILL NULL
+BIGINT(1) NOT NULL
+BIGINT(1) NULL
+BIGINT(10) NOT NULL
+BIGINT(10) NULL
+bigint(11) NOT NULL
+BIGINT(12)
+BIGINT(15)
+BIGINT(15) ZEROFILL
+bigint(20)
+bigint(20) unsigned
+BIGINT(20) UNSIGNED NOT NULL
+BIGINT(20) ZEROFILL
+BIGINT(21)
+bigint(21) unsigned zerofill not null
+BIGINT(3)
+BIGINT(4) NULL
+BIGINT(5) NOT NULL DEFAULT 1
+BIGINT(5) NULL DEFAULT 1
+BINARY
+binary (1)
+BINARY (10)
+binary not null
+BINARY(0)
+BINARY(1)
+BINARY(1) NOT NULL
+BINARY(1) NULL
+BINARY(10)
+BINARY(10) NOT NULL
+BINARY(10) NOT NULL DEFAULT 'x'
+BINARY(10) NULL
+BINARY(10) NULL COMMENT 'This is a BINARY column'
+BINARY(10) NULL DEFAULT 'x'
+BINARY(100)
+BINARY(100) NOT NULL
+BINARY(100) NULL
+BINARY(15) NOT NULL
+BINARY(15) NULL
+BINARY(16)
+BINARY(179)
+binary(2)
+BINARY(2) default '0'
+binary(2) not null
+BINARY(20) NOT NULL
+BINARY(20) NULL
+binary(200)
+BINARY(200) NOT NULL
+BINARY(25) NOT NULL
+BINARY(255)
+BINARY(255) NULL
+binary(3)
+BINARY(30)
+BINARY(30) NOT NULL
+binary(32)
+BINARY(32) NOT NULL
+binary(4)
+binary(5)
+BINARY(5) NOT NULL
+BINARY(50) NOT NULL
+BINARY(50) NULL
+BINARY(8)
+BINARY(80)
+bit
+bit not null
+BIT NULL
+BIT NULL COMMENT 'This is a BIT column'
+bit(0)
+bit(1)
+BIT(1) NOT NULL
+BIT(1) NULL
+BIT(10)
+BIT(10) NOT NULL
+BIT(10) NULL
+BIT(11)
+BIT(12)
+BIT(13)
+BIT(14)
+bit(14) not null
+BIT(15)
+BIT(16)
+BIT(17)
+BIT(18)
+BIT(19)
+BIT(2)
+bit(2) not null
+BIT(20)
+BIT(21)
+BIT(22)
+BIT(23)
+BIT(24)
+BIT(25)
+BIT(26)
+BIT(27)
+BIT(28)
+BIT(29)
+BIT(3)
+BIT(30)
+BIT(31)
+BIT(32)
+BIT(33)
+BIT(34)
+BIT(35)
+BIT(36)
+BIT(37)
+BIT(38)
+BIT(39)
+BIT(4)
+BIT(40)
+BIT(41)
+BIT(42)
+BIT(43)
+BIT(44)
+BIT(45)
+BIT(46)
+BIT(47)
+BIT(48)
+BIT(49)
+BIT(5)
+BIT(50)
+BIT(51)
+BIT(52)
+BIT(53)
+BIT(54)
+BIT(55)
+BIT(56)
+BIT(57)
+BIT(58)
+BIT(59)
+BIT(6)
+BIT(60)
+BIT(61)
+BIT(62)
+BIT(63)
+BIT(64)
+BIT(7)
+BIT(7) NOT NULL
+BIT(8)
+BIT(8) NOT NULL
+BIT(9)
+blob
+blob DEFAULT "" NOT NULL
+blob default "hello"
+blob default ''
+BLOB DEFAULT '1'
+blob default 'x'
+BLOB NOT NULL
+blob null
+BLOB NULL COMMENT 'This is a BLOB column'
+BLOB(1) NULL
+BLOB(100) NOT NULL
+BLOB(100) NULL
+blob(1024)
+blob(1025)
+blob(16)
+blob(20)
+blob(2147483647)
+blob(2147483648)
+blob(250)
+blob(3)
+blob(4294967294)
+blob(4294967295)
+blob(512)
+BOOL
+bool not null default false
+bool not null default true
+boolean
+BOOLEAN NOT NULL
+char
+char (1)
+char (10)
+char (10) not null
+char (127)
+char (20) not null
+char (5)
+CHAR BINARY
+char not null
+char(0)
+char(0) not null
+CHAR(0) NULL
+char(1)
+char(1) default NULL
+char(1) not null
+char(1) NOT NULL default '0'
+char(1) NOT NULL DEFAULT 'b'
+CHAR(1) NULL
+char(10)
+CHAR(10) BINARY NOT NULL
+char(10) default "hello"
+char(10) default "Two"
+char(10) default 'default'
+CHAR(10) DEFAULT 'ola'
+char(10) not null
+CHAR(10) NOT NULL DEFAULT 'x'
+CHAR(10) NULL
+CHAR(10) NULL COMMENT 'This is a CHAR column'
+CHAR(10) NULL DEFAULT 'x'
+char(100)
+CHAR(100) DEFAULT 'initial value'
+CHAR(100) NOT NULL
+char(100) not null default ""
+char(100) not null default ''
+CHAR(100) NULL
+CHAR(11)
+char(12)
+char(12) not null
+CHAR(120)
+char(128)
+char(128) not null
+CHAR(13)
+char(15)
+char(15) default 'пусто'
+CHAR(15) NOT NULL
+CHAR(15) NULL
+CHAR(16)
+char(16) default ''
+char(16) default NULL
+char(16) not null
+char(16) not null default ''
+char(17)
+char(19) NOT NULL
+CHAR(2)
+char(2) not null
+char(20)
+char(20) default "default_value"
+char(20) not null
+CHAR(20) NULL
+CHAR(20)CHARACTER SET latin1
+char(200)
+char(200) not null
+CHAR(205)
+char(215) NOT NULL DEFAULT ''
+char(22)
+char(25)
+CHAR(25) NOT NULL
+char(255)
+char(255) NOT NULL
+CHAR(255) NULL
+CHAR(255) unicode
+CHAR(3)
+char(3) default '0'
+CHAR(3) NOT NULL
+CHAR(3) NULL
+char(30)
+char(30) not null
+char(32)
+CHAR(32) NOT NULL DEFAULT '<UNKNOWN>'
+CHAR(4)
+char(4) DEFAULT NULL
+char(4) not null
+char(40)
+CHAR(48)
+CHAR(5)
+CHAR(5) NOT NULL
+CHAR(50)
+CHAR(50) NOT NULL
+CHAR(50) NULL
+char(6)
+char(6) DEFAULT 'xxx'
+CHAR(6) NOT NULL
+CHAR(60)
+char(64)
+char(64) default ' '
+char(65)
+CHAR(7)
+char(70)
+CHAR(8)
+CHAR(8) BINARY
+char(8) not null
+CHAR(80)
+char(80) not null
+char(9)
+char(9) NOT NULL
+date
+date default '1962-03-03 23:33:34'
+date default null
+date not null
+date NOT NULL default '0000-00-00'
+DATE NULL
+DATE NULL COMMENT 'This is a DATE column'
+datetime
+datetime default '1962-03-03'
+datetime default current_timestamp
+datetime default current_timestamp on update current_timestamp
+datetime default now()
+datetime default NULL
+DATETIME NOT NULL
+datetime NOT NULL default '0000-00-00 00:00:00'
+DATETIME NULL
+DATETIME NULL COMMENT 'This is a DATETIME column'
+DATETIME ON UPDATE CURRENT_TIMESTAMP
+datetime on update now()
+DATETIME(0)
+DATETIME(1)
+DATETIME(2)
+DATETIME(3)
+DATETIME(4)
+DATETIME(4) NOT NULL
+DATETIME(5)
+DATETIME(5) NOT NULL
+DATETIME(6)
+DATETIME(6) NOT NULL
+DEC NOT NULL
+DEC NULL
+DEC NULL COMMENT 'This is a DEC column'
+DEC UNSIGNED NOT NULL
+DEC UNSIGNED NULL
+DEC UNSIGNED ZEROFILL NOT NULL
+DEC UNSIGNED ZEROFILL NULL
+DEC ZEROFILL NOT NULL
+DEC ZEROFILL NULL
+DEC(1,0) NOT NULL
+DEC(1,0) NULL
+DEC(10,8) NOT NULL DEFAULT 3.141592
+DEC(5,0) NOT NULL DEFAULT 2
+DEC(5,0) NULL DEFAULT 2
+DEC(5,4) NOT NULL
+DEC(5,4) NOT NULL DEFAULT 3.1234
+DEC(5,4) NULL
+DEC(5,4) NULL DEFAULT 3.1234
+DEC(5,4) UNSIGNED NOT NULL
+dec(6,6) default .000001
+dec(6,6) default 0.000001
+DECIMAL
+DECIMAL (1, 0) ZEROFILL
+DECIMAL (12,9)
+decimal (22) unsigned
+DECIMAL (4, 2)
+DECIMAL (64,20)
+decimal (9,0)
+decimal default null
+DECIMAL NOT NULL
+DECIMAL NULL
+DECIMAL NULL COMMENT 'This is a DECIMAL column'
+decimal unsigned
+DECIMAL UNSIGNED NOT NULL
+DECIMAL UNSIGNED NULL
+decimal unsigned zerofill
+DECIMAL UNSIGNED ZEROFILL NOT NULL
+DECIMAL UNSIGNED ZEROFILL NULL
+decimal zerofill
+DECIMAL ZEROFILL NOT NULL
+DECIMAL ZEROFILL NULL
+DECIMAL( 12, 0)
+DECIMAL( 13, 12 )
+DECIMAL(1,0) NOT NULL
+DECIMAL(1,0) NULL
+DECIMAL(1,0) UNSIGNED
+DECIMAL(1,0) ZEROFILL
+DECIMAL(1,1) UNSIGNED
+DECIMAL(10)
+DECIMAL(10) UNSIGNED NULL
+DECIMAL(10, 1)
+DECIMAL(10, 2)
+DECIMAL(10,0)
+DECIMAL(10,0) NOT NULL
+DECIMAL(10,0) SIGNED NOT NULL
+DECIMAL(10,1)
+DECIMAL(10,1) ZEROFILL
+DECIMAL(10,2)
+decimal(10,2) unsigned
+decimal(10,2) zerofill
+DECIMAL(10,3)
+DECIMAL(10,4) DEFAULT 0
+decimal(10,5)
+DECIMAL(10,5) NOT NULL
+DECIMAL(10,5) SIGNED NULL
+DECIMAL(10,5) UNSIGNED NOT NULL
+decimal(10,6)
+DECIMAL(10,8) NOT NULL DEFAULT 3.141592
+DECIMAL(10.2)
+decimal(11,0)
+DECIMAL(12,2)
+decimal(12,2) NOT NULL default '0.00'
+decimal(13, 3)
+DECIMAL(15,11) ZEROFILL
+DECIMAL(15,2)
+decimal(16,12)
+DECIMAL(16,6)
+decimal(18)
+decimal(18) unsigned
+DECIMAL(19,4)
+decimal(2) unsigned
+DECIMAL(2,0)
+decimal(2,1)
+DECIMAL(2,1) DEFAULT '0.1 '
+DECIMAL(2,1) DEFAULT '0.10001 '
+DECIMAL(2,1) DEFAULT '0.10001'
+DECIMAL(2,1) DEFAULT '1e-10000'
+DECIMAL(2,1) DEFAULT 0.10001
+DECIMAL(2,2)
+decimal(20)
+decimal(20) unsigned
+decimal(20,1)
+DECIMAL(20,20)
+decimal(20,6)
+DECIMAL(22,1)
+DECIMAL(24,0) NOT NULL
+decimal(3,1)
+decimal(3,3)
+DECIMAL(30,0)
+DECIMAL(30,1)
+DECIMAL(30,1) UNSIGNED
+DECIMAL(30,10)
+DECIMAL(30,2)
+decimal(30,25)
+DECIMAL(30,30)
+DECIMAL(30,6)
+DECIMAL(30,8)
+DECIMAL(31,21)
+decimal(31,30)
+DECIMAL(32,7)
+DECIMAL(32,9)
+decimal(35,10)
+decimal(38)
+decimal(38,0) DEFAULT NULL
+DECIMAL(38,10)
+DECIMAL(38,38)
+DECIMAL(4, 3)
+DECIMAL(4,0)
+decimal(4,2)
+decimal(4,2) not null
+decimal(4,2) unsigned
+decimal(4,2) zerofill
+DECIMAL(4,4) UNSIGNED
+DECIMAL(41,1)
+DECIMAL(43,0) UNSIGNED
+decimal(5)
+DECIMAL(5, 4)
+decimal(5, 5)
+DECIMAL(5,0) NOT NULL DEFAULT 2
+DECIMAL(5,0) NULL DEFAULT 2
+decimal(5,1)
+decimal(5,2)
+decimal(5,3)
+decimal(5,4)
+DECIMAL(5,4) NOT NULL
+DECIMAL(5,4) NOT NULL DEFAULT 3.1234
+DECIMAL(5,4) NULL
+DECIMAL(5,4) NULL DEFAULT 3.1234
+DECIMAL(5,4) UNSIGNED NOT NULL
+decimal(5,5)
+DECIMAL(6)
+DECIMAL(6) ZEROFILL
+DECIMAL(6, 3)
+decimal(6,3)
+decimal(6,6)
+decimal(6,6) zerofill
+decimal(60,0)
+decimal(60,24)
+decimal(60,25)
+decimal(60,30)
+decimal(64)
+DECIMAL(64, 20)
+DECIMAL(64,0)
+DECIMAL(65)
+DECIMAL(65, 30)
+decimal(65, 38)
+DECIMAL(65,0)
+DECIMAL(65,0) SIGNED NULL
+DECIMAL(65,0) UNSIGNED NOT NULL
+DECIMAL(65,10)
+decimal(7,2)
+decimal(7,3)
+decimal(7,3) not null
+decimal(7,3) unsigned
+decimal(7,3) zerofill
+DECIMAL(8,2)
+decimal(9,2)
+double
+DOUBLE (10,10)
+DOUBLE (53,10)
+double default '3.14'
+double not null
+DOUBLE NULL
+DOUBLE NULL COMMENT 'This is a DOUBLE column'
+DOUBLE PRECISION
+DOUBLE PRECISION NOT NULL
+DOUBLE PRECISION NULL
+DOUBLE PRECISION NULL COMMENT 'This is a DOUBLE PRECISION column'
+DOUBLE PRECISION UNSIGNED
+DOUBLE PRECISION UNSIGNED NOT NULL
+DOUBLE PRECISION UNSIGNED NULL
+DOUBLE PRECISION UNSIGNED ZEROFILL NOT NULL
+DOUBLE PRECISION UNSIGNED ZEROFILL NULL
+DOUBLE PRECISION ZEROFILL NOT NULL
+DOUBLE PRECISION ZEROFILL NULL
+DOUBLE PRECISION(1,0) NOT NULL
+DOUBLE PRECISION(5,4) NOT NULL
+DOUBLE UNSIGNED
+DOUBLE UNSIGNED NOT NULL
+DOUBLE UNSIGNED NULL
+DOUBLE UNSIGNED ZEROFILL NOT NULL
+DOUBLE UNSIGNED ZEROFILL NULL
+DOUBLE ZEROFILL
+DOUBLE ZEROFILL NOT NULL
+DOUBLE ZEROFILL NULL
+DOUBLE(1,0) NOT NULL
+DOUBLE(1,0) NULL
+DOUBLE(10,0) SIGNED NOT NULL
+DOUBLE(10,0) UNSIGNED NULL
+double(10,1)
+DOUBLE(10,2)
+double(10,3)
+double(10,5)
+DOUBLE(10,5) NOT NULL
+DOUBLE(10,5) SIGNED NULL
+DOUBLE(10,5) UNSIGNED NOT NULL
+double(10,9)
+double(12,2)
+double(15,1) unsigned
+DOUBLE(16,6)
+double(200, 0)
+DOUBLE(23,0) SIGNED NULL
+DOUBLE(23,0) UNSIGNED NOT NULL
+DOUBLE(255,3)
+DOUBLE(255,4)
+double(3,3)
+double(4,2)
+double(4,2) unsigned
+double(4,2) zerofill
+double(4,3)
+double(40,30)
+double(5,0)
+DOUBLE(5,2)
+double(5,3)
+double(5,4)
+DOUBLE(5,4) NOT NULL
+DOUBLE(5,4) NULL
+DOUBLE(6,0)
+DOUBLE(6,0) ZEROFILL
+double(7,2)
+double(8, 2)
+double(9,2)
+DOUBLE(9,6)
+enum (' ','a','b ') not null default 'b '
+enum (' ','a','b') not null
+enum ('0','1')
+ENUM ('a','b')
+enum ('aac','aab','aaa') not null
+ENUM ('unknown', 'Access-Granted', 'Session-Active', 'Session-Closed' ) NOT NULL DEFAULT 'unknown'
+enum ('Y', 'N') DEFAULT 'N'
+enum ('Y','N')
+ENUM( 'x', 'y' )
+ENUM('') NOT NULL
+enum('0','1')
+ENUM('1','2')
+enum('1','2','3')
+ENUM('200','100')
+ENUM('2001','2002')
+ENUM('2001-01-01','2001/01/01')
+ENUM('5','6')
+ENUM('999999999999999999999999999999999999999999999999999999999999')
+ENUM('9e200','9e100')
+ENUM('a')
+enum('a') DEFAULT NULL
+ENUM('a', '', 'b')
+enum('a', 'A') BINARY
+ENUM('a','abcdefghijabcdefghijabcdefghijabcdefghijabcdefghij') NULL
+ENUM('a','b')
+ENUM('a','b') NOT NULL DEFAULT 'b'
+ENUM('a','b','ac')
+ENUM('a','b','c')
+ENUM('a','b','c') NOT NULL
+ENUM('a','b','c') NULL
+ENUM('a','b','c','1')
+enum('a','b','c','d')
+ENUM('a1','a2')
+ENUM('aaa', 'bbb') NOT NULL
+enum('aaa','a','b','c')
+enum('aaaa','проба')
+ENUM('aaaaaaaa')
+ENUM('aaaaaaaaa')
+ENUM('aaaaaaaaaa')
+enum('abc','def','ghi')
+enum('ae','oe','ue','ss')
+ENUM('b')
+ENUM('b0','b1','b12','b3')
+enum('basic','sliding','signup')
+enum('e1', 'e2', 'e3')
+ENUM('foo','bar')
+enum('N','Y') not null
+ENUM('rainbow')
+enum('red','blue','green')
+enum('SMALL','MEDIUM','LARGE','VERY LARGE')
+enum('Value1', 'Value2') NOT NULL DEFAULT 'Value1'
+ENUM('x')
+enum('x','y') default 'x'
+ENUM('x','y','z')
+enum('y','n')
+enum('y','n') not null
+ENUM('Yes', 'No') NOT NULL
+ENUM(0x0061)
+ENUM(0x6100)
+ENUM(0x6100,0x6200,0x6300)
+ENUM(0x610062)
+fixed
+fixed not null
+FIXED NULL
+FIXED NULL COMMENT 'This is a FIXED column'
+FIXED UNSIGNED NOT NULL
+FIXED UNSIGNED NULL
+FIXED UNSIGNED ZEROFILL NOT NULL
+FIXED UNSIGNED ZEROFILL NULL
+FIXED ZEROFILL NOT NULL
+FIXED ZEROFILL NULL
+FIXED(1,0) NOT NULL
+FIXED(1,0) NULL
+FIXED(10,8) NOT NULL DEFAULT 3.141592
+FIXED(5,0) NOT NULL DEFAULT 2
+FIXED(5,0) NULL DEFAULT 2
+FIXED(5,4) NOT NULL
+FIXED(5,4) NOT NULL DEFAULT 3.1234
+FIXED(5,4) NULL
+FIXED(5,4) NULL DEFAULT 3.1234
+FIXED(5,4) UNSIGNED NOT NULL
+float
+FLOAT (2,2)
+float (3,1) unsigned
+FLOAT (4,2)
+float (4,3)
+FLOAT DEFAULT 0
+float default NULL
+float not null
+FLOAT NULL
+FLOAT NULL COMMENT 'This is a FLOAT column'
+FLOAT UNSIGNED
+FLOAT UNSIGNED NOT NULL
+FLOAT UNSIGNED NULL
+FLOAT UNSIGNED ZEROFILL NOT NULL
+FLOAT UNSIGNED ZEROFILL NULL
+float zerofill
+FLOAT ZEROFILL NOT NULL
+FLOAT ZEROFILL NULL
+FLOAT( 20, 14 )
+FLOAT(1,0) NOT NULL
+FLOAT(1,0) NULL
+FLOAT(10,0) SIGNED NOT NULL
+FLOAT(10,0) UNSIGNED NULL
+float(10,2)
+FLOAT(10,5) NOT NULL
+FLOAT(10,5) SIGNED NULL
+FLOAT(10,5) UNSIGNED NOT NULL
+FLOAT(16,6)
+float(2,0)
+FLOAT(20,3)
+FLOAT(20,4)
+FLOAT(23,0) SIGNED NULL
+FLOAT(23,0) UNSIGNED NOT NULL
+float(24)
+FLOAT(255,3)
+FLOAT(255,4)
+float(3,0)
+float(3,2)
+float(3,3)
+float(30, 0)
+FLOAT(30,18)
+float(4,2)
+float(4,2) unsigned
+float(4,2) zerofill
+float(4,3)
+float(5,3)
+float(5,4)
+FLOAT(5,4) NOT NULL
+FLOAT(5,4) NULL
+float(5,4) zerofill
+float(52)
+float(53)
+FLOAT(53,0) NOT NULL
+float(6,2)
+FLOAT(9,6)
+GEOMETRY
+GEOMETRY DEFAULT NULL
+geometry NOT NULL
+GEOMETRY NULL
+GEOMETRY REF_SYSTEM_ID=102
+GEOMETRY(9,4) REF_SYSTEM_ID=101
+GEOMETRYCOLLECTION
+INET4
+INET6
+inet6 not null
+int
+int default '0' not null
+INT DEFAULT '1 '
+INT DEFAULT '1' NOT NULL
+int default '10'
+int default +1
+int default - 1
+int default 0
+INT default 1
+INT DEFAULT 1 NOT NULL
+INT DEFAULT 10
+int default 100
+INT DEFAULT 1000
+int default 2
+int default 3
+int default 4
+int default 41
+int default 5
+INT DEFAULT NULL
+int not null
+int NOT NULL default '0'
+INT NOT NULL DEFAULT 0
+int not null default 1
+int NOT NULL default 42
+int not null default 5
+int NOT NULL DEFAULT 8
+INT NOT NULL default 99
+int null
+INT NULL COMMENT 'This is a INT column'
+INT NULL DEFAULT NULL
+INT SIGNED
+INT SIGNED NOT NULL
+INT SIGNED NULL
+INT UNSIGNED
+int unsigned not null
+INT UNSIGNED NULL
+INT UNSIGNED ZEROFILL
+INT UNSIGNED ZEROFILL NOT NULL
+INT UNSIGNED ZEROFILL NULL
+int with system versioning
+INT ZEROFILL
+INT ZEROFILL NOT NULL
+INT ZEROFILL NULL
+INT ZEROFILL UNSIGNED
+int(0)
+int(1)
+INT(1) NOT NULL
+INT(1) NULL
+int(10)
+int(10) default '0'
+int(10) not null
+int(10) NOT NULL default '0'
+INT(10) NULL
+int(10) unsigned
+int(10) unsigned default '0'
+int(10) unsigned not null
+int(10) unsigned NOT NULL default '0'
+INT(100) NOT NULL
+int(11)
+int(11) default '0'
+int(11) DEFAULT '0' NOT NULL
+int(11) DEFAULT '1000'
+int(11) default NULL
+INT(11) NOT NULL
+int(11) NOT NULL default '0'
+int(11) unsigned
+int(12)
+int(12) NOT NULL
+int(2)
+int(20) NOT NULL
+INT(23)
+int(255)
+INT(3)
+int(3) unsigned NOT NULL DEFAULT '0'
+int(32) NOT NULL
+int(32) unsigned
+int(4)
+INT(4) NOT NULL
+INT(4) NULL
+INT(45)
+int(5) default NULL
+INT(5) NOT NULL DEFAULT 1
+INT(5) NULL DEFAULT 1
+INT(6)
+INT(6) ZEROFILL
+int(8)
+int(9)
+int4 NOT NULL
+int4 unsigned not null
+integer
+INTEGER NOT NULL
+INTEGER NULL
+INTEGER NULL COMMENT 'This is a INTEGER column'
+INTEGER SIGNED NOT NULL
+INTEGER SIGNED NULL
+integer unsigned
+integer unsigned not null
+integer unsigned null
+INTEGER UNSIGNED ZEROFILL NOT NULL
+INTEGER UNSIGNED ZEROFILL NULL
+INTEGER ZEROFILL NOT NULL
+INTEGER ZEROFILL NULL
+INTEGER(1) NOT NULL
+INTEGER(1) NULL
+INTEGER(10) NOT NULL
+INTEGER(10) NULL
+integer(2)
+INTEGER(4) NULL
+INTEGER(5) NOT NULL DEFAULT 1
+INTEGER(5) NULL DEFAULT 1
+JSON
+json default '{a:1}'
+json not null
+linestring
+LINESTRING NOT NULL
+long
+long byte
+LONGBLOB
+LONGBLOB NOT NULL
+LONGBLOB not null default ''
+LONGBLOB NULL
+LONGBLOB NULL COMMENT 'This is a LONGBLOB column'
+longtext
+LONGTEXT NOT NULL
+LONGTEXT NULL
+LONGTEXT NULL COMMENT 'This is a LONGTEXT column'
+mediumblob
+MEDIUMBLOB NOT NULL
+MEDIUMBLOB NULL
+MEDIUMBLOB NULL COMMENT 'This is a MEDIUMBLOB column'
+mediumint
+mediumint not null
+MEDIUMINT NULL
+MEDIUMINT NULL COMMENT 'This is a MEDIUMINT column'
+MEDIUMINT SIGNED NOT NULL
+MEDIUMINT SIGNED NULL
+MEDIUMINT UNSIGNED
+MEDIUMINT UNSIGNED NOT NULL
+MEDIUMINT UNSIGNED NULL
+MEDIUMINT UNSIGNED ZEROFILL NOT NULL
+MEDIUMINT UNSIGNED ZEROFILL NULL
+mediumint zerofill
+MEDIUMINT ZEROFILL NOT NULL
+MEDIUMINT ZEROFILL NULL
+MEDIUMINT(1) NOT NULL
+MEDIUMINT(1) NULL
+MEDIUMINT(10) NOT NULL
+MEDIUMINT(10) NULL
+MEDIUMINT(4) NULL
+MEDIUMINT(5) NOT NULL DEFAULT 1
+MEDIUMINT(5) NULL DEFAULT 1
+mediumint(8) unsigned NOT NULL default '0'
+MEDIUMTEXT
+MEDIUMTEXT NOT NULL
+MEDIUMTEXT NOT NULL DEFAULT 'A'
+MEDIUMTEXT NULL
+MEDIUMTEXT NULL COMMENT 'This is a MEDIUMTEXT column'
+MULTILINESTRING
+MULTIPOINT
+MULTIPOLYGON
+MULTIPOLYGON NOT NULL
+NATIONAL CHAR
+NATIONAL CHAR(0)
+NATIONAL CHAR(1)
+national char(10)
+NATIONAL CHAR(255)
+national character varying(10)
+NATIONAL VARCHAR(0)
+NATIONAL VARCHAR(1)
+national varchar(10)
+NATIONAL VARCHAR(255)
+NATIONAL VARCHAR(261)
+nchar varchar(10)
+nchar varying(10)
+nchar(10)
+nchar(20)
+numeric
+NUMERIC NOT NULL
+NUMERIC NULL
+NUMERIC NULL COMMENT 'This is a NUMERIC column'
+NUMERIC UNSIGNED NOT NULL
+NUMERIC UNSIGNED NULL
+NUMERIC UNSIGNED ZEROFILL NOT NULL
+NUMERIC UNSIGNED ZEROFILL NULL
+NUMERIC ZEROFILL NOT NULL
+NUMERIC ZEROFILL NULL
+NUMERIC(1,0) NOT NULL
+NUMERIC(1,0) NULL
+numeric(10)
+numeric(10,2)
+NUMERIC(10,8) NOT NULL DEFAULT 3.141592
+numeric(15,2)
+NUMERIC(15,3)
+numeric(30,25)
+numeric(38,10)
+NUMERIC(4,2)
+NUMERIC(5,0) NOT NULL DEFAULT 2
+NUMERIC(5,0) NULL DEFAULT 2
+numeric(5,2)
+NUMERIC(5,4) NOT NULL
+NUMERIC(5,4) NOT NULL DEFAULT 3.1234
+NUMERIC(5,4) NULL
+NUMERIC(5,4) NULL DEFAULT 3.1234
+NUMERIC(5,4) UNSIGNED NOT NULL
+numeric(7,6)
+numeric(8)
+nvarchar(10)
+nvarchar(20)
+point
+POINT NOT NULL
+POINT REF_SYSTEM_ID=0
+POINT REF_SYSTEM_ID=101
+POINT REF_SYSTEM_ID=102
+POINT(8,2)
+POLYGON
+REAL
+REAL NOT NULL
+REAL NULL
+REAL NULL COMMENT 'This is a REAL column'
+REAL UNSIGNED NOT NULL
+REAL UNSIGNED NULL
+REAL UNSIGNED ZEROFILL NOT NULL
+REAL UNSIGNED ZEROFILL NULL
+REAL ZEROFILL NOT NULL
+REAL ZEROFILL NULL
+REAL(1,0) NOT NULL
+REAL(1,0) NULL
+REAL(5,4) NOT NULL
+REAL(5,4) NULL
+set (' ','a','b ') not null default 'b '
+set (' ','a','b') not null
+SET ('jkl','mno','pqr')
+set ('x','y','z','ä','ö','ü')
+SET('1','2')
+SET('1','2','3')
+set('1','2','3','4','5','6','7')
+SET('2001-01-01','2001/01/01')
+SET('999999999999999999999999999999999999999999999999999999999999')
+SET('a')
+SET('a') NOT NULL
+SET('a', 'b', 'c')
+SET('a', 'b', 'c', 'd', 'e')
+SET('a','abcdefghijabcdefghijabcdefghijabcdefghijabcdefghij') NULL
+SET('a','b')
+SET('a','b','c')
+SET('a','b','c') NOT NULL
+SET('a','b','c') NULL
+SET('a','b','c','1')
+SET('a','b','c','d','e','f')
+SET('a1','a2')
+SET('aaa', 'bbb') NOT NULL
+set('ae','oe','ue','ss')
+set('b')
+SET('b0','b1','b12','b3')
+set('e1', 'e2', 'e3')
+SET('master','slave')
+set('mt')
+set('sms') not null
+SET('x') NOT NULL
+set('x','y') default 'x'
+set('y','n')
+set('y','n') not null
+SET('Yes', 'No') NOT NULL
+smallint
+smallint default - 1
+smallint default -1
+smallint not null
+SMALLINT NULL
+SMALLINT NULL COMMENT 'This is a SMALLINT column'
+SMALLINT SIGNED NOT NULL
+SMALLINT SIGNED NULL
+SMALLINT UNSIGNED
+smallint unsigned not null
+SMALLINT UNSIGNED NULL
+SMALLINT UNSIGNED ZEROFILL NOT NULL
+SMALLINT UNSIGNED ZEROFILL NULL
+smallint zerofill
+SMALLINT ZEROFILL NOT NULL
+SMALLINT ZEROFILL NULL
+SMALLINT(1) NOT NULL
+SMALLINT(1) NULL
+SMALLINT(10) NOT NULL
+SMALLINT(10) NULL
+SMALLINT(4) NULL
+smallint(5)
+smallint(5) NOT NULL default '0'
+SMALLINT(5) NOT NULL DEFAULT 1
+SMALLINT(5) NULL DEFAULT 1
+smallint(5) unsigned not null
+smallint(6) NOT NULL
+smallint(6) NOT NULL default 0
+smallint(6) unsigned NOT NULL default '0'
+text
+text default ''
+TEXT DEFAULT '111111111'
+text default 5
+text not null
+text not null default ''
+TEXT NULL
+TEXT NULL COMMENT 'This is a TEXT column'
+TEXT(1) NULL
+text(10)
+TEXT(100) NOT NULL
+TEXT(100) NULL
+TEXT(1431655798)
+text(200)
+text(2147483647)
+text(2147483648)
+text(4294967295)
+text(70000)
+text(70000000)
+time
+time default '00:00:00'
+TIME DEFAULT 0
+time default NULL
+time not null
+TIME NULL
+TIME NULL COMMENT 'This is a TIME column'
+TIME(0)
+TIME(1)
+time(2)
+TIME(3)
+TIME(4)
+time(4) not null
+TIME(5) NOT NULL
+TIME(6)
+TIME(6) NOT NULL
+timestamp
+timestamp DEFAULT '0000-00-00 00:00:00'
+TIMESTAMP DEFAULT '1971-01-01 00:00:00'
+TIMESTAMP DEFAULT '2001-01-01 10:20:30'
+TIMESTAMP DEFAULT 0
+timestamp default current_timestamp
+timestamp default now()
+timestamp default now() on update now()
+TIMESTAMP DEFAULT NULL
+timestamp not null
+timestamp NOT NULL DEFAULT '0000-00-00 00:00:00'
+TIMESTAMP NOT NULL DEFAULT '2001-01-01 10:20:30'
+timestamp not null default '2003-01-01 00:00:00'
+timestamp not null default '2003-01-01 00:00:00' on update current_timestamp
+timestamp not null default '2003-01-01 00:00:00' on update now()
+timestamp not null default 20050102030405
+timestamp not null default current_timestamp
+timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+TIMESTAMP NOT NULL DEFAULT NOW()
+timestamp not null default now() on update now()
+timestamp null
+TIMESTAMP NULL COMMENT 'This is a TIMESTAMP column'
+TIMESTAMP NULL DEFAULT '0000-00-00 00:00:00'
+TIMESTAMP NULL DEFAULT '2001-01-01 10:20:30'
+timestamp null default '2003-01-01 00:00:00'
+TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
+timestamp null default current_timestamp on update current_timestamp
+timestamp null default null
+timestamp null on update current_timestamp(6)
+timestamp on update now()
+TIMESTAMP(0)
+TIMESTAMP(1)
+TIMESTAMP(1) NOT NULL
+timestamp(2)
+TIMESTAMP(3)
+TIMESTAMP(3) DEFAULT 0
+TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP
+TIMESTAMP(3) NOT NULL
+TIMESTAMP(3) NULL DEFAULT NULL
+TIMESTAMP(4)
+timestamp(4) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+TIMESTAMP(4) NULL DEFAULT NULL
+timestamp(5)
+timestamp(5) DEFAULT CURRENT_TIMESTAMP
+timestamp(5) on update current_timestamp
+timestamp(5) on update current_timestamp()
+timestamp(5) on update current_timestamp(5)
+timestamp(5) on update current_timestamp(6)
+TIMESTAMP(6)
+timestamp(6) not null
+TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+TIMESTAMP(6) NOT NULL DEFAULT NOW()
+TIMESTAMP(6) NULL
+TIMESTAMP(6) NULL DEFAULT '2001-01-01 00:00:00'
+TIMESTAMP(6) NULL DEFAULT NULL
+tinyblob
+tinyblob not null
+TINYBLOB NULL
+TINYBLOB NULL COMMENT 'This is a TINYBLOB column'
+TINYINT
+tinyint not null
+TINYINT NULL
+TINYINT NULL COMMENT 'This is a TINYINT column'
+TINYINT SIGNED NOT NULL
+TINYINT SIGNED NULL
+TINYINT UNSIGNED
+tinyint unsigned not null
+TINYINT UNSIGNED NOT NULL DEFAULT 0
+TINYINT UNSIGNED NULL
+TINYINT UNSIGNED ZEROFILL NOT NULL
+TINYINT UNSIGNED ZEROFILL NULL
+tinyint zerofill
+TINYINT ZEROFILL NOT NULL
+TINYINT ZEROFILL NULL
+tinyint(1)
+tinyint(1) not null
+TINYINT(1) NULL
+tinyint(1) unsigned NOT NULL default '1'
+TINYINT(10) NOT NULL
+TINYINT(10) NULL
+TINYINT(11) NOT NULL
+TINYINT(11) UNSIGNED NOT NULL
+tinyint(3)
+tinyint(3) default NULL
+tinyint(3) unsigned default NULL
+tinyint(30) zerofill
+TINYINT(4)
+tinyint(4) NOT NULL
+TINYINT(4) NULL
+tinyint(4) unsigned not null
+tinyint(4) zerofill
+tinyint(5)
+TINYINT(5) NOT NULL DEFAULT 1
+TINYINT(5) NULL DEFAULT 1
+tinytext
+TINYTEXT NOT NULL
+TINYTEXT NULL
+TINYTEXT NULL COMMENT 'This is a TINYTEXT column'
+UUID
+VARBINARY(0)
+VARBINARY(1)
+VARBINARY(1) NOT NULL
+VARBINARY(1) NULL
+VARBINARY(10)
+VARBINARY(10) NOT NULL
+VARBINARY(10) NOT NULL DEFAULT 'x'
+VARBINARY(10) NULL
+VARBINARY(10) NULL COMMENT 'This is a VARBINARY column'
+VARBINARY(10) NULL DEFAULT 'x'
+VARBINARY(100)
+varbinary(100) not null
+VARBINARY(100) NULL
+VARBINARY(1000)
+VARBINARY(1024)
+VARBINARY(15) NOT NULL
+VARBINARY(15) NULL
+VARBINARY(16)
+VARBINARY(16) NOT NULL
+varbinary(2)
+VARBINARY(2) NOT NULL DEFAULT '0'
+varbinary(20)
+VARBINARY(20) NOT NULL
+VARBINARY(20) NULL
+varbinary(200)
+VARBINARY(200) NOT NULL
+VARBINARY(25) NOT NULL
+varbinary(255)
+VARBINARY(255) NULL
+VARBINARY(3)
+VARBINARY(30)
+VARBINARY(30) NOT NULL
+varbinary(300)
+VARBINARY(32)
+VARBINARY(4)
+VARBINARY(5)
+VARBINARY(5) NOT NULL
+VARBINARY(50) NOT NULL
+VARBINARY(50) NULL
+VARBINARY(64)
+VARBINARY(8)
+VARCHAR (1)
+varchar (80)
+VARCHAR( 10 )
+VARCHAR(0)
+VARCHAR(0) NOT NULL
+VARCHAR(0) NULL
+varchar(1)
+VARCHAR(1) NOT NULL
+VARCHAR(1) NULL
+VARCHAR(10)
+VARCHAR(10) BINARY
+varchar(10) default 'def'
+varchar(10) DEFAULT 5
+varchar(10) default NULL
+varchar(10) not null
+VARCHAR(10) NOT NULL DEFAULT ''
+VARCHAR(10) NOT NULL DEFAULT 'x'
+VARCHAR(10) NULL
+VARCHAR(10) NULL COMMENT 'This is a VARCHAR column'
+VARCHAR(10) NULL DEFAULT 'x'
+varchar(100)
+varchar(100) NOT NULL
+varchar(100) null
+VARCHAR(1000)
+VARCHAR(10000)
+varchar(1024)
+VARCHAR(1027)
+VARCHAR(11)
+varchar(12)
+varchar(12) not null
+VARCHAR(120)
+varchar(127) DEFAULT NULL
+VARCHAR(128)
+varchar(128) NOT NULL
+varchar(15)
+varchar(15) NOT NULL
+varchar(15) NOT NULL default ''
+VARCHAR(15) NULL
+varchar(150)
+varchar(150) NOT NULL
+VARCHAR(16)
+varchar(16) NOT NULL
+varchar(16) NOT NULL default ''
+varchar(18)
+VARCHAR(2)
+VARCHAR(2) NOT NULL
+varchar(20)
+varchar(20) default 'foo'
+VARCHAR(20) DEFAULT NULL
+varchar(20) not null
+varchar(20) NOT NULL default ''
+varchar(20) null
+VARCHAR(200)
+varchar(200) not null
+varchar(2000)
+varchar(2048)
+VARCHAR(2048) DEFAULT ''
+varchar(21) not null
+varchar(22) not null
+varchar(23)
+varchar(24)
+varchar(25)
+varchar(25) default NULL
+VARCHAR(25) NOT NULL
+VARCHAR(250)
+varchar(250) NOT NULL
+varchar(254)
+VARCHAR(255)
+varchar(255) default NULL
+varchar(255) not null
+varchar(255) not null default ''
+VARCHAR(255) NULL
+varchar(256)
+VARCHAR(257)
+VARCHAR(261)
+VARCHAR(3)
+VARCHAR(3) NOT NULL
+varchar(30)
+varchar(30) default "hello"
+VARCHAR(30) DEFAULT 'xxx' NOT NULL
+VARCHAR(30) NOT NULL
+varchar(300)
+varchar(300) not null
+varchar(3068)
+varchar(3069)
+varchar(3070)
+varchar(3070) not null
+varchar(31)
+VARCHAR(3176)
+VARCHAR(32)
+varchar(32) not null
+VARCHAR(33)
+varchar(333)
+varchar(34)
+varchar(35)
+varchar(36)
+VARCHAR(39)
+VARCHAR(4)
+varchar(4) not null
+VARCHAR(40)
+varchar(40) not null
+VARCHAR(400)
+varchar(4000)
+varchar(4096)
+varchar(5)
+varchar(5) default 'abcde'
+varchar(5) not null
+varchar(50)
+varchar(50) DEFAULT NULL
+varchar(50) not null
+VARCHAR(50) NULL
+VARCHAR(500)
+VARCHAR(512)
+varchar(52)
+VARCHAR(6)
+varchar(6) default NULL
+VARCHAR(6) NOT NULL
+varchar(60)
+varchar(60) default 'x'
+VARCHAR(64)
+VARCHAR(64) DEFAULT NULL
+VARCHAR(64) NOT NULL
+VARCHAR(7)
+varchar(765)
+varchar(8)
+VARCHAR(8) DEFAULT NULL
+VARCHAR(8) NOT NULL DEFAULT ''
+VARCHAR(8) NULL
+varchar(80)
+varchar(9)
+vector (1) not null
+VECTOR(1)
+vector(1) not null
+vector(10)
+vector(10) not null
+vector(1536) not null
+vector(2)
+vector(2) not null
+vector(5) not null
+vector(64) not null
+vector(8)
+vector(800)
+year
+YEAR DEFAULT 0
+YEAR DEFAULT 2008
+year not null
+YEAR NULL
+YEAR NULL COMMENT 'This is a YEAR column'
+year(4)
+YEAR(4) NOT NULL
+YEAR(4) NULL

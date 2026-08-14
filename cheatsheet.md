@@ -133,7 +133,9 @@ generator, 25% revgen and 50% `INFILE`, set both query counts to half the `INFIL
 `PQUERY_MAX_SQL_LINES` (5141189, the pquery maximum) caps the per-trial SQL. Lines are cut from
 the end, and the sources are joined in the order generator, revgen, `INFILE`, all-disk, so the
 last source in use loses lines first. The file lands in `TRIAL_SQL_DIR`.
-`REVGEN_YACC` picks the grammar revgen walks, so it tracks the version under test.
+`REVGEN_YACC` picks the grammar revgen walks, so it tracks the version under test. Beside it sits
+`<version>_coldefs.txt`, the column definitions revgen builds its tables from; `yacc/harvest_coldefs.sh`
+writes one per version from that version's own test suite.
 
 | Applied to the per-trial SQL | What it does |
 |---|---|
@@ -258,9 +260,11 @@ Confirm the bad endpoint reproduces first. Narrow the range using the old builds
 
 | Command | What it does |
 |---|---|
-| `s <name>` | Reattach to a screen, or list them |
+| `s <name/pid>` | Reattach to a screen, or to a screen inside it by its PID. No name: list them in columns |
+| `sn [name]` | Start a new screen and attach to it. No name given: named after the current directory, numbered |
+| `sren <old> <new>` | Rename a screen. Old can be part of the name, or the PID |
 | `sg <text>` | List screens matching a pattern |
-| `sc` | Am I inside a screen |
+| `sc` | Am I inside a screen, and in which window |
 
 | Prefix | Owner |
 |---|---|

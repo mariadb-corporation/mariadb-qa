@@ -25,6 +25,6 @@ case "$MODE" in
 esac
 
 echo "[entropy/build.sh] mode=$MODE cxx=$CXX"
-"$CXX" "${FLAGS[@]}" "$SRC" -o "$OUT" -lc++abi
+"$CXX" "${FLAGS[@]}" "$SRC" -o "$OUT" -lc++abi -Wl,--build-id=sha1
 echo "[entropy/build.sh] built: $OUT ($(stat -c %s "$OUT") bytes)"
 echo "[entropy/build.sh] sanity: $(./$OUT 100000 2>&1 | head -1)"

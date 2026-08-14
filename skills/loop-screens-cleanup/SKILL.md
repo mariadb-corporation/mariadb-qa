@@ -23,11 +23,12 @@ Non-interactive batch version of cycling through `/test/loop_screens` and decidi
 Each in-scope screen runs a reducer (`bash -c ./reducer<N>.sh ... ; <pge loops> ; bash`). The reducer prints a status bracket at the head of every line - `state::ATLEASTONCE` in `reducercpp/reducer.cpp` (default `[]`, set to `[*]` once the issue reproduces at least once):
 
 ```
-[ ]                         -> issue NEVER reproduced this run     -> END
-[*]  + finished             -> reproduced, reduction complete       -> END
-[*]  + reduced to 3 lines    -> at the reduction target             -> END
-[*]  + running over 4 days   -> diminishing returns                 -> END
-[*]  + still reducing        -> reproduced, actively reducing        -> LEAVE
+[ ]                                       -> issue NEVER reproduced this run  -> END
+[*]  + finished                           -> reproduced, reduction complete   -> END
+[*]  + reduced to 3 lines                 -> at the reduction target          -> END
+[*]  + over 4 days, _out near target      -> diminishing returns              -> END
+[*]  + over 4 days, _out far from target  -> testcase not filable             -> LEAVE
+[*]  + still reducing                     -> reproduced, actively reducing    -> LEAVE
 ```
 
 A `[]` screen still showing live subreducer activity is a stuck reducer spinning on a non-reproducing issue (its main reducer is usually already dead, subreducers orphaned to PID 1) - it still ENDs.
@@ -35,13 +36,25 @@ A `[]` screen still showing live subreducer activity is a stuck reducer spinning
 Two runtime END rules on top of the bracket:
 
 - **At the reduction target.** The most-reduced `<trial-dir>/*.sql_out*` down to 3 lines is done - the target is 3-4 lines. Further churn buys nothing. A 1 or 2 line `_out` is normal for some SQL, not a degenerate reduction: END it and say nothing about the line count.
-- **Over 4 days of runtime** (`ps -o etime=` on the main reducer), UNLESS its `reducer<N>.sh` has `PQUERY_MULTI` set to anything other than 0. A `PQUERY_MULTI` run does true concurrent replay for a race bug and is expected to take much longer, so it keeps running. Anything else past 4 days has hit diminishing returns: take the current `_out` as the testcase and file from that.
+- **Over 4 days of runtime** (`ps -o etime=` on the main reducer), and only when the current `_out` is
+  near the 3-4 line target. This rule ends a run by taking the current `_out` as the testcase, so it
+  applies only when that `_out` IS a testcase. Check the line count first:
 
   ```
+  wc -l <trial-dir>/*.sql_out*                          # most-reduced _out; <= ~20 lines -> near target
   grep -E '^PQUERY_MULTI=' <workdir>/reducer<N>.sh      # 0 -> eligible to END past 4 days
   ```
 
-  The config is read once at startup, so a running reducer whose `reducer<N>.sh` has since been deleted cannot be checked - treat it as eligible.
+  Two exclusions past 4 days:
+
+  - `PQUERY_MULTI` set to anything other than 0. That run does true concurrent replay for a race bug
+    and is expected to take much longer, so it keeps running. The config is read once at startup, so a
+    running reducer whose `reducer<N>.sh` has since been deleted cannot be checked - treat it as eligible.
+  - The `_out` is still far from the target (hundreds or thousands of lines) and still shrinking against
+    its `_out.prev`. Ending it discards days of work and hands back nothing filable. LEAVE it, and report
+    the line count and the trend so the user can call it.
+
+  Always put the `_out` line count in the decision table, so the call is visible before the reap.
 
 Detection signals (per screen, from a `hardcopy -h` dump):
 - **bracket** = last `[*]` or `[]` in the dump (default `[]` if none).
@@ -76,8 +89,13 @@ Detection signals (per screen, from a `hardcopy -h` dump):
    WD=$(grep -oE '/data/[0-9]+/' "$f" | head -1 | tr -d '\n')
    RED=$(pgrep -cf "${WD:-/data/}reducer$N\.sh")     # main reducer; the authoritative liveness test
    if [ "$RED" = 0 ]; then FIN=yes; else FIN=no; fi
+   OUT=$(ls -1 $WD$N/*.sql_out* 2>/dev/null | grep -v '\.prev$' | tail -1)   # most-reduced generation
+   LINES=$([ -n "$OUT" ] && wc -l < "$OUT" || echo -)   # goes in the table for every screen; - = no _out yet
    if [ "$BRK" = '[*]' ] && [ "$FIN" = no ]; then DECISION=LEAVE; else DECISION=END; fi
    ```
+
+   `LINES` is what gates the 4-day rule: it turns a `LEAVE` into an `END` only when the `_out` is near
+   the 3-4 line target. Far from target -> the `LEAVE` stands, whatever the runtime.
 
    Build the **PRESERVE set** = the epochs of every `LEAVE` screen. These must never be killed or removed.
 

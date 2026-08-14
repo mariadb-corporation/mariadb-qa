@@ -3,10 +3,10 @@
 SRU_REDUCED_LINES=13  # A trial whose latest _out file is this short is reduced already, so no new reducer is started for it
 SRU_DONE_LINES=7  # A testcase this short is short enough to report, so a trial with the same UniqueID needs no reducer, in this or in any other workdir
 
-SRU_GREEN=$'\e[32m' SRU_ORANGE=$'\e[33m' SRU_DIM=$'\e[2m' SRU_ALERT=$'\e[1;31m' SRU_OFF=$'\e[0m'  # Green a reducer started, orange nothing to do, dim a dead end, alert a framework problem. Ref the echoit() scale in pquery-run.sh
-if [ ! -t 1 ]; then SRU_GREEN= SRU_ORANGE= SRU_DIM= SRU_ALERT= SRU_OFF=; fi  # Plain text whenever stdout is not a terminal
+SRU_GREEN=$'\e[32m' SRU_LGREEN=$'\e[92m' SRU_ORANGE=$'\e[33m' SRU_RED=$'\e[91m' SRU_ALERT=$'\e[1;31m' SRU_DIM=$'\e[2m' SRU_OFF=$'\e[0m'  # Green a reducer started, light green one already running, orange nothing to do, red a dead end, alert a framework problem, dim work covered in another workdir. Ref the echoit() scale in pquery-run.sh
+if [ ! -t 1 ]; then SRU_GREEN= SRU_LGREEN= SRU_ORANGE= SRU_RED= SRU_ALERT= SRU_DIM= SRU_OFF=; fi  # Plain text whenever stdout is not a terminal
 
-SRU_SCAN_DIR="$(mktemp -d)" || { echo "${SRU_ALERT}Assert: mktemp -d failed, cannot create a temporary directory${SRU_OFF}"; unset SRU_REDUCED_LINES SRU_DONE_LINES SRU_GREEN SRU_ORANGE SRU_DIM SRU_ALERT SRU_OFF SRU_SCAN_DIR; return 1; }
+SRU_SCAN_DIR="$(mktemp -d)" || { echo "${SRU_ALERT}Assert: mktemp -d failed, cannot create a temporary directory${SRU_OFF}"; unset SRU_REDUCED_LINES SRU_DONE_LINES SRU_GREEN SRU_LGREEN SRU_ORANGE SRU_RED SRU_ALERT SRU_DIM SRU_OFF SRU_SCAN_DIR; return 1; }
 ls -d /data/*/ 2>/dev/null | xargs -r -d '\n' -P 16 -n 1 sh -c 'ls -d "${1}"*/*_out 2>/dev/null >> "${0}/$$"' "${SRU_SCAN_DIR}"  # Listing every trial directory of every workdir waits on the disk, so scan 16 workdirs at a time. Each scan writes its own file, because parallel writes into one pipe interleave
 
 # Report text<tab>UniqueID, one line per UniqueID which has a testcase of SRU_DONE_LINES lines or less anywhere in /data, naming the most reduced of them. The UniqueID comes last, so that a tab inside one cannot run into the next field. The UniqueID of a trial directory is the one in its MYBUG file. gawk stops at the first line over the limit, so a long testcase costs eight lines of reading instead of its full size
@@ -22,7 +22,7 @@ SRU_DONE_LIST="$(cat ${SRU_SCAN_DIR}/* 2>/dev/null </dev/null | xargs -r -d '\n'
     # The smallest testcase in bytes wins, and on equal size the lowest path, so every run gives the same list
     if (bug != "" && (!(bug in size) || $2 < size[bug] || ($2 == size[bug] && $3 < testcase[bug]))) { lines[bug] = $1; size[bug] = $2; testcase[bug] = $3 }
   }
-  END { for (bug in size) { print "(" lines[bug] " lines, " size[bug] " bytes): " testcase[bug] "\t" bug } }')"
+  END { for (bug in size) { print "(" lines[bug] " lines): " testcase[bug] "\t" bug } }')"
 rm -rf "${SRU_SCAN_DIR}"
 
 declare -A SRU_DONE_MAP=()  # The same list keyed on UniqueID, so each trial below costs a lookup and not a scan
@@ -30,33 +30,62 @@ while IFS=$'\t' read -r SRU_DONE SRU_BUG; do
   if [ -n "${SRU_BUG}" ]; then SRU_DONE_MAP["${SRU_BUG}"]="${SRU_DONE}"; fi
 done <<< "${SRU_DONE_LIST}"
 
+declare -A SRU_RUNNING_MAP=()  # Every live reducer, keyed on the UniqueID it reduces, so a trial whose UniqueID is being reduced elsewhere costs a lookup and not a scan. The key is the reducer's own TEXT string, the same string sr compares
+while IFS=$'\t' read -r SRU_RUN_UID SRU_RUN_TRIAL; do
+  if [ -n "${SRU_RUN_UID}" ]; then SRU_RUNNING_MAP["${SRU_RUN_UID}"]="${SRU_RUN_TRIAL}"; fi
+done < <(pgrep -a -f '^/data/[0-9]{6}/reducer(_val)?[0-9]+\.sh$' | sed 's|^[0-9]\+ ||' | sort -u | xargs -r -d '\n' env LC_ALL=C gawk '
+  BEGINFILE { if (ERRNO) { nextfile } }  # A reducer which ended between the scan and this read is skipped
+  /^[ ]*TEXT=/ {
+    if ($0 ~ /TEXT="/ && $0 !~ /somebug/) {  # A MODE 0 reducer has an empty TEXT and a blank reducer has somebug, so neither carries a UniqueID
+      uid = $0; sub(/^.*TEXT="/, "", uid); sub(/"[ \t]*$/, "", uid)
+      trial = FILENAME; sub(/\/reducer(_val)?/, "/", trial); sub(/\.sh$/, "", trial)
+      print uid "\t" trial
+    }
+    nextfile  # Only the first TEXT= line counts, which is the one sr reads
+  }')
+
 for SRU_TRIALS in $(${HOME}/pr | grep --binary-files=text -o ': reducers [0-9,]\+' | sed 's|: reducers ||'); do  # One comma-separated trial list per UniqueID
   SRU_HANDLED=
   for SRU_TRIAL in ${SRU_TRIALS//,/ }; do
     SRU_BUG=; IFS= read -r SRU_BUG 2>/dev/null < "${SRU_TRIAL}/MYBUG"  # This trial's UniqueID
     SRU_DONE=; if [ -n "${SRU_BUG}" ]; then SRU_DONE="${SRU_DONE_MAP["${SRU_BUG}"]}"; fi  # A trial without a readable MYBUG has no UniqueID to look up, and bash rejects an empty subscript
     if [ -n "${SRU_DONE}" ]; then
-      echo "${SRU_ORANGE}Trial ${SRU_TRIAL}: not starting, already reduced testcase ${SRU_DONE}${SRU_OFF}"
+      echo "${SRU_ORANGE}Trial ${SRU_TRIAL}: skipped: already reduced ${SRU_DONE}${SRU_OFF}"
       SRU_HANDLED=1; break  # This UniqueID is reduced far enough; no sibling trial needs a reducer
     fi
     SRU_OUT="$(ls -t ${SRU_TRIAL}/*_out 2>/dev/null | head -n1)"  # The latest reduced testcase, found the same way as ${HOME}/o does
     if [ -n "${SRU_OUT}" ]; then
       SRU_LINES="$(wc -l < "${SRU_OUT}")"
       if [ "${SRU_LINES}" -le "${SRU_REDUCED_LINES}" ]; then
-        echo "${SRU_ORANGE}Trial ${SRU_TRIAL} is reduced already (${SRU_LINES} lines), skipped${SRU_OFF}"
+        echo "${SRU_ORANGE}Trial ${SRU_TRIAL}: skipped: already reduced (${SRU_LINES} lines): ${PWD}/${SRU_OUT}${SRU_OFF}"
         SRU_HANDLED=1; break  # This UniqueID is done; no sibling trial needs a reducer
       fi
     fi
-    if [ -n "$(ls ${SRU_TRIAL}/[1-2][0-9]*_start 2>/dev/null)" ]; then  # An EPOCH bundle is present, so reduction was attempted already
-      if pgrep -f "^${PWD}/reducer${SRU_TRIAL}\.sh" >/dev/null 2>&1; then
-        echo "${SRU_ORANGE}Trial ${SRU_TRIAL}: reducer${SRU_TRIAL}.sh is running, skipped${SRU_OFF}"
-        SRU_HANDLED=1; break  # This UniqueID is being reduced; sr would refuse any sibling trial
-      fi
-      continue  # Reduction was attempted but is not running; try the next trial with this UniqueID
+    if pgrep -f "^${PWD}/reducer${SRU_TRIAL}\.sh" >/dev/null 2>&1; then  # This trial's own reducer is running
+      SRU_BEST=' (not reducing yet)'; if [ -n "${SRU_OUT}" ]; then SRU_BEST=" (${SRU_LINES} lines): ${PWD}/${SRU_OUT}"; fi  # The best testcase so far, or a note while the reducer has yet to produce one
+      echo "${SRU_LGREEN}Trial ${SRU_TRIAL}: skipped: already running${SRU_BEST}${SRU_OFF}"
+      SRU_HANDLED=1; break  # This UniqueID is being reduced; sr would refuse any sibling trial
     fi
-    if ${HOME}/sr ${SRU_TRIAL}; then echo "${SRU_GREEN}Started reducer for trial ${SRU_TRIAL}${SRU_OFF}"; fi
+    if [ -n "$(ls ${SRU_TRIAL}/[1-2][0-9]*_start 2>/dev/null)" ]; then
+      continue  # An EPOCH bundle is present but nothing is running, so reduction was attempted and stopped; try the next trial with this UniqueID
+    fi
+    SRU_UID="$(grep --binary-files=text -m1 '^[ ]*TEXT=' reducer${SRU_TRIAL}.sh 2>/dev/null | grep --binary-files=text -v "^[ ]*TEXT=''" | grep --binary-files=text -v "^[ ]*TEXT=.*somebug" | sed 's|.*TEXT="||;s|"[ \t]*$||')"  # The UniqueID this trial's reducer looks for, read the way sr reads it
+    SRU_RUNNING=; if [ -n "${SRU_UID}" ]; then SRU_RUNNING="${SRU_RUNNING_MAP["${SRU_UID}"]}"; fi  # A reducer without a UniqueID has nothing to look up, and bash rejects an empty subscript
+    if [ -n "${SRU_RUNNING}" ]; then
+      echo "${SRU_DIM}Trial ${SRU_TRIAL}: skipped: a trial with a matching UniqueID is already being reduced elsewhere (${SRU_RUNNING})${SRU_OFF}"
+      SRU_HANDLED=1; break  # sr would refuse this trial and every sibling of it
+    fi
+    SRU_SYNTAX=; if [ -r reducer${SRU_TRIAL}.sh ]; then SRU_SYNTAX="$(bash -n reducer${SRU_TRIAL}.sh 2>&1 | head -n1)"; fi  # A reducer script bash cannot parse dies at once and writes no EPOCH bundle, so without this check every sru run starts it again and leaves another s${SRU_TRIAL} screen behind
+    if [ -n "${SRU_SYNTAX}" ]; then
+      echo "${SRU_ALERT}Trial ${SRU_TRIAL}: skipped: reducer${SRU_TRIAL}.sh does not parse: ${SRU_SYNTAX}${SRU_OFF}"
+      SRU_HANDLED=1; continue  # This trial cannot be reduced until its reducer script is fixed, and this line reports why, so try the next trial with this UniqueID without the dead-end line at the end
+    fi
+    if ${HOME}/sr ${SRU_TRIAL}; then echo "${SRU_GREEN}Trial ${SRU_TRIAL}: started: reducer${SRU_TRIAL}.sh running${SRU_OFF}"; fi
     SRU_HANDLED=1; break  # One reducer per UniqueID; sr itself refuses when this UniqueID is already being reduced
   done
-  if [ -z "${SRU_HANDLED}" ]; then echo "${SRU_DIM}Trial(s) ${SRU_TRIALS}: all attempted without any resulting reduction; trial viability exhausted${SRU_OFF}"; fi
+  if [ -z "${SRU_HANDLED}" ]; then
+    case "${SRU_TRIALS}" in *,*) SRU_LABEL='Trials'; SRU_REASON='all same-UID trials attempted';; *) SRU_LABEL='Trial'; SRU_REASON='attempted';; esac  # One trial or a comma-separated list of them
+    echo "${SRU_RED}${SRU_LABEL} ${SRU_TRIALS}: skipped: ${SRU_REASON} without any resulting reduction; trial viability exhausted${SRU_OFF}"
+  fi
 done
-unset SRU_REDUCED_LINES SRU_DONE_LINES SRU_GREEN SRU_ORANGE SRU_DIM SRU_ALERT SRU_OFF SRU_SCAN_DIR SRU_DONE_LIST SRU_DONE_MAP SRU_TRIALS SRU_TRIAL SRU_BUG SRU_DONE SRU_OUT SRU_LINES SRU_HANDLED  # This script is sourced by 'sru', so leave no variables behind
+unset SRU_REDUCED_LINES SRU_DONE_LINES SRU_GREEN SRU_LGREEN SRU_ORANGE SRU_RED SRU_ALERT SRU_DIM SRU_OFF SRU_SCAN_DIR SRU_DONE_LIST SRU_DONE_MAP SRU_RUNNING_MAP SRU_RUN_UID SRU_RUN_TRIAL SRU_TRIALS SRU_TRIAL SRU_BUG SRU_DONE SRU_OUT SRU_LINES SRU_BEST SRU_HANDLED SRU_UID SRU_RUNNING SRU_SYNTAX SRU_LABEL SRU_REASON  # This script is sourced by 'sru', so leave no variables behind

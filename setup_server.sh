@@ -233,6 +233,18 @@ sudo add-apt-repository universe
 sudo add-apt-repository multiverse
 sudo add-apt-repository restricted
 
+# Verify all apt pockets are configured. A do-release-upgrade can silently drop
+# -updates, -security and -backports, which leaves apt reading only the frozen
+# release pocket and reporting 'no updates' forever.
+REL="$(lsb_release -cs)"
+for POCKET in ${REL} ${REL}-updates ${REL}-security ${REL}-backports; do
+  if apt-cache policy | grep -q "a=${POCKET},"; then
+    echo "OK      apt pocket ${POCKET}"
+  else
+    echo "MISSING apt pocket ${POCKET}  <- fix /etc/apt/sources.list.d/ubuntu.sources"
+  fi
+done
+
 # Recent updates to list:
 # Do not add 'terminator' to the list below, as it will install the desktop
 # To remove the desktop on 20.04:
@@ -275,6 +287,7 @@ if [ "${1}" == "rr" ]; then
   sudo sed -i 's|^#RemoveIPC=yes|RemoveIPC=no|' /etc/systemd/logind.conf; sudo systemctl restart systemd-logind.service
   if [ -r /etc/apt/apt.conf.d/20auto-upgrades ]; then
     sudo sed -i 's|Unattended-Upgrade "1"|Unattended-Upgrade "0"|' /etc/apt/apt.conf.d/20auto-upgrades
+  fi
   if [ -r /etc/apt/apt.conf.d/50unattended-upgrades ]; then
     sudo sed -i 's|Unattended-Upgrade "1"|Unattended-Upgrade "0"|' /etc/apt/apt.conf.d/50unattended-upgrades
   fi

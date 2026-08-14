@@ -649,11 +649,13 @@ generate_reducer_script(){
     if [ ! -z "${ERROR_LOG_UID}" ]; then
       UNTS_COMMENT="# TEXT is the error-log UID (the original UniqueID is the '#TEXT=' line below). USE_NEW_TEXT_STRING=1: reducer nts-compares each replay against this UID."
       sed -i $'s\x01^USE_NEW_TEXT_STRING=.*\x01USE_NEW_TEXT_STRING=1  '"${UNTS_COMMENT}"$'\x01' ${REDUCER_FILENAME}
-      sed -i $'s\x01^   \\(TEXT=.*\\)\x01   TEXT="'"${ERROR_LOG_UID}"$'"\\n#\\1\x01' ${REDUCER_FILENAME}
+      ERROR_LOG_UID_ESC="$(printf '%s' "${ERROR_LOG_UID}" | sed 's/\\/\\\\\\\\/g; s/&/\\\&/g; s/"/\\\\"/g; s/\$/\\\\$/g; s/`/\\\\`/g')"  # Escape for bash double-quote (\ " $ `) and sed replacement (\ &), backslash first, the same way TEXT_ESC is escaped above. An error-log UID can carry any of these, and a bare " in it makes the reducer script unparseable
+      sed -i $'s\x01^   \\(TEXT=.*\\)\x01   TEXT="'"${ERROR_LOG_UID_ESC}"$'"\\n#\\1\x01' ${REDUCER_FILENAME}
       # Reaching this block means the override gate fired (known/filtered nts UID, or "no core found" + ERROR_LOG_SCAN_ISSUE) AND a non-ASSERT error-log UID is available. Overwrite MYBUG with the error-log UID; the core/SAN precedence applies upstream in nts (which already wrote the highest-precedence signal as MYBUG before this gate). MYBUG.orig snapshots the pre-override state.
       [ -r ${RUNDIR}/${TRIAL}/MYBUG ] && cp ${RUNDIR}/${TRIAL}/MYBUG ${RUNDIR}/${TRIAL}/MYBUG.orig 2>/dev/null
       echo "${ERROR_LOG_UID}" > ${RUNDIR}/${TRIAL}/MYBUG
       UNTS_COMMENT=
+      ERROR_LOG_UID_ESC=
     fi
     echo "* TEXT variable set to: '${ERROR_LOG_UID}'"
     ERROR_LOG_UID=
@@ -811,13 +813,13 @@ if [ ${QC} -eq 0 ]; then
           ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG
           cd - >/dev/null || exit 1
         fi
-        TEXT="$(cat ./${TRIAL}/node${SUBDIR}/MYBUG | head -n1 | sed 's|"|\\\\"|g')"  # TODO: this change needs further testing for cluster/GR. Also, it is likely someting was missed for this in the updated pquery-run.sh: the need to generate a MYBUG file for each node!   # The sed transforms " to \" to avoid TEXT containing doube quotes in reducer.sh. This works correctly, even though TEXT is set to "some text \" some text \" some text" in reducer.sh. i.e. bugs are reduced correctly.
+        TEXT="$(cat ./${TRIAL}/node${SUBDIR}/MYBUG | head -n1)"  # TODO: this change needs further testing for cluster/GR. Also, it is likely someting was missed for this in the updated pquery-run.sh: the need to generate a MYBUG file for each node!   # The UniqueID exactly as nts wrote it, ref the same read for a single-node trial below
         if [[ "${TEXT}" == "Assert:"* ]]; then  # Try to re-generate MYBUG in case something went amiss during pquery-run.sh (i.e. when 'Assert:' is seen in MYBUG)
           cd ./${TRIAL}/node${SUBDIR} || exit 1
           ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG
           cd - >/dev/null || exit 1
         fi
-        TEXT="$(cat ./${TRIAL}/node${SUBDIR}/MYBUG | head -n1 | sed 's|"|\\\\"|g')"  # Ref TODO above
+        TEXT="$(cat ./${TRIAL}/node${SUBDIR}/MYBUG | head -n1)"  # Ref TODO above
         check_if_asan_or_ubsan_or_tsan ${SUBDIR}
         if [ "${MULTI}" == "1" ]; then
            if [ -s ${RUNDIR}/${TRIAL}/node${SUBDIR}/${TRIAL}.sql.failing ];then
@@ -992,13 +994,13 @@ if [ ${QC} -eq 0 ]; then
             ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG
             cd - >/dev/null || exit 1
           fi
-          TEXT="$(cat ./${TRIAL}/MYBUG | sed 's|"|\\\\"|g')"  # The sed transforms " to \" to avoid TEXT containing doube quotes in reducer.sh. This works correctly, even though TEXT is set to "some text \" some text \" some text" in reducer.sh. i.e. bugs are reduced correctly.
+          TEXT="$(cat ./${TRIAL}/MYBUG)"  # The UniqueID exactly as nts wrote it. TEXT_ESC below escapes it for the reducer's TEXT= line, and every check here compares it against raw text, so it must not be pre-escaped
           if [[ "${TEXT}" == "Assert:"* ]]; then  # Try to re-generate MYBUG in case something went amiss during pquery-run.sh (i.e. when 'Assert:' is seen in MYBUG)
             cd ./${TRIAL} || exit 1
             ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG
             cd - >/dev/null || exit 1
           fi
-          TEXT="$(cat ./${TRIAL}/MYBUG | sed 's|"|\\\\"|g')"  # As above
+          TEXT="$(cat ./${TRIAL}/MYBUG)"  # As above
           check_if_asan_or_ubsan_or_tsan
           if [ "$(echo "${TEXT}" | wc -l)" != "1" ]; then
             echo "Assert: TEXT does not exactly contain one line only! TEXT seen (with newlines removed): '$(echo "${TEXT}" | tr '\n' ' ')'"
