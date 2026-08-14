@@ -250,6 +250,7 @@ SIGSEGV|copy_funcs|multi_delete::send_data|select_result_sink::send_data_with_ch
 del_table == table_being_deleted|SIGABRT|multi_delete::send_data|select_result_sink::send_data_with_check|JOIN::exec_inner|JOIN::exec                                          ## MDEV-40573
 m_prebuilt->trx == thd_to_trx(m_user_thd)|SIGABRT|ut_dbg_assertion_failed|ha_innobase::change_active_index|handler::ha_index_init|ha_partition::index_init                     ## MDEV-24808
 m_user_thd == ha_thd()|SIGABRT|ha_innobase::change_active_index|ha_innobase::index_init|handler::ha_index_init|ha_partition::index_init                                        ## MDEV-24808
+SIGSEGV|LEX::sp_package_spec_check_cyclic_dependency|LEX::set_field_type_typedef_package_spec|ORAparse|parse_sql                                                               ## MDEV-40721
 #SIGSEGV|__GI___nptl_deallocate_tsd|__GI___nptl_deallocate_tsd|start_thread|clone3                                                                                              ## MDEV-40651 (filtering ftm; may be a generic/dud DuckDB stack)
 SIGSEGV|Dynamic_array<sp_type_def*>::elements|sp_type_def_list::find_type_def|sp_pcontext::find_type_def|LEX::find_type_def                                                    ## MDEV-40654
 SIGSEGV|sp_type_def_list::find_type_def|sp_pcontext::find_type_def|MYSQLparse|parse_sql                                                                                        ## MDEV-40654

@@ -24,6 +24,10 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 ##### CURRENT BUGS (Search key: Mac) #####
 UBSAN|load of null pointer of type 'Item *'|sql/sql_select.cc|copy_funcs|multi_delete::send_data|select_result_sink::send_data_with_check|JOIN::exec_inner                     ## MDEV-40573
 UBSAN|load of value X, which is not a valid value for type 'bool'|sql/sql_delete.cc|multi_delete::send_data|select_result_sink::send_data_with_check|JOIN::exec_inner|JOIN::exec ## MDEV-40573
+UBSAN|load of value X, which is not a valid value for type 'bool'|storage/connect/ha_connect.cc|ha_connect::GetIndexOption|ha_connect::GetIndexInfo|ha_connect::create|handler::ha_create  ## MDEV-40755
+MSAN|use-of-uninitialized-value|sql/sql_lex.cc|LEX::find_type_def|MYSQLparse|parse_sql|mysql_parse                                                                             ## MDEV-40654
+pkg|SIGABRT|is_package_public_routine_quick|Sp_handler::sp_resolve_package_routine_implicit|Create_sp_func::create_with_db|Create_qfunc::create_func                           ## MDEV-40654
+MSAN|use-of-uninitialized-value|storage/innobase/handler/ha_innodb.cc|create_index|create_table_info_t::create_table|ha_innobase::create|handler::ha_create                    ## MDEV-40734
 UBSAN|member call on null pointer of type 'Field'|storage/duckdb/convertor/duckdb_select.cc|store_duckdb_field_in_mysql_format|ha_duckdb::rnd_next|handler::ha_rnd_next|rr_sequential ## MDEV-40651
 MSAN|use-of-uninitialized-value|sql/item_timefunc.cc|extract_date_time|Item_func_str_to_date::get_date_common|Type_handler_temporal_with_date::Item_update_null_value|Item_func::is_null  ## MDEV-40616
 UBSAN|member call on null pointer of type 'Item'|sql/filesort.cc|sortlength|filesort|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner                    ## MDEV-33121
