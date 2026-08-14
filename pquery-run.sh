@@ -174,6 +174,7 @@ source ${SCRIPT_PWD}/$CONFIGURATION_FILE
 USE_GENERATOR=${USE_GENERATOR:-0}
 USE_REVGEN=${USE_REVGEN:-0}
 USE_INFILE=${USE_INFILE:-0}
+QUERIES_PER_INFILE=${QUERIES_PER_INFILE:-0}  # 0 = the whole file, which is what configuration files that predate this option expect
 USE_ALL_DISK_SQL=${USE_ALL_DISK_SQL:-0}
 QUERIES_PER_ALL_DISK_RUN=${QUERIES_PER_ALL_DISK_RUN:-100000}
 ALL_DISK_SQL_NEW_QUERIES_EVERY_X_TRIALS=${ALL_DISK_SQL_NEW_QUERIES_EVERY_X_TRIALS:-45}
@@ -318,7 +319,7 @@ fi
 # is shuffled once it is assembled.
 for RETIRED_VAR in PRE_SHUFFLE_SQL PRE_SHUFFLE_MIN_SQL_LINES PRE_SHUFFLE_TWO_MIN_SQL_LINES PRE_SHUFFLE_TRIALS_PER_SHUFFLE PRE_SHUFFLE_DIR PRE_SHUFFLE_INTERLEAVE GENERATE_NEW_QUERIES_EVERY_X_TRIALS REVGEN_NEW_QUERIES_EVERY_X_TRIALS; do
   if [ ! -z "${!RETIRED_VAR}" ]; then
-    echoit "Assert: the configuration file sets ${RETIRED_VAR}, which no longer exists. The SQL input is now a set of sources: USE_GENERATOR and USE_REVGEN run every trial, USE_INFILE takes the input file, and USE_ALL_DISK_SQL collects QUERIES_PER_ALL_DISK_RUN lines from all SQL on disk every ALL_DISK_SQL_NEW_QUERIES_EVERY_X_TRIALS trials. The per-trial SQL lands in TRIAL_SQL_DIR, capped at PQUERY_MAX_SQL_LINES lines, and is always shuffled. ADV_FILTER_SQL=1 applies the ADV_FILTER_LIST removals, and the interleave settings are now INTERLEAVE, INTERLEAVE_SQL and INTERLEAVE_LINES"
+    echoit "Assert: the configuration file sets ${RETIRED_VAR}, which no longer exists. The SQL input is now a set of sources: USE_GENERATOR and USE_REVGEN run every trial, USE_INFILE randomly selects QUERIES_PER_INFILE lines from the input file, and USE_ALL_DISK_SQL collects QUERIES_PER_ALL_DISK_RUN lines from all SQL on disk every ALL_DISK_SQL_NEW_QUERIES_EVERY_X_TRIALS trials. The per-trial SQL lands in TRIAL_SQL_DIR, capped at PQUERY_MAX_SQL_LINES lines, and is always shuffled. ADV_FILTER_SQL=1 applies the ADV_FILTER_LIST removals, and the interleave settings are now INTERLEAVE, INTERLEAVE_SQL and INTERLEAVE_LINES"
     exit 1
   fi
 done
@@ -342,6 +343,10 @@ if ! [[ "${PQUERY_MAX_SQL_LINES}" =~ ^[0-9]{1,10}$ ]] || [ "${PQUERY_MAX_SQL_LIN
 fi
 if ! [[ "${QUERIES_PER_ALL_DISK_RUN}" =~ ^[0-9]{1,10}$ ]] || [ "${QUERIES_PER_ALL_DISK_RUN}" -lt 1 ]; then
   echoit "Assert: QUERIES_PER_ALL_DISK_RUN must be a positive integer of at most 10 digits (current value: '${QUERIES_PER_ALL_DISK_RUN}')"
+  exit 1
+fi
+if ! [[ "${QUERIES_PER_INFILE}" =~ ^[0-9]{1,10}$ ]]; then
+  echoit "Assert: QUERIES_PER_INFILE must be an integer of at most 10 digits, 0 or higher, where 0 means the whole input file (current value: '${QUERIES_PER_INFILE}')"
   exit 1
 fi
 if ! [[ "${ALL_DISK_SQL_NEW_QUERIES_EVERY_X_TRIALS}" =~ ^[0-9]{1,10}$ ]] || [ "${ALL_DISK_SQL_NEW_QUERIES_EVERY_X_TRIALS}" -lt 1 ]; then
@@ -672,9 +677,14 @@ emit_trial_sources(){  # Every active source's SQL on stdout, in the order the l
   [ ${USE_GENERATOR} -eq 1 ] && emit_file "${GEN_OUTFILE}"
   [ ${USE_REVGEN} -eq 1 ] && emit_file "${REVGEN_OUTFILE}"
   if [ ${USE_INFILE} -eq 1 ]; then
-    if [ "${INFILE_LINES}" -le "${PQUERY_MAX_SQL_LINES}" ]; then
+    if [ "${QUERIES_PER_INFILE}" -gt 0 ]; then
+      # Up to QUERIES_PER_INFILE lines, randomly selected from the whole file (xoshiro256++ entropy),
+      # another set each trial. shuf ends every line it writes with a newline, so no end-of-file repair
+      # is needed here
+      shuf --random-source=<(${RANDOM_BIN} --raw) -n ${QUERIES_PER_INFILE} "${INFILE}"
+    elif [ "${INFILE_LINES}" -le "${PQUERY_MAX_SQL_LINES}" ]; then
       emit_file "${INFILE}"
-    else  # Larger than the cap: read a window at a random offset, so each trial sees other SQL
+    else  # QUERIES_PER_INFILE=0 and larger than the cap: read a window at a random offset, so each trial sees other SQL
       tail -c +$(( $(${RANDOM_BIN} ${INFILE_WINDOW_MAX_OFFSET}) + 1 )) "${INFILE}" | tail -n +2  # tail -n +2 drops the part line the offset lands in
       [ -n "$(tail -c 1 "${INFILE}")" ] && echo  # The window can end at the end of the file, so the same applies
     fi
@@ -3819,9 +3829,11 @@ else
   SLAVE_EXTRA=
 fi
 
-# Measure the input file once, for the per-trial window in emit_trial_sources(). A file larger than the
-# line cap is read from a random offset each trial, so a run sees the whole file over its trials instead
-# of the first PQUERY_MAX_SQL_LINES lines every time. The configured input file itself is never changed.
+# Measure the input file once, for the per-trial selection or window in emit_trial_sources(). With
+# QUERIES_PER_INFILE > 0 each trial randomly selects up to that many lines from the whole file
+# (xoshiro256++ entropy). At 0 the whole file is used, and a file larger than the line cap is then read
+# from a random offset each trial, so a run sees the whole file over its trials instead of the first
+# PQUERY_MAX_SQL_LINES lines every time. The configured input file itself is never changed.
 INFILE_LINES=0
 INFILE_WINDOW_MAX_OFFSET=1
 INFILE_ASM_KB=0  # What this source can add to one trial's SQL, for the diskspace check in assemble_trial_sql()
@@ -3832,7 +3844,14 @@ if [ "${USE_INFILE}" -eq 1 ]; then
     exit 1
   fi
   INFILE_ASM_KB=$(( $(stat -c %s ${INFILE}) / 1024 + 1 ))
-  if [ "${INFILE_LINES}" -gt "${PQUERY_MAX_SQL_LINES}" ]; then
+  if [ "${QUERIES_PER_INFILE}" -gt 0 ]; then
+    if [ "${QUERIES_PER_INFILE}" -lt "${INFILE_LINES}" ]; then
+      # Only the selected lines reach a trial, so the diskspace check must not ask for the whole file.
+      # The bytes per line are rounded up, so the estimate errs on the large side
+      INFILE_ASM_KB=$(( ( ( $(stat -c %s ${INFILE}) + INFILE_LINES - 1 ) / INFILE_LINES ) * QUERIES_PER_INFILE / 1024 + 1 ))
+    fi
+    echoit "The SQL input file holds ${INFILE_LINES} lines. Each trial randomly selects up to QUERIES_PER_INFILE=${QUERIES_PER_INFILE} of them"
+  elif [ "${INFILE_LINES}" -gt "${PQUERY_MAX_SQL_LINES}" ]; then
     # Leave room for a full window: stop the random offset one window short of the end of the file. The
     # bytes per line are rounded up, so the room reserved is not short and a trial gets its full window.
     # A window can still come out a little short where the lines around it run longer than the average
@@ -3856,7 +3875,13 @@ fi
 SQL_INPUT_TEXT=
 if [ ${USE_GENERATOR} -eq 1 ]; then SQL_INPUT_TEXT="SQL Generator (${QUERIES_PER_GENERATOR_RUN} queries per trial)"; fi
 if [ ${USE_REVGEN} -eq 1 ]; then SQL_INPUT_TEXT="${SQL_INPUT_TEXT}${SQL_INPUT_TEXT:+ + }revgen (${QUERIES_PER_REVGEN_RUN} queries per trial)"; fi
-if [ ${USE_INFILE} -eq 1 ]; then SQL_INPUT_TEXT="${SQL_INPUT_TEXT}${SQL_INPUT_TEXT:+ + }SQL file ${INFILE} (${INFILE_LINES} lines)"; fi
+if [ ${USE_INFILE} -eq 1 ]; then
+  if [ "${QUERIES_PER_INFILE}" -gt 0 ]; then
+    SQL_INPUT_TEXT="${SQL_INPUT_TEXT}${SQL_INPUT_TEXT:+ + }SQL file ${INFILE} (up to ${QUERIES_PER_INFILE} of ${INFILE_LINES} lines per trial)"
+  else
+    SQL_INPUT_TEXT="${SQL_INPUT_TEXT}${SQL_INPUT_TEXT:+ + }SQL file ${INFILE} (${INFILE_LINES} lines)"
+  fi
+fi
 if [ ${USE_ALL_DISK_SQL} -eq 1 ]; then SQL_INPUT_TEXT="${SQL_INPUT_TEXT}${SQL_INPUT_TEXT:+ + }all SQL on disk (${QUERIES_PER_ALL_DISK_RUN} lines, new every ${ALL_DISK_SQL_NEW_QUERIES_EVERY_X_TRIALS} trials)"; fi
 SQL_INPUT_TEXT="Sources: ${SQL_INPUT_TEXT}"
 echoit "Valgrind run: $(if [ "${VALGRIND_RUN}" == "1" ]; then echo -n 'TRUE'; else echo -n 'FALSE'; fi) | pquery timeout: ${PQUERY_RUN_TIMEOUT} | ${SQL_INPUT_TEXT}$(if [ ${THREADS} -ne 1 ]; then echo -n " | Testcase size (chunked from infile): ${MULTI_THREADED_TESTC_LINES}"; fi)"

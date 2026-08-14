@@ -3,11 +3,11 @@ SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
 SQLFILE="$(mktemp).sql"
 echo "--- Writing SQL to $SQLFILE"
 
-for tc in $(find $dir -type f -name "*.test"); do
-  echo "Processing ${tc}"
-  res="$(${SCRIPT_PWD}/mtr_to_sql_mini.sh $tc)"
-  tc_sql_file=$(echo $res | grep -oP '(?<=Output: ).*(?= \()')
-  cat $tc_sql_file >> $SQLFILE
+${SCRIPT_PWD}/mtr_to_sql_mini.sh "${dir:-.}" | while read -r what file rest; do
+  case "${what}" in
+    Input:) echo "Processing ${file}";;
+    Output:) cat $file >> $SQLFILE;;
+  esac
 done
 
 echo "--- Output SQL file is $SQLFILE"

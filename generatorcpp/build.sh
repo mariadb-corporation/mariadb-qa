@@ -5,7 +5,7 @@
 # multi-GB sanitizer-instrumented .s output of this single-TU 22 MB file; clang has
 # an integrated assembler and uses far less peak RSS).
 #
-# Build profile (clang 21, generator.cpp ≈ 22 MB single TU):
+# Build profile (generator.cpp ≈ 22 MB single TU):
 #
 #   mode      output             time      peak RSS    use case
 #   ----      ------             ----      --------    --------
@@ -14,9 +14,12 @@
 #   ubsan     generator_ubasan   ~33 min   ~20 GB      UB detection
 #   asan      generator_asan     ~40 min   ~30 GB      ASAN+UBSAN, heaviest
 #
-# IMPORTANT: only one mode at a time — two concurrent clang compiles of this TU
-# can push the 125 GB host into swap thrashing (peaks combine + page-cache).
-# Check `ps -ef | grep clang.*generator.cpp` before starting any build.
+# Free memory decides how many modes run at once. Compare it against the peaks
+# above: comfortably more than their sum, run them together; less, run one at a
+# time, because the peaks add up, page cache lands on top, and the host starts
+# swap thrashing. Each mode is a single-file compile and uses one core, so the
+# only way to use more cores is to run more modes.
+# `ps -ef | grep clang.*generator.cpp` shows what is already building.
 #
 # Usage:  ./build.sh           # release build
 #         ./build.sh debug
@@ -69,7 +72,7 @@ REL_FLAGS=(
 )
 REL_LINK_FLAGS=(
   -Os -flto=thin
-  -fuse-ld=lld                # clang 22's LTO needs lld; GNU ld lacks LLVMgold.so
+  -fuse-ld=lld                # clang's LTO needs lld; GNU ld lacks LLVMgold.so
   -Wl,-O2 -Wl,--as-needed -Wl,--gc-sections
   -s
   -stdlib=libc++

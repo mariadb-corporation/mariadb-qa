@@ -4,7 +4,7 @@
 # Single TU build. Clang+libc++ is the canonical toolchain (see global memory
 # feedback_clang_only_builds).
 #
-# Build profile (clang 21, reducer.cpp ≈ 334 KB single TU):
+# Build profile (reducer.cpp ≈ 334 KB single TU):
 #
 #   mode      output            time     peak RSS    use case
 #   ----      ------            ----     --------    --------
@@ -13,8 +13,9 @@
 #   ubsan     reducer_ubasan    ~30 s    ~1 GB       UB detection
 #   asan      reducer_asan      ~45 s    ~1.5 GB     ASAN+UBSAN
 #
-# All modes are inexpensive on this TU; concurrent builds with generatorcpp are
-# fine as long as generatorcpp is not also compiling.
+# All modes are cheap on this TU, 1.5 GB at worst as the peaks above show, so a
+# reducer build runs alongside any other build without competing for memory.
+# Each mode is a single-file compile and uses one core.
 #
 # Usage:  ./build.sh           # release    -> reducer
 #         ./build.sh debug     # debug      -> reducer_dbg

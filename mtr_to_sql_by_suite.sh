@@ -16,10 +16,10 @@ for arg in "${@}"; do
   if [ ! -d "$dir" ]; then
     echo "$dir does not exist, so skipping it."
   else
-    for tc in $(find $dir -type f -name "*.test"); do
-      res="$(${SCRIPT_PWD}/mtr_to_sql_mini.sh $tc)"
-      tc_sql_file=$(echo $res | grep -oP '(?<=Output: ).*(?= \()')
-      cat $tc_sql_file >> $SQLFILE
+    ${SCRIPT_PWD}/mtr_to_sql_mini.sh "$dir" | while read -r what file rest; do
+      case "${what}" in
+        Output:) cat $file >> $SQLFILE;;
+      esac
     done
   fi
 done

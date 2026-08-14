@@ -118,17 +118,18 @@ file is shuffled before the trial runs, so the SQL of each source is spread over
 |---|---|---|
 | `generatorcpp/generator` | Random SQL built from hand-written templates | `USE_GENERATOR=1`, `QUERIES_PER_GENERATOR_RUN` |
 | `revgen/revgen` | Random SQL built by walking the server's own yacc grammar | `USE_REVGEN=1`, `QUERIES_PER_REVGEN_RUN` |
-| `INFILE` | A fixed SQL file. The default is every distribution's MTR suite converted to SQL | `USE_INFILE=1` |
+| `INFILE` | A fixed SQL file. The default is every distribution's MTR suite converted to SQL | `USE_INFILE=1`, `QUERIES_PER_INFILE` |
 | all SQL on the disk | A random sample of every `*.sql` file found | `USE_ALL_DISK_SQL=1`, `QUERIES_PER_ALL_DISK_RUN` |
 
 The generator and revgen run every trial. The all-disk source is the slow one, so it collects a
 new pool every `ALL_DISK_SQL_NEW_QUERIES_EVERY_X_TRIALS` trials; the file list it samples from is
-indexed once per run. An `INFILE` larger than the line cap is read from a random offset each
-trial, so a run covers the whole file over its trials.
+indexed once per run. The `INFILE` contributes `QUERIES_PER_INFILE` randomly selected lines
+(xoshiro256++ entropy) each trial. At 0 the whole file is used, and a file larger than the line
+cap is then read from a random offset each trial, so a run covers the whole file over its trials.
 
 The share each source gets is simply its line count: `QUERIES_PER_GENERATOR_RUN`,
-`QUERIES_PER_REVGEN_RUN`, `QUERIES_PER_ALL_DISK_RUN`, and the length of the `INFILE`. So for 25%
-generator, 25% revgen and 50% `INFILE`, set both query counts to half the `INFILE`'s line count.
+`QUERIES_PER_REVGEN_RUN`, `QUERIES_PER_ALL_DISK_RUN`, and `QUERIES_PER_INFILE`. So for 25%
+generator, 25% revgen and 50% `INFILE`, set `QUERIES_PER_INFILE` to the sum of the other two.
 
 `PQUERY_MAX_SQL_LINES` (5141189, the pquery maximum) caps the per-trial SQL. Lines are cut from
 the end, and the sources are joined in the order generator, revgen, `INFILE`, all-disk, so the
