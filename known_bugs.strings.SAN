@@ -22,6 +22,7 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|get_new_start_alter_info|Query_log_event::handle_split_alter_query_log_event                                               ## MDEV-37770 (needs testcase)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|applying non-zero offset X to null pointer|storage/innobase/handler/ha_innodb.cc|innobase_get_computed_value|row_upd_store_v_row|row_upd_store_row|row_upd_del_mark_clust_rec  ## MDEV-40774
 UBSAN|member call on null pointer of type 'Field'|storage/innobase/handler/handler0alter.cc|innobase_create_index_def|ha_innobase_inplace_ctx::create_key_defs|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table   ## MDEV-40772
 UBSAN|load of null pointer of type 'Item *'|sql/sql_select.cc|copy_funcs|multi_delete::send_data|select_result_sink::send_data_with_check|JOIN::exec_inner                     ## MDEV-40573
 UBSAN|load of value X, which is not a valid value for type 'bool'|sql/sql_delete.cc|multi_delete::send_data|select_result_sink::send_data_with_check|JOIN::exec_inner|JOIN::exec ## MDEV-40573
