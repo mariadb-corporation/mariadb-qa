@@ -246,6 +246,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+!memcmp(page, temp_page, PAGE_HEADER)|SIGABRT|ut_dbg_assertion_failed|page_zip_reorganize|page_cur_insert_rec_zip|page_cur_tuple_insert                                        ## MDEV-40775
 mysql_table|SIGABRT|innobase_get_computed_value|row_upd_store_v_row|row_upd_store_row|row_upd_del_mark_clust_rec                                                               ## MDEV-40774
 SIGSEGV|__memset_evex_unaligned_erms|memset|row_mysql_store_blob_ref|innobase_get_computed_value                                                                               ## MDEV-40774
 !param->got_error|SIGABRT|Table_triggers_list::change_table_name|rename_triggers|ddl_log_execute_action|ddl_log_execute_entry_no_lock                                          ## MDEV-40773
