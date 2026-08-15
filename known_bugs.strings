@@ -246,6 +246,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|Field::stored_in_db|innobase_create_index_def|ha_innobase_inplace_ctx::create_key_defs|prepare_inplace_alter_table_dict                                                ## MDEV-40772
 SIGSEGV|copy_funcs|multi_delete::send_data|select_result_sink::send_data_with_check|JOIN::exec_inner                                                                           ## MDEV-40573
 del_table == table_being_deleted|SIGABRT|multi_delete::send_data|select_result_sink::send_data_with_check|JOIN::exec_inner|JOIN::exec                                          ## MDEV-40573
 m_prebuilt->trx == thd_to_trx(m_user_thd)|SIGABRT|ut_dbg_assertion_failed|ha_innobase::change_active_index|handler::ha_index_init|ha_partition::index_init                     ## MDEV-24808
