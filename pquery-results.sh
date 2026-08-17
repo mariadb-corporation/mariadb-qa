@@ -59,8 +59,18 @@ NTS=  # Backwards compatible (and manually modified reducers scanning without us
 if grep -qi --binary-files=text "^USE_NEW_TEXT_STRING=1" reducer*.sh 2>/dev/null; then
   NTS='-Fi' # New text string (i.e. no regex, exact text string) mode
 fi
+# Terminal width, used to right-position the '(Seen ...)' column of the UniqueID list. Stays 0 when stdout is not a terminal (~/pg redirects to a log), which keeps the fixed-width layout so stored output is unaffected.
+# Colours follow the echoit() scale in pquery-run.sh and the dim note in ~/sr: DIM for an error-log entry and for the summary blocks, ORANGE for a framework problem. A crash signature, a sanitizer report and the MODE=4 line all rank the same, and read green once any of their trials has an _out file, so reduction is running or done, red when a trial was started but no _out came of it, and #E59E7A while nothing was started at all. An UNTYPED entry uses #D47147, because it asks for a uid_prefix() rule and is meant to catch the eye. All empty when stdout is not a terminal, so a redirected run stays plain text.
+SCREEN_WIDTH=0
+C_DIM=$'\e[2m' C_SIG_OR_SAN=$'\e[32m' C_STALLED=$'\e[31m' C_UNREDUCED=$'\e[38;2;229;158;122m' C_UNTYPED=$'\e[38;2;212;113;71m' C_ORANGE=$'\e[33m' C_OFF=$'\e[0m'
+if [ -t 1 ]; then
+  SCREEN_WIDTH="$(tput cols 2>/dev/null)"
+else
+  C_DIM= C_SIG_OR_SAN= C_STALLED= C_UNREDUCED= C_UNTYPED= C_ORANGE= C_OFF=
+fi
+case "${SCREEN_WIDTH}" in (''|*[!0-9]*) SCREEN_WIDTH=0 ;; esac
 TRIALS_EXECUTED=$(cat pquery-run.log 2>/dev/null | grep --binary-files=text -o "==.*TRIAL.*==" 2>/dev/null | tail -n1 | sed 's|[^0-9]*||;s|[ \t=]||g')
-echo "========== [ cd ${PWD} ] Sorted UniqueID's (${TRIALS_EXECUTED} trials done, $(ls reducer*.sh qcreducer*.sh 2>/dev/null | wc -l) remaining reducers) nf: non-filtered bugs =========="
+echo "=== [ cd ${PWD} ] UniqueID's (${TRIALS_EXECUTED} trials done, $(ls reducer*.sh qcreducer*.sh 2>/dev/null | wc -l) remaining reducers) nf: non-filtered bugs ==="
 
 # Hang/timeout signature scan over SHUTDOWN_TIMEOUT_ISSUE-marked trials. Consumed by the TRIALS_MDEV_30418 / MASTER_POS_WAIT / MDEV_22727 / NET_RETRY / MDEV_25611 / MDEV_35064 blocks (all inside the MDG=0 && GRP_RPL=0 main branch), each looking for a different SQL pattern within those trials' default.node.tld_thread-*.sql. One batched grep populates a "<file>:<matched_line>" cache that _pq_trials_with dispatches over.
 _HANG_TRIALS=
@@ -117,11 +127,19 @@ CHAR_REGEX='[^0-9]'
 if [ "$(echo ${PWD} | sed 's|.*/||')" == "ERR_REDUCERS" ]; then
   CHAR_REGEX='[^_0-9]'
 fi
+OUT_TRIALS=",$(ls -d [0-9]*/*_out 2>/dev/null | sed 's|/.*||' | sort -u | tr '\n' ',')"  # Every trial which already holds a reduced testcase, comma-wrapped so a lookup of ",<trial>," cannot match part of another trial number. One glob for the whole workdir, so the colouring below costs no extra directory reads
+STARTED_TRIALS=",$(ls -d [0-9]*/[1-2][0-9]*_start 2>/dev/null | sed 's|/.*||' | sort -u | tr '\n' ',')"  # Every trial which holds an EPOCH bundle, so a reducer ran on it at some point. Same test start_unreduced uses. A trial in this list but not in OUT_TRIALS was started and gave no testcase
 if [[ $MDG -eq 0 && $GRP_RPL -eq 0 ]]; then  # Normal non-Galera, non-GR run
-  grep --binary-files=text -vE 'Last.*consecutive queries all failed|Assert: no core file found in.*and fallback_text_string.sh returned an empty output' "${TEXTS_CACHE}" 2>/dev/null | sed "s|.*TEXT=.||;s|['\"][ \t]*$||" | sort -u > "${STRINGS_CACHE}"
+  grep --binary-files=text -vE 'Last.*consecutive queries all failed|Assert: no core file found in.*and fallback_text_string.sh returned an empty output' "${TEXTS_CACHE}" 2>/dev/null | sed "s|.*TEXT=.||;s|['\"][ \t]*$||" | sort -u | awk -v w="${SCREEN_WIDTH}" '
+    # Error-log and assert-only entries list first, crash signatures and sanitizer reports after. Inside the leading group the ones that fit the terminal come before the ones that run past it, so the aligned block stays unbroken. Alphabetical within each group. The width test mirrors the display below: a sanitizer entry always renders at 170 columns, any other entry at its own length with the \" escaping reverted.
+    { t=$0
+      san = (index(t,"=ERROR")==1 || index(t,"ThreadSanitizer:")==1 || index(t,"runtime error:")==1 || index(t,"LeakSanitizer:")==1 || index(t,"MemorySanitizer:")==1)
+      if (san) { L=170 } else { gsub(/\\"/,"\"",t); L=length(t) }
+      if (san || index($0,"SIG")) sig_or_san[++nss]=$0; else if (w>0 && L<w-43) fit[++nf]=$0; else ovf[++no]=$0 }
+    END { for (i=1;i<=nf;i++) print fit[i]; for (i=1;i<=no;i++) print ovf[i]; for (i=1;i<=nss;i++) print sig_or_san[i] }' > "${STRINGS_CACHE}"
   if [ "${NTS}" == "-Fi" ]; then  # New text string (i.e. no regex, exact text string) mode
     # One awk pass over the string list and the TEXT cache replaces a ~10-process pipeline per string. Matching is case-insensitive fixed-substring (as grep -Fi); trial numbers come from the cache filenames (strip at ':', drop CHAR_REGEX chars, drop leading __); trial lists are numeric-unique ascending (as sort -un). The trailing printf '%b' loop reproduces echo -e's backslash handling. The s|\\"|"|g revert of the else-branch: pquery-prep-reducer.sh inserts \ before " for in-reducer TEXT use; it is not part of the official bug uniqueID string, so pquery-results.sh / MYBUG / known_bug_string.sh show " where reducer.sh TEXT holds \" (pquery-clean-known.sh relies on the \" form to find failing reducers).
-    awk -v crx="${CHAR_REGEX}" '
+    awk -v crx="${CHAR_REGEX}" -v w="${SCREEN_WIDTH}" -v dim="${C_DIM}" -v sig_or_sancol="${C_SIG_OR_SAN}" -v stalledcol="${C_STALLED}" -v unredcol="${C_UNREDUCED}" -v outs="${OUT_TRIALS}" -v started="${STARTED_TRIALS}" -v untypedcol="${C_UNTYPED}" -v off="${C_OFF}" '
       FILENAME==ARGV[1] { if ($0!="") s[++ns]=$0; next }  # An empty TEXT extraction stays hidden, as with word-split iteration
       { cl[++nc]=$0; lcl[nc]=tolower($0) }
       END {
@@ -138,13 +156,21 @@ if [[ $MDG -eq 0 && $GRP_RPL -eq 0 ]]; then  # Normal non-Galera, non-GR run
           for (a=2; a<=nt; a++) { v=tr[a]; b=a-1; while (b>=1 && tr[b]+0 > v+0) { tr[b+1]=tr[b]; b-- } tr[b+1]=v }
           j=""; pv=""
           for (a=1; a<=nt; a++) { if (a>1 && tr[a]+0 == pv+0) continue; j=(j=="")?tr[a]:j","tr[a]; pv=tr[a] }
-          if      (index(S,"=ERROR")==1)           { o=sprintf("%-164sASAN  ",S) }
-          else if (index(S,"ThreadSanitizer:")==1) { o=sprintf("%-164sTSAN  ",S) }
-          else if (index(S,"runtime error:")==1)   { o=sprintf("%-164sUBSAN ",S) }
-          else if (index(S,"LeakSanitizer:")==1)   { o=sprintf("%-164sASAN ",S) }
-          else if (index(S,"MemorySanitizer:")==1) { o=sprintf("%-164sMSAN ",S) }
-          else                                     { o=sprintf("%-170s",S); gsub(/\\"/,"\"",o) }
-          printf "%s (Seen %3s times: reducers %s)\n", o, cnt, j
+          # sc: a crash signature and a sanitizer report read green once one of their trials holds an _out file, red when a trial was started and produced none, and in the unreduced colour while nothing was started. c: an UNTYPED entry in the untyped colour, an error-log error or warning dim.
+          hasout=0; hasstart=0
+          for (a=1; a<=nt; a++) { if (index(outs, "," tr[a] ",")) { hasout=1; break } if (index(started, "," tr[a] ",")) hasstart=1 }
+          sc = hasout ? sig_or_sancol : (hasstart ? stalledcol : unredcol)
+          c=""
+          if      (index(S,"=ERROR")==1)           { o=sprintf("%-164sASAN  ",S); c=sc }
+          else if (index(S,"ThreadSanitizer:")==1) { o=sprintf("%-164sTSAN  ",S); c=sc }
+          else if (index(S,"runtime error:")==1)   { o=sprintf("%-164sUBSAN ",S); c=sc }
+          else if (index(S,"LeakSanitizer:")==1)   { o=sprintf("%-164sASAN ",S);  c=sc }
+          else if (index(S,"MemorySanitizer:")==1) { o=sprintf("%-164sMSAN ",S);  c=sc }
+          else                                     { o=S; gsub(/\\"/,"\"",o); if (index(S,"SIG")) c=sc; else if (index(S,"UNTYPED")==1) c=untypedcol; else if (index(S,"ERROR") || index(S,"WARNING")) c=dim }
+          # A UniqueID that leaves room pushes its "(Seen ...)" to a fixed right-hand column, so the counts line up in one place instead of drifting with the text. A longer one falls back to the fixed layout.
+          if (w > 0 && length(o) < w-43) { line=sprintf("%-*s(Seen %3s times: reducers %s)", w-43, o, cnt, j) }
+          else                           { line=sprintf("%-170s (Seen %3s times: reducers %s)", o, cnt, j) }
+          if (c!="") printf "%s%s%s\n", c, line, off; else print line
         }
       }' "${STRINGS_CACHE}" "${TEXTS_CACHE}" | while IFS= read -r _line; do printf '%b\n' "${_line}"; done
   else  # Backwards compatible (and manually modified reducers scanning without using new text string)
@@ -198,7 +224,12 @@ if [[ $MDG -eq 0 && $GRP_RPL -eq 0 ]]; then
   if [ $COUNT -gt 0 ]; then
     STRING_OUT="$(echo "* TRIALS TO CHECK MANUALLY (NO TEXT SET: MODE=4) *" | awk -F "\n" '{printf "%-55s",$1}')"
     COUNT_OUT=$(echo $COUNT | awk '{printf " (Seen %3s times: reducers ",$1}')
-    echo -e "${STRING_OUT}${COUNT_OUT}$(echo ${MATCHING_TRIALS[@]}|sed 's| |,|g'))"
+    MODE4_COLOR="${C_UNREDUCED}"  # Green once one of these trials holds an _out file, red when one was started and gave none, as with the UniqueID list above
+    for MATCHING_TRIAL in ${MATCHING_TRIALS[@]}; do
+      case "${OUT_TRIALS}" in *",${MATCHING_TRIAL},"*) MODE4_COLOR="${C_SIG_OR_SAN}"; break ;; esac
+      case "${STARTED_TRIALS}" in *",${MATCHING_TRIAL},"*) MODE4_COLOR="${C_STALLED}" ;; esac
+    done
+    echo -e "${MODE4_COLOR}${STRING_OUT}${COUNT_OUT}$(echo ${MATCHING_TRIALS[@]}|sed 's| |,|g'))${C_OFF}"
   fi
 else
   COUNT=0
@@ -213,7 +244,7 @@ else
   if [ $COUNT -gt 0 ]; then
     STRING_OUT="$(echo "* TRIALS TO CHECK MANUALLY (NO TEXT SET; MODE=4) *" | awk -F "\n" '{printf "%-55s",$1}')"
     COUNT_OUT=$(echo $COUNT | awk '{printf " (Seen %3s times: reducers ",$1}')
-    echo "$(echo -e "${STRING_OUT}${COUNT_OUT}${MATCHING_TRIALS[@]})" | sed 's|, |,|g;s|,)|)|')"
+    echo "${C_SIG_OR_SAN}$(echo -e "${STRING_OUT}${COUNT_OUT}${MATCHING_TRIALS[@]})" | sed 's|, |,|g;s|,)|)|')${C_OFF}"
            #echo -e "${STRING_OUT}${COUNT_OUT}${MATCHING_TRIALS[@]})"
   fi
 fi
@@ -239,7 +270,7 @@ if [ $(ls */SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | wc -l) -gt 0 ]; then
   COUNT=$(ls */SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | wc -l)
   STRING_OUT="$(echo "* SHUTDOWN TIMEOUT >90 SEC ISSUE *" | awk -F "\n" '{printf "%-55s",$1}')"
   COUNT_OUT=$(echo $COUNT | awk '{printf "  (Seen %3s times: reducers ",$1}')
-  echo -e "${STRING_OUT}${COUNT_OUT}$(ls */SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | sed 's|/.*||' | sort -un | tr '\n' ',' | sed 's|,$||'))"
+  echo -e "${C_DIM}${STRING_OUT}${COUNT_OUT}$(ls */SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | sed 's|/.*||' | sort -un | tr '\n' ',' | sed 's|,$||'))${C_OFF}"
   COUNT=
   STRING_OUT=
   COUNT_OUT=
@@ -404,12 +435,11 @@ fi
 CORE_PATHS="$(find . | grep --binary-files=text 'core' 2>/dev/null)"
 COREDUMPS="$(echo "${CORE_PATHS}" | grep --binary-files=text -vE 'parse|pquery' 2>/dev/null | cut -d '/' -f2 | sort -un | tr '\n' ' ' | sed 's|$|\n|')"
 if [ "$(echo "${COREDUMPS}" | sed 's| \+||g')" != "" ]; then
-  echo "** Coredumps found in trials:"
-  echo "${CORE_PATHS}" | grep --binary-files=text -vE 'parse|pquery|vault' 2>/dev/null | cut -d '/' -f2 | sort -un | tr '\n' ' ' | sed 's|$|\n|'
+  echo "${C_DIM}** Coredumps found in trials: $(echo "${CORE_PATHS}" | grep --binary-files=text -vE 'parse|pquery|vault' 2>/dev/null | cut -d '/' -f2 | sort -un | tr '\n' ' ' | sed 's|[ ]*$||')${C_OFF}"
 fi
 
 if [ $(ls -l reducer* qcreducer* 2>/dev/null | awk '{print $5"|"$9}' | grep --binary-files=text "^0|" 2>/dev/null | sed 's/^0|//' | wc -l) -gt 0 ]; then
-  echo "Detected one or more empty (0 byte) reducer script(s): $(ls -l reducer* qcreducer* 2>/dev/null | awk '{print $5"|"$9}' | grep --binary-files=text "^0|" 2>/dev/null | sed 's/^0|//' | tr '\n' ' ')- you may want to check what's causing this (possibly a bug in pquery-prep-red.sh, or did you simply run out of space while running pquery-prep-red.sh?) and do the analysis for these trial numbers manually, or free some space, delete the reducer*.sh scripts and re-run pquery-prep-red.sh"
+  echo "${C_ORANGE}Detected one or more empty (0 byte) reducer script(s): $(ls -l reducer* qcreducer* 2>/dev/null | awk '{print $5"|"$9}' | grep --binary-files=text "^0|" 2>/dev/null | sed 's/^0|//' | tr '\n' ' ')- you may want to check what's causing this (possibly a bug in pquery-prep-red.sh, or did you simply run out of space while running pquery-prep-red.sh?) and do the analysis for these trial numbers manually, or free some space, delete the reducer*.sh scripts and re-run pquery-prep-red.sh${C_OFF}"
 fi
 
 # Stack smashing overview
@@ -454,19 +484,22 @@ if [ -s "${ERRORLOGS}" ]; then
     | awk -F'\t' 'FILENAME==ARGV[1]{listed[$0];next} !($1 in listed)' "${LISTED_UIDS}" - > "${ERROR_SIGS}"
 fi
 if [ -s "${ERROR_SIGS}" ]; then
-  echo "** Significant/Major errors (if any)"
-  # Cross-trial aggregation: group by signature, list trials per signature in numeric order. Sort by signature (alphabetical) then trial (numeric) so the awk pass only has to detect signature boundaries. The per-(sig,trial) dedup in the awk catches trials whose master.err and slave.err both contain the same signature.
-  sort -t$'\t' -k1,1 -k2,2n "${ERROR_SIGS}" | awk -F'\t' '
+  # Cross-trial aggregation: group by signature, list trials per signature in numeric order. Sort by signature (alphabetical) then trial (numeric) so the awk pass only has to detect signature boundaries. The per-(sig,trial) dedup in the awk catches trials whose master.err and slave.err both contain the same signature. Signature and trials share one line, separated by two spaces: a colon would read as part of the UniqueID.
+  ERROR_SIGS_OUT="$(sort -t$'\t' -k1,1 -k2,2n "${ERROR_SIGS}" | awk -F'\t' '
     seen[$1, $2]++ { next }
     $1 != prev_sig {
-      if (prev_sig != "") print "    " trials
-      print "  " $1
+      if (prev_sig != "") print prev_sig "  " trials
       trials = $2
       prev_sig = $1
       next
     }
     { trials = trials " " $2 }
-    END { if (prev_sig != "") print "    " trials }'
+    END { if (prev_sig != "") print prev_sig "  " trials }')"
+  if [ ! -z "${ERROR_SIGS_OUT}" ]; then  # Header only when the aggregation actually produced rows
+    echo "${C_DIM}** Significant/Major errors${C_OFF}"
+    echo "${ERROR_SIGS_OUT}" | sed "s|^|${C_DIM}|;s|\$|${C_OFF}|"  # Per line, so a grep of the output keeps its own colouring intact
+  fi
+  ERROR_SIGS_OUT=
 fi
 
 extract_valgrind_error(){

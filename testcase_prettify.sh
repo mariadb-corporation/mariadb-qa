@@ -552,6 +552,7 @@ cat "${1}" | tr -d '`' | \
        s|^[ \t]\+||gi; \
        s|_offset|\L_offset|gi; \
        s|sleep[ ]*(|SLEEP(|gi; \
+       s|WSREP_SST_AUTH|wsrep_sst_auth|gi; \
        s|DELIMITER|DELIMITER |gi; \
        s|DELIMITER [ ]\+|DELIMITER |gi; \
        s|srv / t|srv/t|gi; \

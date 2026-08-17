@@ -44,7 +44,11 @@ done < <(pgrep -a -f '^/data/[0-9]{6}/reducer(_val)?[0-9]+\.sh$' | sed 's|^[0-9]
     nextfile  # Only the first TEXT= line counts, which is the one sr reads
   }')
 
-for SRU_TRIALS in $(${HOME}/pr | grep --binary-files=text -o ': reducers [0-9,]\+' | sed 's|: reducers ||'); do  # One comma-separated trial list per UniqueID
+for SRU_TRIALS in $(${HOME}/pr | awk '
+  { p=index($0,"(Seen "); if (p==0) next
+    u=substr($0,1,p-1)  # The UniqueID is the part left of "(Seen ", so a digit in the trial list can never be read as part of it
+    if (index(u,"SIG")==0 && u !~ /^(=ERROR|ThreadSanitizer:|runtime error:|LeakSanitizer:|MemorySanitizer:|\* TRIALS TO CHECK MANUALLY)/) next  # A crash signature, a sanitizer report and a MODE=4 trial all earn a reducer slot. Anything else is an error-log entry, and those do not
+    r=$0; sub(/^.*: reducers /,"",r); sub(/\).*$/,"",r); if (r ~ /^[0-9,]+$/) print r }'); do  # One comma-separated trial list per UniqueID
   SRU_HANDLED=
   for SRU_TRIAL in ${SRU_TRIALS//,/ }; do
     SRU_BUG=; IFS= read -r SRU_BUG 2>/dev/null < "${SRU_TRIAL}/MYBUG"  # This trial's UniqueID

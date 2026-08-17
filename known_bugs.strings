@@ -193,6 +193,7 @@ MUTEX_ERROR|safe_mutex: Trying to lock uninitialized mutex at storage/spider/spd
 MARIADBD_ERROR|mariadbd: innodb_buffer_pool_size change aborted                                          ## MDEV-37149
 OPENTABLE|OpenTable: Invalid flag 0 for column a               ## MDEV-38838
 OPENTABLE|OpenTable: SQLDriverConnect: [unixODBC][Driver Manager]Data source name not found and no default driver specified ## MDEV-38838
+WSREP_WARNING|Illegal character in variable: X (Y)             ## SPECIAL-56
 
 ##### Slave errors
 SLAVE_ERROR|Slave (additional info): Commit failed due to failure of an earlier commit on which this one depends Error_code: 1964                                              ## MDEV-34346

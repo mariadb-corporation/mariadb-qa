@@ -133,7 +133,7 @@ uid_normalize() {
   uid_normalize_nodedup | awk '!seen[$0]++'
 }
 
-# uid_prefix: route each normalised line to its UID form (<TYPE>|<short body>). Order matters — most specific match wins. Prefixes shared with new_text_string.sh (INNODB_ERROR, INNODB_WARNING, SLAVE_ERROR, MARIADBD_ERROR, MARKED_AS_CRASHED, GOT_ERROR, OPENTABLE, MUTEX_ERROR) and known_bugs.strings (ASAN, LSAN, MSAN). Prefixes scoped to this script: INNODB_NOTE, SLAVE_WARNING, WARNING_ABORTED, WARNING, MYSQL_HA_READ, ROCKSDB_ERROR, CHECKTABLE, GLIBC, ASSERT. ASSERT form drops the `/test/<ver>/` leading path and the line number, leaving `ASSERT|<repo-relative-path>|Assertion '<x>' failed`; it is a log-derived shadow of the same crash that nts captures with frames as `<assert>|SIGABRT|f1..f4`, so consumers that already have an nts frame UID must call `top` with EXCLUDE_ASSERT=1 to suppress this shadow (else MYBUG / reducer TEXT lose the frame info).
+# uid_prefix: route each normalised line to its UID form (<TYPE>|<short body>). Order matters — most specific match wins. Prefixes shared with new_text_string.sh (INNODB_ERROR, INNODB_WARNING, SLAVE_ERROR, MARIADBD_ERROR, MARKED_AS_CRASHED, GOT_ERROR, OPENTABLE, MUTEX_ERROR) and known_bugs.strings (ASAN, LSAN, MSAN). Prefixes scoped to this script: INNODB_NOTE, SLAVE_WARNING, WARNING_ABORTED, WARNING, MYSQL_HA_READ, WSREP_ERROR, WSREP_WARNING, ROCKSDB_ERROR, CHECKTABLE, GLIBC, ASSERT. ASSERT form drops the `/test/<ver>/` leading path and the line number, leaving `ASSERT|<repo-relative-path>|Assertion '<x>' failed`; it is a log-derived shadow of the same crash that nts captures with frames as `<assert>|SIGABRT|f1..f4`, so consumers that already have an nts frame UID must call `top` with EXCLUDE_ASSERT=1 to suppress this shadow (else MYBUG / reducer TEXT lose the frame info).
 uid_prefix() {
   awk '
     {
@@ -180,6 +180,9 @@ uid_prefix() {
       if (sub(/^\[Warning\] Slave: /,                     "SLAVE_WARNING|Slave: "))                    { print; next }
       if (sub(/^\[Warning\] Aborted connection/, "WARNING_ABORTED|Aborted connection")) { print; next }
       if (sub(/^\[Warning\] Table .* was altered WITHOUT VALIDATION.*$/, "WARNING|Table X was altered WITHOUT VALIDATION: the table might be corrupted")) { print; next }
+      if (sub(/^\[Warning\] WSREP: Illegal character in variable: .*$/, "WSREP_WARNING|Illegal character in variable: X (Y)")) { print; next }
+      if (sub(/^\[ERROR\] WSREP: /,              "WSREP_ERROR|"))                { print; next }
+      if (sub(/^\[Warning\] WSREP: /,            "WSREP_WARNING|"))              { print; next }
       if (sub(/^\[ERROR\] RocksDB: /,            "ROCKSDB_ERROR|RocksDB: "))     { print; next }
       if (sub(/^\[ERROR\] CHECKTABLE /,          "CHECKTABLE|CHECKTABLE "))      { print; next }
       if (sub(/^\[ERROR\] Table /,               "MARIADBD_ERROR|Table "))       { print; next }

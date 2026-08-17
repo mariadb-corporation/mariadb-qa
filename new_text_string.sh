@@ -378,13 +378,13 @@ find_other_possible_issue_strings(){
     exit 0
   fi
   MEMNOTFREED=
-  GOTERROR="$(grep -hio 'm\(ariadb\|ysql\)d: Got error[^"]\+"[^"]\+"' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g" | grep -io 'Got error [0-9]\+[^\.]\+' | sed 's/Got error \([0-9]\+\)[ ]*/Got error \1|/i' | sed 's|/dev/shm/[^ ]*sql-temptable[^ ]*MAI|X/sql-temptable-Y.MAI|' | sed 's#/\(data\|test\)/[^ ]*sql-temptable[^ ]*MAI#X/sql-temptable-Y.MAI#' | sed 's|#sql-temptable-[0-9a-f-]\+|#sql-temptable-X|g')"
+  GOTERROR="$(grep -hio 'm\(ariadb\|ysql\)d: Got error[^"]\+"[^"]\+"' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g" | grep -io 'Got error [0-9]\+[^\.]\+' | sed 's/Got error \([0-9]\+\)[ ]*/Got error \1|/i' | sed 's|/dev/shm/[^ ]*sql-temptable[^ ]*MAI|X/sql-temptable-Y.MAI|' | sed 's#/\(data\|test\)/[^ ]*sql-temptable[^ ]*MAI#X/sql-temptable-Y.MAI#' | sed 's|#sql-temptable-[0-9a-f-]\+|#sql-temptable-X|g' | sed "s|the event.s master log [^,]*, end_log_pos [0-9]\+|the event's master log X, end_log_pos Y|" | sed 's|Gtid [0-9]\+-[0-9]\+-[0-9]\+|Gtid Z|g')"
   if [ ! -z "${GOTERROR}" ]; then
     TEXT="GOT_ERROR|${GOTERROR}"
     echo "${TEXT}"
     exit 0
   else
-    GOTERROR="$(grep -hio 'Got error.*' ${ERROR_LOGS} 2>/dev/null | head -n1 | sed "s|Got error '\([0-9]\+\) \"[^\"]*\"' for '[^']*#sql-temptable[^']*'|Got error \1 when reading table (temptable)|" | sed "s|Got error '\([0-9]\+\) \"[^\"]*\"' for '[^']*'|Got error \1 when reading table X|" | sed "s|when reading table '[^']*'|when reading table X|" | sed 's/Got error \([0-9]\+\)[ ]*/Got error \1|/i' | sed 's|/dev/shm/[^ ]*sql-temptable[^ ]*MAI|X/sql-temptable-Y.MAI|' | sed 's#/\(data\|test\)/[^ ]*sql-temptable[^ ]*MAI#X/sql-temptable-Y.MAI#' | sed 's|#sql-temptable-[0-9a-f-]\+|#sql-temptable-X|g')"
+    GOTERROR="$(grep -hio 'Got error.*' ${ERROR_LOGS} 2>/dev/null | head -n1 | sed "s|Got error '\([0-9]\+\) \"[^\"]*\"' for '[^']*#sql-temptable[^']*'|Got error \1 when reading table (temptable)|" | sed "s|Got error '\([0-9]\+\) \"[^\"]*\"' for '[^']*'|Got error \1 when reading table X|" | sed "s|when reading table '[^']*'|when reading table X|" | sed 's/Got error \([0-9]\+\)[ ]*/Got error \1|/i' | sed 's|/dev/shm/[^ ]*sql-temptable[^ ]*MAI|X/sql-temptable-Y.MAI|' | sed 's#/\(data\|test\)/[^ ]*sql-temptable[^ ]*MAI#X/sql-temptable-Y.MAI#' | sed 's|#sql-temptable-[0-9a-f-]\+|#sql-temptable-X|g' | sed "s|the event.s master log [^,]*, end_log_pos [0-9]\+|the event's master log X, end_log_pos Y|" | sed 's|Gtid [0-9]\+-[0-9]\+-[0-9]\+|Gtid Z|g')"
     if [ ! -z "${GOTERROR}" ]; then
       TEXT="GOT_ERROR|${GOTERROR}"
       TEXT="$(echo "${TEXT}" | sed "s|marked as crashed and should be repaired\"' for .*|marked as crashed and should be repaired\" for X|")"  # Use a generic indentifier X for any table name, similar to X/Y value handling in *SAN bugs
