@@ -246,6 +246,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|bitmap_is_set|DeltaAppender::append_row_delete|DeltaAppender::append_row_update|ha_duckdb::update_row                                                                  ## MDEV-40784
+bit < map->n_bits|SIGABRT|bitmap_is_set|DeltaAppender::append_row_delete|DeltaAppender::append_row_update|myduck::DuckdbThdContext::append_row_update                          ## MDEV-40784
 !index || lock->index == index|SIGABRT|lock_rec_queue_validate|lock_clust_rec_read_check_and_lock|sel_set_rec_lock|row_search_mvcc                                             ## MDEV-39923
 !memcmp(page, temp_page, PAGE_HEADER)|SIGABRT|ut_dbg_assertion_failed|page_zip_reorganize|page_cur_insert_rec_zip|page_cur_tuple_insert                                        ## MDEV-40775
 mysql_table|SIGABRT|innobase_get_computed_value|row_upd_store_v_row|row_upd_store_row|row_upd_del_mark_clust_rec                                                               ## MDEV-40774
