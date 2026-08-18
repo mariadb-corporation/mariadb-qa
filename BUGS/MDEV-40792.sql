@@ -1,0 +1,4 @@
+CREATE TABLE t (a INT,b TINYBLOB,KEY(a),KEY(a,b)) ENGINE=Aria PARTITION BY HASH(a) PARTITIONS 2;
+SET optimizer_switch='mrr=on';
+INSERT INTO t VALUES (2,1),(3,1),(4,1);
+SELECT b FROM t WHERE a>1;
