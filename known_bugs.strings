@@ -176,6 +176,12 @@ INNODB_ERROR|User stopword table X does not exist                               
 INNODB_ERROR|Cannot add field X in table Y because after adding it, the row size is greater than the maximum allowed size for a record on index leaf page                      ## SPECIAL-46
 INNODB_ERROR|User stopword table does not exist                ## Non-issue (ref rfi)
 INNODB_ERROR|Invalid column name for stopword table X. Its first column must be named as value ## SPECIAL-53 (non-issue)
+INNODB_ERROR|(Operation interrupted) writing `use_stopword'                                                                                                                    ## MDEV-40804
+INNODB_ERROR|(Operation interrupted) while getting next doc id for table X                                                                                                     ## MDEV-40806
+INNODB_ERROR|(Operation interrupted) while reading FTS index.                                                                                                                  ## MDEV-40806
+INNODB_ERROR|(Operation interrupted) while reading words.                                                                                                                      ## MDEV-40806
+INNODB_ERROR|(Operation interrupted) during SYNC of table X                                                                                                                    ## MDEV-40806
+INNODB_ERROR|(Operation interrupted) matching document.                                                                                                                        ## MDEV-40806
 INNODB_ERROR|FTS_DOC_ID must be larger than 0 for table        ## SPECIAL-34 (non-issue)
 INNODB_ERROR|The table doesnt have a corresponding tablespace, it was discarded ## SPECIAL-33 (non-issue)
 INNODB_ERROR|Cannot rename X to Y because the target schema directory doesnt exist                                                                                             ## MDEV-27952
@@ -247,6 +253,15 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|Geometry::create_from_json|Gis_geometry_collection::init_from_json|Geometry::create_from_json|Gis_geometry_collection::init_from_json                                  ## MDEV-40789
+SIGSEGV|Gis_geometry_collection::init_from_json|Geometry::create_from_json|Gis_geometry_collection::init_from_json|Geometry::create_from_json                                  ## MDEV-40789
+SIGSEGV|json_read_value|Gis_geometry_collection::init_from_json|Geometry::create_from_json|Gis_geometry_collection::init_from_json                                             ## MDEV-40789
+SIGSEGV|my_mb_wc_utf8mb3_quick|my_utf8mb3_uni|get_first_nonspace|json_read_value                                                                                               ## MDEV-40789
+SIGSEGV|my_mb_wc_utf8mb4_quick|my_mb_wc_utf8mb4|get_first_nonspace|json_read_value                                                                                             ## MDEV-40789
+SIGSEGV|my_mb_wc_utf8mb4_quick|my_mb_wc_utf8mb4|skip_str_constant|read_strn                                                                                                    ## MDEV-40789
+SIGSEGV|my_mb_wc_utf8mb4|get_first_nonspace|json_read_value|Geometry::create_from_json                                                                                         ## MDEV-40789
+SIGSEGV|my_utf8mb3_uni|get_first_nonspace|json_read_value|Gis_geometry_collection::init_from_json                                                                              ## MDEV-40789
+SIGSEGV|read_array|json_read_value|Gis_geometry_collection::init_from_json|Geometry::create_from_json                                                                          ## MDEV-40789
 SIGSEGV|bitmap_is_set|DeltaAppender::append_row_delete|DeltaAppender::append_row_update|ha_duckdb::update_row                                                                  ## MDEV-40784
 bit < map->n_bits|SIGABRT|bitmap_is_set|DeltaAppender::append_row_delete|DeltaAppender::append_row_update|myduck::DuckdbThdContext::append_row_update                          ## MDEV-40784
 !index || lock->index == index|SIGABRT|lock_rec_queue_validate|lock_clust_rec_read_check_and_lock|sel_set_rec_lock|row_search_mvcc                                             ## MDEV-39923

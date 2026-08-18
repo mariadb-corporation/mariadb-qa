@@ -744,7 +744,8 @@ if [ ${QC} -eq 0 ]; then
         if [ -r ./reducer${TRIAL}-${SUBDIR}.sh ]; then
           if [ "${SCRIPT_PWD}/new_text_string.sh" -nt "./reducer${TRIAL}-${SUBDIR}.sh" ]; then
             cd ./${TRIAL}/node${SUBDIR} || exit 1
-            ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG
+            ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG.new
+            if [ -s ./MYBUG.new ] || [ ! -f ./MYBUG ]; then mv -f ./MYBUG.new ./MYBUG; else rm -f ./MYBUG.new; fi  # An empty nts result must not wipe the stored UniqueID
             cd - >/dev/null || exit 1
             REFRESH_TEXT="$(head -n1 ./${TRIAL}/node${SUBDIR}/MYBUG | sed 's/\\/\\\\\\\\/g; s/&/\\\&/g; s/"/\\\\"/g; s/\$/\\\\$/g; s/`/\\\\`/g')"
             NEW_LINE='   TEXT="'"${REFRESH_TEXT}"'"'
@@ -810,13 +811,15 @@ if [ ${QC} -eq 0 ]; then
         if [ -z "${BASE}" ]; then BASE="/test/SOMEBASEDIR"; fi
         if [ ! -r ./${TRIAL}/node${SUBDIR}/MYBUG ] || nts_chain_newer "./${TRIAL}/node${SUBDIR}/MYBUG"; then  # Regenerate MYBUG when missing OR when any nts-chain script is newer (= generification rules updated since this trial was first processed; otherwise pr would show stale UniqueIDs forever)
           cd ./${TRIAL}/node${SUBDIR} || exit 1
-          ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG
+          ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG.new
+          if [ -s ./MYBUG.new ] || [ ! -f ./MYBUG ]; then mv -f ./MYBUG.new ./MYBUG; else rm -f ./MYBUG.new; fi  # An empty nts result must not wipe the stored UniqueID
           cd - >/dev/null || exit 1
         fi
         TEXT="$(cat ./${TRIAL}/node${SUBDIR}/MYBUG | head -n1)"  # TODO: this change needs further testing for cluster/GR. Also, it is likely someting was missed for this in the updated pquery-run.sh: the need to generate a MYBUG file for each node!   # The UniqueID exactly as nts wrote it, ref the same read for a single-node trial below
         if [[ "${TEXT}" == "Assert:"* ]]; then  # Try to re-generate MYBUG in case something went amiss during pquery-run.sh (i.e. when 'Assert:' is seen in MYBUG)
           cd ./${TRIAL}/node${SUBDIR} || exit 1
-          ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG
+          ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG.new
+          if [ -s ./MYBUG.new ] || [ ! -f ./MYBUG ]; then mv -f ./MYBUG.new ./MYBUG; else rm -f ./MYBUG.new; fi  # An empty nts result must not wipe the stored UniqueID
           cd - >/dev/null || exit 1
         fi
         TEXT="$(cat ./${TRIAL}/node${SUBDIR}/MYBUG | head -n1)"  # Ref TODO above
@@ -888,7 +891,8 @@ if [ ${QC} -eq 0 ]; then
           # If any nts-chain script is newer than the existing reducer script, the generification rules likely changed since this reducer was first generated. Refresh the `   TEXT=` line in-place from a regenerated MYBUG so `pr` (which reads `^   TEXT=` from reducer<N>.sh, NOT MYBUG) stops showing stale UniqueIDs.
           if nts_chain_newer "./reducer${TRIAL}.sh"; then
             cd ./${TRIAL} || exit 1
-            ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG
+            ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG.new
+            if [ -s ./MYBUG.new ] || [ ! -f ./MYBUG ]; then mv -f ./MYBUG.new ./MYBUG; else rm -f ./MYBUG.new; fi  # An empty nts result must not wipe the stored UniqueID
             cd - >/dev/null || exit 1
             REFRESH_TEXT="$(head -n1 ./${TRIAL}/MYBUG | sed 's/\\/\\\\\\\\/g; s/&/\\\&/g; s/"/\\\\"/g; s/\$/\\\\$/g; s/`/\\\\`/g')"
             NEW_LINE='   TEXT="'"${REFRESH_TEXT}"'"'
@@ -991,13 +995,15 @@ if [ ${QC} -eq 0 ]; then
         if [ ! -r ./${TRIAL}/VALGRIND ] || [ -r ./${TRIAL}/VALGRIND -a ! -z "$(ls -t --color=never data*/*core* node*/*core* 2>/dev/null)" ]; then
           if [ ! -r ./${TRIAL}/MYBUG ] || nts_chain_newer "./${TRIAL}/MYBUG"; then  # Regenerate MYBUG when missing OR when any nts-chain script is newer (= generification rules updated since this trial was first processed; otherwise pr would show stale UniqueIDs forever)
             cd ./${TRIAL} || exit 1
-            ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG
+            ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG.new
+            if [ -s ./MYBUG.new ] || [ ! -f ./MYBUG ]; then mv -f ./MYBUG.new ./MYBUG; else rm -f ./MYBUG.new; fi  # An empty nts result must not wipe the stored UniqueID
             cd - >/dev/null || exit 1
           fi
           TEXT="$(cat ./${TRIAL}/MYBUG)"  # The UniqueID exactly as nts wrote it. TEXT_ESC below escapes it for the reducer's TEXT= line, and every check here compares it against raw text, so it must not be pre-escaped
           if [[ "${TEXT}" == "Assert:"* ]]; then  # Try to re-generate MYBUG in case something went amiss during pquery-run.sh (i.e. when 'Assert:' is seen in MYBUG)
             cd ./${TRIAL} || exit 1
-            ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG
+            ${SCRIPT_PWD}/new_text_string.sh > ./MYBUG.new
+            if [ -s ./MYBUG.new ] || [ ! -f ./MYBUG ]; then mv -f ./MYBUG.new ./MYBUG; else rm -f ./MYBUG.new; fi  # An empty nts result must not wipe the stored UniqueID
             cd - >/dev/null || exit 1
           fi
           TEXT="$(cat ./${TRIAL}/MYBUG)"  # As above

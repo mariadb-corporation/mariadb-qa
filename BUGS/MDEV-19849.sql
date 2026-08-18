@@ -28,3 +28,12 @@ RENAME TABLE t TO doesnotexist.t;
 
 CREATE TABLE t1(c1 INT KEY,old1 DOUBLE,new1 DOUBLE,old2 DOUBLE,new2 DOUBLE);
 RENAME TABLE t1 TO doesnotexist.t1;
+
+CREATE TABLE t1 (c1 INT) ENGINE=InnoDB PARTITION BY RANGE(c1) SUBPARTITION BY HASH(c1) SUBPARTITIONS 2 (PARTITION p1 VALUES LESS THAN (10));
+SET sql_mode='ANSI_QUOTES';
+RENAME TABLE t1 TO "t2_new..............................................end";
+# CLI: ERROR 1025 (HY000): Error on rename of './test/t1' to './test/t2_new@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@0' (errno: 168 "Unknown (generic) error from engine")
+# ERR: [ERROR] InnoDB: Operating system error number 36 in a file operation.
+# ERR: [ERROR] InnoDB: Error number 36 means 'File name too long'
+# ERR: [Note] InnoDB: Some operating system error numbers are described at https://mariadb.com/docs/server/reference/error-codes/operating-system-error-codes
+# ERR: [ERROR] InnoDB: Cannot rename file './test/t1#P#p1#SP#p1sp0.ibd' to './test/t2_new@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002e@002eend#P#p1#SP#p1sp0.ibd'

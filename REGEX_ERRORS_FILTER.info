@@ -232,11 +232,17 @@ InnoDB: corruption in the InnoDB tablespace. Please   Non-issue: occurs whenever
 InnoDB: preallocating.*bytes for file.*failed with error 28  Non-issue: out of disk space
 errno: 28 .No space left on device                    Non-issue: out of disk space
 Operating system error number 36 in a file operation  MDEV-19849 (file name too long)
+Error number 36 means .File name too long             MDEV-19849 (file name too long)
 Warning.*InnoDB.*Monitor.*is already enabled          Non-issue: a warning when a given InnoDB monitor was already enabled
 ERROR.*InnoDB.*RENAME.*is ref.*foreign.*not compatible.*new table def  MDEV-33284
 ERROR.*InnoDB.*Cannot save table stat.*Too many concurrent transact    Discussion (ref email thread 'Discuss')
 Warning.*InnoDB.*Cannot find a free slot for.*undo.*too many a.*trans  Discussion (ref email thread 'Discuss')
 ERROR.*InnoDB.*Too many concurrent transactions.*writing.*use_stopword Discussion (ref email thread 'Discuss')
+ERROR.*InnoDB.*Operation interrupted.*while getting next doc id for table  MDEV-40806 (error log line only, SPECIAL-57)
+ERROR.*InnoDB.*Operation interrupted.*while reading FTS index  MDEV-40806 (error log line only, SPECIAL-57)
+ERROR.*InnoDB.*Operation interrupted.*while reading words  MDEV-40806 (error log line only, SPECIAL-57)
+ERROR.*InnoDB.*Operation interrupted.*during SYNC of table  MDEV-40806 (error log line only, SPECIAL-57)
+ERROR.*InnoDB.*Operation interrupted.*matching document  MDEV-40806 (error log line only, SPECIAL-57)
 Slave SQL: Could not.*Write_rows_v1 event on table.*Cannot add or update a child row: a foreign key constraint fails.*Error_code: 1452.*HA_ERR_NO_REFERENCED_ROW  MDEV-33378
 Slave SQL: Error .Cannot add or update a child row: a foreign key constraint fails.*Internal MariaDB error code: 1452  MDEV-33378
 Slave SQL: Could not.*Write_rows_v1 event on table.*Error_code: 1062.*HA_ERR.*DUPP_KEY  MDEV-33350

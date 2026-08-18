@@ -1,0 +1,14 @@
+SET SESSION max_statement_time=0.001;
+CREATE TABLE ct1 (id INT PRIMARY KEY, txt TEXT, FULLTEXT(txt)) ENGINE=InnoDB;
+SET SESSION max_statement_time=0.005;
+CREATE TABLE ct2 (id INT PRIMARY KEY, txt TEXT, FULLTEXT(txt)) ENGINE=InnoDB;
+SET SESSION max_statement_time=0.02;
+CREATE TABLE ct3 (id INT PRIMARY KEY, txt TEXT, FULLTEXT(txt)) ENGINE=InnoDB;
+SET SESSION max_statement_time=0;
+INSERT INTO ct1 VALUES (1,'the quick brown fox');
+INSERT INTO ct2 VALUES (1,'the quick brown fox');
+INSERT INTO ct3 VALUES (1,'the quick brown fox');
+SELECT COUNT(*) FROM ct1 WHERE MATCH(txt) AGAINST('the');
+SELECT COUNT(*) FROM ct2 WHERE MATCH(txt) AGAINST('the');
+SELECT COUNT(*) FROM ct3 WHERE MATCH(txt) AGAINST('the');
+DROP TABLE ct1,ct2,ct3;

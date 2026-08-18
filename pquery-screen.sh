@@ -1,7 +1,8 @@
 #!/bin/bash
 # Reattach to a screen when a name is passed, then list all screens in columns.
-# A screen that was started inside another screen, or that is attached from
-# inside one now, is listed below that screen, with the process running in it.
+# The windows of a screen are listed below it, each with the process running in
+# it. A screen that was started inside another screen, or that is attached from
+# inside one now, is listed below that screen as well.
 
 if [ ! -z "${1}" ]; then screen -d -r "${*}"; fi
 
@@ -78,14 +79,18 @@ windows_of(){  # ${1}=screen. Sets ORDERED to its windows, oldest first
   done
 }
 
-running_in(){  # ${1}=screen. Sets RUNNING to what is in the foreground in its first window
-  local FRONT
-  RUNNING=
-  windows_of "${1}"
-  if [ "${#ORDERED[@]}" -eq 0 ]; then return; fi
-  FRONT="${FGROUP[${ORDERED[0]}]}"
-  if [ -z "${COMM[${FRONT}]}" ]; then FRONT="${ORDERED[0]}"; fi
+running_in(){  # ${1}=window. Sets RUNNING to what is in the foreground in that window
+  local FRONT="${FGROUP[${1}]}"
+  if [ -z "${COMM[${FRONT}]}" ]; then FRONT="${1}"; fi
   RUNNING="${COMM[${FRONT}]}"
+}
+
+window_number(){  # ${1}=window. Sets NUMBER to the number screen gave that window
+  local ENTRY
+  NUMBER=
+  while IFS= read -r -d '' ENTRY; do
+    if [ "${ENTRY:0:7}" = 'WINDOW=' ]; then NUMBER="${ENTRY:7}"; return; fi
+  done < "/proc/${1}/environ" 2>/dev/null
 }
 
 # A screen started inside another screen keeps that screen in its environment
@@ -120,25 +125,44 @@ done
 ROWS=()
 WIDTH=4
 PIDWIDTH=3
+WHENWIDTH=4
 HERE="$(ps -o tty= -p $$)"  # The window this runs in, to mark it in the list
 HERE="${HERE// /}"
 
+add_row(){  # ${1}=depth ${2}=tree mark ${3}=name ${4}=pid ${5}=middle column ${6}=tail
+  local INDENT="$(( 2 * ${1} ))"
+  ROWS+=("${INDENT}"$'\t'"${2}"$'\t'"${3}"$'\t'"${4}"$'\t'"${5}"$'\t'"${6}")
+  if [ "$(( ${#3} + INDENT ))" -gt "${WIDTH}" ]; then WIDTH="$(( ${#3} + INDENT ))"; fi
+  if [ "${#4}" -gt "${PIDWIDTH}" ]; then PIDWIDTH="${#4}"; fi
+  if [ "${#5}" -gt "${WHENWIDTH}" ]; then WHENWIDTH="${#5}"; fi
+}
+
 add_screen(){  # ${1}=screen ${2}=depth ${3}=tree mark
-  local SUBS=(${SUBSCREENS[${1}]}) INDENT="$(( 2 * ${2} ))" YOU= EXTRA= INDEX MARK
+  local SUBS=(${SUBSCREENS[${1}]}) WINS LEFT WINDOW INDEX MARK YOU=
   windows_of "${1}"
-  for WINDOW in "${ORDERED[@]}"; do
-    if [ "${TTYOF[${WINDOW}]}" = "${HERE}" ]; then YOU='  <- you are here'; fi
-  done
-  if [ "${2}" -gt 0 ]; then
-    running_in "${1}"
-    EXTRA="  (${RUNNING})"
+  WINS=("${ORDERED[@]}")
+  if [ "${#WINS[@]}" -lt 2 ]; then  # A lone window is the screen itself, so it adds no depth
+    for WINDOW in "${WINS[@]}"; do
+      if [ "${TTYOF[${WINDOW}]}" = "${HERE}" ]; then YOU='  <- you are here'; fi
+    done
+    WINS=()
   fi
-  ROWS+=("${INDENT}"$'\t'"${3}"$'\t'"${NAMEOF[${1}]}"$'\t'"${1}"$'\t'"${WHENOF[${1}]}"$'\t'"${STATEOF[${1}]}${EXTRA}${YOU}")
-  if [ "$(( ${#NAMEOF[${1}]} + INDENT ))" -gt "${WIDTH}" ]; then WIDTH="$(( ${#NAMEOF[${1}]} + INDENT ))"; fi
-  if [ "${#1}" -gt "${PIDWIDTH}" ]; then PIDWIDTH="${#1}"; fi
-  for INDEX in "${!SUBS[@]}"; do
+  add_row "${2}" "${3}" "${NAMEOF[${1}]}" "${1}" "${WHENOF[${1}]}" "${STATEOF[${1}]}${YOU}"
+  LEFT="$(( ${#WINS[@]} + ${#SUBS[@]} ))"
+  for WINDOW in "${WINS[@]}"; do
+    LEFT="$(( LEFT - 1 ))"
     MARK='├'
-    if [ "${INDEX}" -eq "$(( ${#SUBS[@]} - 1 ))" ]; then MARK='└'; fi
+    if [ "${LEFT}" -eq 0 ]; then MARK='└'; fi
+    window_number "${WINDOW}"
+    running_in "${WINDOW}"
+    YOU=
+    if [ "${TTYOF[${WINDOW}]}" = "${HERE}" ]; then YOU='  <- you are here'; fi
+    add_row "$(( ${2} + 1 ))" "${MARK}" "window ${NUMBER}" "${WINDOW}" "${TTYOF[${WINDOW}]}" "${RUNNING}${YOU}"
+  done
+  for INDEX in "${!SUBS[@]}"; do
+    LEFT="$(( LEFT - 1 ))"
+    MARK='├'
+    if [ "${LEFT}" -eq 0 ]; then MARK='└'; fi
     add_screen "${SUBS[${INDEX}]}" "$(( ${2} + 1 ))" "${MARK}"
   done
 }
@@ -150,10 +174,11 @@ done
 printf '%s\n' "${BEFORE[@]}"
 for ROW in "${ROWS[@]}"; do
   IFS=$'\t' read -r INDENT MARK NAME PROC WHEN STATE <<<"${ROW}"
+  PAD="$(( WHENWIDTH - ${#WHEN} ))"
   if [ "${MARK}" = 'row' ]; then
-    printf '    %-*s    %*s  (%s)  %s\n' "${WIDTH}" "${NAME}" "${PIDWIDTH}" "${PROC}" "${WHEN}" "${STATE}"
+    printf '    %-*s    %*s  (%s)%*s  %s\n' "${WIDTH}" "${NAME}" "${PIDWIDTH}" "${PROC}" "${WHEN}" "${PAD}" '' "${STATE}"
   else
-    printf '    %*s%s %-*s    %*s  (%s)  %s\n' "$(( INDENT - 2 ))" '' "${MARK}" "$(( WIDTH - INDENT ))" "${NAME}" "${PIDWIDTH}" "${PROC}" "${WHEN}" "${STATE}"
+    printf '    %*s%s %-*s    %*s  (%s)%*s  %s\n' "$(( INDENT - 2 ))" '' "${MARK}" "$(( WIDTH - INDENT ))" "${NAME}" "${PIDWIDTH}" "${PROC}" "${WHEN}" "${PAD}" '' "${STATE}"
   fi
 done
 printf '%s\n' "${AFTER[@]}"

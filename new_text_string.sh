@@ -414,7 +414,8 @@ find_other_possible_issue_strings(){
     exit 0
   fi
   INNODBWARNROLLBACK=
-  INNODBERROR="$(grep -hio 'ERROR\] InnoDB.*' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g" | sed 's|ERROR\] InnoDB[: ]*||' | sed 's|table.*index.*stat[^:]\+|table X index Y stat Z|;s|User stopword table.*does not exist|User stopword table X does not exist|;s|\.$||')"
+  # The single quote is kept: InnoDB quotes identifiers as `name', and error_log_scan.sh's uid_prefix keeps it too, so both UID sources agree.
+  INNODBERROR="$(grep -hio 'ERROR\] InnoDB.*' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|"||g' | sed 's|ERROR\] InnoDB[: ]*||' | sed 's|table.*index.*stat[^:]\+|table X index Y stat Z|;s|User stopword table.*does not exist|User stopword table X does not exist|;s|\.$||')"
   if [ ! -z "${INNODBERROR}" ]; then
     TEXT="INNODB_ERROR|${INNODBERROR}"
     # Per-pattern INNODB_ERROR UID body normalisations. Each rule maps one or more raw error-log variants to a single stable UID body so semantically-identical events fold to one kb entry. Order matters where rules could overlap: COMPACT RECORD collapse runs BEFORE non-COMPACT RECORD collapse so the more-specific pattern wins.
