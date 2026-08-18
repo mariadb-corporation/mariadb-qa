@@ -53,6 +53,7 @@ MSAN|use-of-uninitialized-value|storage/spider/spd_db_conn.cc|spider_db_open_han
 ASAN|stack-use-after-return|strings/ctype-latin1.c|my_mb_wc_latin1|json_escape|st_append_escaped|Item_func_json_objectagg::add                                                 ## MDEV-40546
 UBSAN|inf is outside the range of representable values of type 'unsigned long long'|sql/sql_show.cc|get_schema_stat_record|fill_schema_table_by_open|get_all_tables|get_schema_tables_result ## MDEV-40537
 MSAN|use-of-uninitialized-value|sql/handler.cc|handler::calculate_checksum|mysql_checksum_table|mysql_execute_command|mysql_parse                                              ## MDEV-40534
+MSAN|use-of-uninitialized-value|mysys/crc32/crc32c_x86.cc|xor2_and_128|crc32_avx512|handler::calculate_checksum|mysql_checksum_table                                           ## MDEV-40534
 MSAN|use-of-uninitialized-value|sql/sql_statistics.h|Histogram::find_bucket|Histogram::range_selectivity|get_column_range_cardinality|records_in_column_ranges                 ## MDEV-40533
 MSAN|use-of-uninitialized-value|sql/sql_statistics.h|Histogram_binary::find_bucket|Histogram_binary::range_selectivity|get_column_range_cardinality|records_in_column_ranges   ## MDEV-40533
 MSAN|use-of-uninitialized-value|include/my_sys.h|my_b_write|write_keys|find_all_keys|filesort                                                                                  ## MDEV-29901
