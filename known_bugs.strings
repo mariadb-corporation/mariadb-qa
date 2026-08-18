@@ -253,6 +253,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|Window_funcs_sort::setup|Window_funcs_computation::setup|JOIN::make_aggr_tables_info|JOIN::optimize_stage2                                                             ## MDEV-40821
 SIGABRT|__cxa_throw|duckdb::DuckDBAssertInternal|duckdb::Time::Convert|duckdb::StringAsTime<false>                                                                             ## MDEV-40819
 ha_count_rw_2pc(thd_arg, thd_arg->in_multi_stmt_transaction_mode())|SIGABRT|Gtid_log_event::Gtid_log_event|MYSQL_BIN_LOG::write_gtid_event|MYSQL_BIN_LOG::write_transaction_or_stmt|MYSQL_BIN_LOG::trx_group_commit_leader ## MDEV-40818
 ha_count_rw_2pc(thd_arg, thd_arg->in_multi_stmt_transaction_mode())|SIGABRT|Gtid_log_event::Gtid_log_event|MYSQL_BIN_LOG::write_gtid_event|MYSQL_BIN_LOG::write_transaction_or_stmt|MYSQL_BIN_LOG::trx_group_commit_with_engines ## MDEV-40818
