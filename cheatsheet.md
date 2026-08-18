@@ -261,7 +261,7 @@ Confirm the bad endpoint reproduces first. Narrow the range using the old builds
 
 | Command | What it does |
 |---|---|
-| `s <name/pid>` | Reattach to a screen, or to a screen inside it by its PID. No name: list them in columns |
+| `s <name/pid>` | Reattach to a screen, also by the PID of a window or process inside one. No name: list them in columns |
 | `sn [name]` | Start a new screen and attach to it. No name given: named after the current directory, numbered |
 | `sren <old> <new>` | Rename a screen. Old can be part of the name, or the PID |
 | `sg <text>` | List screens matching a pattern |

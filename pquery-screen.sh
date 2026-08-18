@@ -1,10 +1,39 @@
 #!/bin/bash
 # Reattach to a screen when a name is passed, then list all screens in columns.
+# A pid can also be that of a process inside a screen: the attach then goes to
+# the screen holding it, straight to the window it runs in.
 # The windows of a screen are listed below it, each with the process running in
 # it. A screen that was started inside another screen, or that is attached from
 # inside one now, is listed below that screen as well.
 
-if [ ! -z "${1}" ]; then screen -d -r "${*}"; fi
+screen_of(){  # ${1}=process. Sets INSIDE to the screen it was started under
+  local ENTRY
+  INSIDE=
+  while IFS= read -r -d '' ENTRY; do
+    if [ "${ENTRY:0:4}" = 'STY=' ]; then INSIDE="${ENTRY:4}"; return; fi
+  done 2>/dev/null < "/proc/${1}/environ"
+}
+
+window_number(){  # ${1}=window. Sets NUMBER to the number screen gave that window
+  local ENTRY
+  NUMBER=
+  while IFS= read -r -d '' ENTRY; do
+    if [ "${ENTRY:0:7}" = 'WINDOW=' ]; then NUMBER="${ENTRY:7}"; return; fi
+  done 2>/dev/null < "/proc/${1}/environ"
+}
+
+if [ ! -z "${1}" ]; then
+  ATTACH=("${*}")
+  if [[ "${1}" =~ ^[0-9]+$ ]] && [[ "$(screen -ls)" != *$'\t'"${1}".* ]]; then
+    screen_of "${1}"  # Not a screen of its own, so find the one it runs inside
+    window_number "${1}"
+    if [ ! -z "${INSIDE}" ]; then
+      ATTACH=("${INSIDE}")
+      if [ ! -z "${NUMBER}" ]; then ATTACH+=('-p' "${NUMBER}"); fi
+    fi
+  fi
+  screen -d -r "${ATTACH[@]}"
+fi
 
 MONTHS='JanFebMarAprMayJunJulAugSepOctNovDec'
 
@@ -14,14 +43,6 @@ pretty_time(){  # ${1}=month ${2}=day ${3}=year ${4}=hh:mm:ss. Sets PRETTY
   if [ "${HOUR12}" -eq 0 ]; then HOUR12=12; fi
   if [ "${HOUR}" -ge 12 ]; then HALF='PM'; fi
   printf -v PRETTY '%02d/%02d/%04d %02d:%s %s' "$(( 10#${1} ))" "$(( 10#${2} ))" "$(( 10#${3} ))" "${HOUR12}" "${4#*:}" "${HALF}"
-}
-
-screen_of(){  # ${1}=process. Sets INSIDE to the screen it was started under
-  local ENTRY
-  INSIDE=
-  while IFS= read -r -d '' ENTRY; do
-    if [ "${ENTRY:0:4}" = 'STY=' ]; then INSIDE="${ENTRY:4}"; return; fi
-  done < "/proc/${1}/environ" 2>/dev/null
 }
 
 # The screens, in the order screen -ls lists them
@@ -83,14 +104,6 @@ running_in(){  # ${1}=window. Sets RUNNING to what is in the foreground in that 
   local FRONT="${FGROUP[${1}]}"
   if [ -z "${COMM[${FRONT}]}" ]; then FRONT="${1}"; fi
   RUNNING="${COMM[${FRONT}]}"
-}
-
-window_number(){  # ${1}=window. Sets NUMBER to the number screen gave that window
-  local ENTRY
-  NUMBER=
-  while IFS= read -r -d '' ENTRY; do
-    if [ "${ENTRY:0:7}" = 'WINDOW=' ]; then NUMBER="${ENTRY:7}"; return; fi
-  done < "/proc/${1}/environ" 2>/dev/null
 }
 
 # A screen started inside another screen keeps that screen in its environment

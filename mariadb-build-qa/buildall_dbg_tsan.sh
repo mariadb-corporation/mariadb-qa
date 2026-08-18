@@ -24,7 +24,7 @@ rm -Rf 10.1[0-1]_dbg_tsan
 #cd ${DIR}/10.3 && USE_TSAN=1 ~/mariadb-qa/build_mdpsms_dbg_san.sh &
 #cd ${DIR}/10.4 && USE_TSAN=1 ~/mariadb-qa/build_mdpsms_dbg_san.sh &
 #cd ${DIR}/10.5 && USE_TSAN=1 ~/mariadb-qa/build_mdpsms_dbg_san.sh &
-cd ${DIR}/10.6 && USE_TSAN=1 ~/mariadb-qa/build_mdpsms_dbg_san.sh &
+#cd ${DIR}/10.6 && USE_TSAN=1 ~/mariadb-qa/build_mdpsms_dbg_san.sh &
 #cd ${DIR}/10.7 && USE_TSAN=1 ~/mariadb-qa/build_mdpsms_dbg_san.sh &
 #cd ${DIR}/10.8 && USE_TSAN=1 ~/mariadb-qa/build_mdpsms_dbg_san.sh &
 #cd ${DIR}/10.9 && USE_TSAN=1 ~/mariadb-qa/build_mdpsms_dbg_san.sh &
