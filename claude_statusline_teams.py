@@ -67,6 +67,34 @@ def band(label, pct, hhmm, stale):
   return f'{FADED if stale else INBAR}{fill(pct)}{text[:n]}{BARBG}{text[n:]}{RESET}'
 
 
+def record(session):
+  # pid -> session id map file for the screen lister, keyed by the claude process
+  p = os.getppid()
+  for _ in range(6):
+    try:
+      with open(f'/proc/{p}/comm') as f:
+        comm = f.read().strip()
+      if comm == 'claude':
+        break
+      with open(f'/proc/{p}/stat') as f:
+        p = int(f.read().rsplit(') ', 1)[1].split()[1])
+    except (OSError, ValueError, IndexError):
+      return
+    if p <= 1:
+      return
+  else:
+    return
+  d = f'/tmp/.claude_session_ids.{os.getuid()}'
+  try:
+    os.makedirs(d, exist_ok=True)
+    tmp = f'{d}/.{p}.tmp'
+    with open(tmp, 'w') as f:
+      f.write(session)
+    os.replace(tmp, f'{d}/{p}')
+  except OSError:
+    return
+
+
 def cached():
   try:
     age = time.time() - os.path.getmtime(CACHE)
@@ -140,9 +168,11 @@ elif cwd.startswith(home + os.sep):
 if cwd:
   parts.append(f'{LINE}{cwd}{RESET}')
 
-session = (data.get('session_id') or '')[:8]
+session_id = data.get('session_id') or ''
+session = session_id[:8]
 if session:
   parts.append(f'{LINE}{session}{RESET}')
+  record(session_id)
 
 ctx = data.get('context_window') or {}
 used = ctx.get('total_input_tokens')

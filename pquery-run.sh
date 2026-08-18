@@ -3993,9 +3993,13 @@ if [[ "${MDG}" -eq 0 && "${GRP_RPL}" -eq 0 ]]; then
   TEMPLATE_CREATE_ATTEMPTS=0
   while true; do
     TEMPLATE_CREATE_ATTEMPTS=$[ ${TEMPLATE_CREATE_ATTEMPTS} + 1]
-    rm -Rf ${WORKDIR}/data.template
-    ${INIT_TOOL} ${INIT_OPT} --basedir=${BASEDIR} --datadir=${WORKDIR}/data.template > ${WORKDIR}/log/mysql_install_db.txt 2>&1
-    if [ "$(ls ${WORKDIR}/data.template/mysql 2>/dev/null | wc -l)" -gt 50 ]; then  # Likely succesfull template creation
+    rm -Rf ${WORKDIR}/data.template ${WORKDIR}/data.template.tmp
+    # Own tmpdir: any concurrently starting server deletes all #sql* files in a shared tmpdir at startup (mysql_rm_tmp_tables), which kills this bootstrap's temporary tables mid-install
+    mkdir -p ${WORKDIR}/data.template.tmp
+    ${INIT_TOOL} ${INIT_OPT} --tmpdir=${WORKDIR}/data.template.tmp --basedir=${BASEDIR} --datadir=${WORKDIR}/data.template > ${WORKDIR}/log/mysql_install_db.txt 2>&1
+    INIT_TOOL_RC=$?
+    if [ ${INIT_TOOL_RC} -eq 0 -a "$(ls ${WORKDIR}/data.template/mysql 2>/dev/null | wc -l)" -gt 50 ]; then  # Likely succesfull template creation
+      rm -Rf ${WORKDIR}/data.template.tmp
       echoit "Created datadir template at ${WORKDIR}/data.template"
       break
     else

@@ -4,7 +4,8 @@
 # the screen holding it, straight to the window it runs in.
 # The windows of a screen are listed below it, each with the process running in
 # it. A screen that was started inside another screen, or that is attached from
-# inside one now, is listed below that screen as well.
+# inside one now, is listed below that screen as well. A screen or window that
+# holds a claude session shows that session's short id after the pid.
 
 screen_of(){  # ${1}=process. Sets INSIDE to the screen it was started under
   local ENTRY
@@ -70,9 +71,13 @@ while IFS=$'\t' read -r ID WHEN STATE; do
 done <<<"${LIST}"
 
 # One process snapshot. Only a window of a screen, and a screen client, need more than a name
-declare -A COMM TTYOF TICKS FGROUP KIDS SCREENAT CLIENTS WINDOWAT
+declare -A COMM TTYOF TICKS FGROUP KIDS SCREENAT CLIENTS WINDOWAT PPIDOF ALLKIDS SIDOF
+CLAUDES=()
 while read -r PROC PARENT TPGRP TTY CMD ARGS; do
   COMM["${PROC}"]="${CMD}"
+  PPIDOF["${PROC}"]="${PARENT}"
+  ALLKIDS["${PARENT}"]="${ALLKIDS[${PARENT}]} ${PROC}"
+  if [ "${CMD}" = 'claude' ]; then CLAUDES+=("${PROC}"); fi
   if [ "${CMD}" = 'screen' ] && [ "${TTY}" != '?' ]; then CLIENTS["${PROC}"]="${TTY} ${ARGS}"; fi
   if [[ "${SCREENS}" == *" ${PROC} "* ]]; then SCREENAT["${PARENT}"]="${PROC}"; fi  # A screen, as seen from the client that started it
   if [[ "${SCREENS}" != *" ${PARENT} "* ]]; then continue; fi
@@ -86,6 +91,37 @@ while read -r PROC PARENT TPGRP TTY CMD ARGS; do
   set -- ${STAT}
   TICKS["${PROC}"]="${20:-0}"  # Start time in clock ticks, which orders the windows by age
 done <<<"$(ps -eo pid=,ppid=,tpgid=,tty=,comm=,args=)"
+
+# The claude session in a screen or window, mapped to every process above it.
+# The statusline keeps /tmp/.claude_session_ids.<uid>/<claude pid> map files.
+# Without one yet, a child's environment or a --resume id fills the gap.
+SIDMAP="/tmp/.claude_session_ids.${UID}"
+session_of(){  # ${1}=claude process. Sets SESSION to its session id, or to ?
+  local KID ENTRY WORD PREV=
+  SESSION=
+  if [ -s "${SIDMAP}/${1}" ] && [ "${SIDMAP}/${1}" -nt "/proc/${1}" ]; then
+    read -r SESSION < "${SIDMAP}/${1}"
+    if [ ! -z "${SESSION}" ]; then return; fi
+  fi
+  for KID in ${ALLKIDS[${1}]}; do
+    while IFS= read -r -d '' ENTRY; do
+      if [ "${ENTRY:0:23}" = 'CLAUDE_CODE_SESSION_ID=' ]; then SESSION="${ENTRY:23}"; return; fi
+    done 2>/dev/null < "/proc/${KID}/environ"
+  done
+  while IFS= read -r -d '' WORD; do
+    if [[ "${PREV}" =~ ^(--resume|-r|--session-id)$ ]] && [[ "${WORD}" =~ ^[0-9a-f-]{36}$ ]]; then SESSION="${WORD}"; return; fi
+    PREV="${WORD}"
+  done 2>/dev/null < "/proc/${1}/cmdline"
+  SESSION='?'
+}
+for CLAUDE in "${CLAUDES[@]}"; do
+  session_of "${CLAUDE}"
+  UP="${CLAUDE}"
+  while [ ! -z "${UP}" ] && [ "${UP}" != '0' ] && [ "${UP}" != '1' ]; do
+    if [ -z "${SIDOF[${UP}]}" ]; then SIDOF["${UP}"]="${SESSION:0:8}"; fi
+    UP="${PPIDOF[${UP}]}"
+  done
+done
 
 windows_of(){  # ${1}=screen. Sets ORDERED to its windows, oldest first
   local WINDOW SLOT
@@ -138,15 +174,17 @@ done
 ROWS=()
 WIDTH=4
 PIDWIDTH=3
+SIDWIDTH=1
 WHENWIDTH=4
 HERE="$(ps -o tty= -p $$)"  # The window this runs in, to mark it in the list
 HERE="${HERE// /}"
 
 add_row(){  # ${1}=depth ${2}=tree mark ${3}=name ${4}=pid ${5}=middle column ${6}=tail
-  local INDENT="$(( 2 * ${1} ))"
-  ROWS+=("${INDENT}"$'\t'"${2}"$'\t'"${3}"$'\t'"${4}"$'\t'"${5}"$'\t'"${6}")
+  local INDENT="$(( 2 * ${1} ))" SID="${SIDOF[${4}]:--}"
+  ROWS+=("${INDENT}"$'\t'"${2}"$'\t'"${3}"$'\t'"${4}"$'\t'"${SID}"$'\t'"${5}"$'\t'"${6}")
   if [ "$(( ${#3} + INDENT ))" -gt "${WIDTH}" ]; then WIDTH="$(( ${#3} + INDENT ))"; fi
   if [ "${#4}" -gt "${PIDWIDTH}" ]; then PIDWIDTH="${#4}"; fi
+  if [ "${#SID}" -gt "${SIDWIDTH}" ]; then SIDWIDTH="${#SID}"; fi
   if [ "${#5}" -gt "${WHENWIDTH}" ]; then WHENWIDTH="${#5}"; fi
 }
 
@@ -186,12 +224,12 @@ done
 
 printf '%s\n' "${BEFORE[@]}"
 for ROW in "${ROWS[@]}"; do
-  IFS=$'\t' read -r INDENT MARK NAME PROC WHEN STATE <<<"${ROW}"
+  IFS=$'\t' read -r INDENT MARK NAME PROC SID WHEN STATE <<<"${ROW}"
   PAD="$(( WHENWIDTH - ${#WHEN} ))"
   if [ "${MARK}" = 'row' ]; then
-    printf '    %-*s    %*s  (%s)%*s  %s\n' "${WIDTH}" "${NAME}" "${PIDWIDTH}" "${PROC}" "${WHEN}" "${PAD}" '' "${STATE}"
+    printf '    %-*s    %*s  %-*s  (%s)%*s  %s\n' "${WIDTH}" "${NAME}" "${PIDWIDTH}" "${PROC}" "${SIDWIDTH}" "${SID}" "${WHEN}" "${PAD}" '' "${STATE}"
   else
-    printf '    %*s%s %-*s    %*s  (%s)%*s  %s\n' "$(( INDENT - 2 ))" '' "${MARK}" "$(( WIDTH - INDENT ))" "${NAME}" "${PIDWIDTH}" "${PROC}" "${WHEN}" "${PAD}" '' "${STATE}"
+    printf '    %*s%s %-*s    %*s  %-*s  (%s)%*s  %s\n' "$(( INDENT - 2 ))" '' "${MARK}" "$(( WIDTH - INDENT ))" "${NAME}" "${PIDWIDTH}" "${PROC}" "${SIDWIDTH}" "${SID}" "${WHEN}" "${PAD}" '' "${STATE}"
   fi
 done
 printf '%s\n' "${AFTER[@]}"

@@ -22,7 +22,7 @@ SRU_DONE_LIST="$(cat ${SRU_SCAN_DIR}/* 2>/dev/null </dev/null | xargs -r -d '\n'
     # The smallest testcase in bytes wins, and on equal size the lowest path, so every run gives the same list
     if (bug != "" && (!(bug in size) || $2 < size[bug] || ($2 == size[bug] && $3 < testcase[bug]))) { lines[bug] = $1; size[bug] = $2; testcase[bug] = $3 }
   }
-  END { for (bug in size) { print "(" lines[bug] " lines): " testcase[bug] "\t" bug } }')"
+  END { for (bug in size) { print testcase[bug] " (" lines[bug] " lines)\t" bug } }')"
 rm -rf "${SRU_SCAN_DIR}"
 
 declare -A SRU_DONE_MAP=()  # The same list keyed on UniqueID, so each trial below costs a lookup and not a scan
@@ -54,7 +54,7 @@ for SRU_TRIALS in $(${HOME}/pr | awk '
     SRU_BUG=; IFS= read -r SRU_BUG 2>/dev/null < "${SRU_TRIAL}/MYBUG"  # This trial's UniqueID
     SRU_DONE=; if [ -n "${SRU_BUG}" ]; then SRU_DONE="${SRU_DONE_MAP["${SRU_BUG}"]}"; fi  # A trial without a readable MYBUG has no UniqueID to look up, and bash rejects an empty subscript
     if [ -n "${SRU_DONE}" ]; then
-      echo "${SRU_ORANGE}Trial ${SRU_TRIAL}: skipped: already reduced ${SRU_DONE}${SRU_OFF}"
+      echo "${SRU_ORANGE}Trial ${SRU_TRIAL}: skipped: a matching UniqueID trial was already reduced: ${SRU_DONE}${SRU_OFF}"
       SRU_HANDLED=1; break  # This UniqueID is reduced far enough; no sibling trial needs a reducer
     fi
     SRU_OUT="$(ls -t ${SRU_TRIAL}/*_out 2>/dev/null | head -n1)"  # The latest reduced testcase, found the same way as ${HOME}/o does
@@ -76,7 +76,7 @@ for SRU_TRIALS in $(${HOME}/pr | awk '
     SRU_UID="$(grep --binary-files=text -m1 '^[ ]*TEXT=' reducer${SRU_TRIAL}.sh 2>/dev/null | grep --binary-files=text -v "^[ ]*TEXT=''" | grep --binary-files=text -v "^[ ]*TEXT=.*somebug" | sed 's|.*TEXT="||;s|"[ \t]*$||')"  # The UniqueID this trial's reducer looks for, read the way sr reads it
     SRU_RUNNING=; if [ -n "${SRU_UID}" ]; then SRU_RUNNING="${SRU_RUNNING_MAP["${SRU_UID}"]}"; fi  # A reducer without a UniqueID has nothing to look up, and bash rejects an empty subscript
     if [ -n "${SRU_RUNNING}" ]; then
-      echo "${SRU_DIM}Trial ${SRU_TRIAL}: skipped: a trial with a matching UniqueID is already being reduced elsewhere (${SRU_RUNNING})${SRU_OFF}"
+      echo "${SRU_DIM}Trial ${SRU_TRIAL}: skipped: a matching UniqueID trial is already being reduced: ${SRU_RUNNING}${SRU_OFF}"
       SRU_HANDLED=1; break  # sr would refuse this trial and every sibling of it
     fi
     SRU_SYNTAX=; if [ -r reducer${SRU_TRIAL}.sh ]; then SRU_SYNTAX="$(bash -n reducer${SRU_TRIAL}.sh 2>&1 | head -n1)"; fi  # A reducer script bash cannot parse dies at once and writes no EPOCH bundle, so without this check every sru run starts it again and leaves another s${SRU_TRIAL} screen behind
