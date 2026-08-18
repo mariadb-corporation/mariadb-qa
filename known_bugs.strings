@@ -253,6 +253,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|Field::unpack|SORT_INFO::unpack_addon_fields<true>|rr_unpack_from_buffer<true, true>|READ_RECORD::read_record                                                          ## MDEV-40813
 SIGSEGV|Geometry::create_from_json|Gis_geometry_collection::init_from_json|Geometry::create_from_json|Gis_geometry_collection::init_from_json                                  ## MDEV-40789
 SIGSEGV|Gis_geometry_collection::init_from_json|Geometry::create_from_json|Gis_geometry_collection::init_from_json|Geometry::create_from_json                                  ## MDEV-40789
 SIGSEGV|json_read_value|Gis_geometry_collection::init_from_json|Geometry::create_from_json|Gis_geometry_collection::init_from_json                                             ## MDEV-40789
