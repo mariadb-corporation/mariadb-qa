@@ -1,0 +1,7 @@
+INSTALL SONAME 'ha_connect';
+CREATE TABLE t3 (c1 INT) ENGINE=CONNECT TABLE_TYPE=MYSQL CONNECTION='mysql://root@localhost/test/t1';
+CREATE TABLE t1 (c1 INT);
+LOCK TABLES t3 READ;
+SELECT c1 FROM t3 GROUP BY c1;
+SELECT * FROM information_schema.KEY_COLUMN_USAGE WHERE table_name LIKE 't%' GROUP BY table_schema ORDER BY table_name;
+BEGIN;
