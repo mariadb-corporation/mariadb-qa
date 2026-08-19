@@ -258,6 +258,7 @@ SIGABRT|__cxa_throw|duckdb::TryCast::Operation<duckdb::timestamp_tz_t, float>|du
 SIGABRT|__cxa_throw|float duckdb::Value::GetValueInternal<float>|store_duckdb_field_in_mysql_format|ha_duckdb_select_handler::next_row                                         ## MDEV-40846
 DUCKDB_ERROR|Appender init error: {"exception_type":"Catalog","exception_message":"Table X could not be found"}                                                                ## MDEV-40843
 SIGSEGV|vtable for __cxxabiv1::__si_class_type_info|CntCloseTable|ha_connect::CloseTable|ha_connect::external_lock                                                             ## MDEv-40844
+SIGSEGV|ha_connect::rnd_pos|handler::ha_rnd_pos|rr_from_pointers|Sql_cmd_delete::delete_from_single_table                                                                      ## MDEV-40842
 SIGSEGV|ha_connect::rnd_pos|handler::ha_rnd_pos|rr_from_pointers|READ_RECORD::read_record                                                                                      ## MDEV-40842
 SIGABRT|__cxa_throw|duckdb::HandleCastError::AssignError|duckdb::Blob::TryGetBlobSize|duckdb::Blob::GetBlobSize                                                                ## MDEV-40841
 SIGABRT|__cxa_throw|duckdb::HandleCastError::AssignError|duckdb::HandleCastError::AssignError|duckdb::Blob::TryGetBlobSize                                                     ## MDEV-40841
