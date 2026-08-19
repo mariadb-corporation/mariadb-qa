@@ -254,6 +254,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|vtable for __cxxabiv1::__si_class_type_info|CntCloseTable|ha_connect::CloseTable|ha_connect::external_lock                                                             ## MDEv-40844
 SIGSEGV|ha_connect::rnd_pos|handler::ha_rnd_pos|rr_from_pointers|READ_RECORD::read_record                                                                                      ## MDEV-40842
 SIGABRT|__cxa_throw|duckdb::HandleCastError::AssignError|duckdb::Blob::TryGetBlobSize|duckdb::Blob::GetBlobSize                                                                ## MDEV-40841
 SIGABRT|__cxa_throw|duckdb::HandleCastError::AssignError|duckdb::HandleCastError::AssignError|duckdb::Blob::TryGetBlobSize                                                     ## MDEV-40841
