@@ -76,7 +76,8 @@ DROP TABLE t1;
 # afterwards. Only the error log line is wrong. On an INSERT or a SELECT the client also gets an
 # error; on OPTIMIZE TABLE it does not, that statement reports status OK.
 # Absent on a CS 13.1.0 build from before MDEV-28730, present after it.
-# Keep the filter narrow. A broad 'Operation interrupted' pattern would also hide
-# 'writing `use_stopword'' (MDEV-40804), which loses data.
+# Keep each pattern narrow, matching one filed message. A broad 'Operation interrupted' pattern
+# would also hide a new FTS config key, a different error code, or 'writing `use_stopword''
+# (MDEV-40804), which loses data.
 # The second block can also hit MDEV-40621 on a build before its fix, on a debug build as
 # fts_decode_vlc and on an optimised build as fts_optimize_compact.

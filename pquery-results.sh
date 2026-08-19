@@ -139,10 +139,10 @@ OUT_TRIALS=",$(ls -d [0-9]*/*_out 2>/dev/null | sed 's|/.*||' | sort -u | tr '\n
 STARTED_TRIALS=",$(ls -d [0-9]*/[1-2][0-9]*_start 2>/dev/null | sed 's|/.*||' | sort -u | tr '\n' ',')"  # Every trial which holds an EPOCH bundle, so a reducer ran on it at some point. Same test start_unreduced uses. A trial in this list but not in OUT_TRIALS was started and gave no testcase
 if [[ $MDG -eq 0 && $GRP_RPL -eq 0 ]]; then  # Normal non-Galera, non-GR run
   grep --binary-files=text -vE 'Last.*consecutive queries all failed|Assert: no core file found in.*and fallback_text_string.sh returned an empty output' "${TEXTS_CACHE}" 2>/dev/null | sed "s|.*TEXT=.||;s|['\"][ \t]*$||" | sort -u | awk -v w="${SCREEN_WIDTH}" '
-    # Error-log and assert-only entries list first, crash signatures and sanitizer reports after. Inside the leading group the ones that fit the terminal come before the ones that run past it, so the aligned block stays unbroken. Alphabetical within each group. The width test mirrors the display below: a sanitizer entry always renders at 170 columns, any other entry at its own length with the \" escaping reverted.
+    # Error-log and assert-only entries list first, crash signatures and sanitizer reports after. Inside the leading group the ones that fit the terminal come before the ones that run past it, so the aligned block stays unbroken. Alphabetical within each group. The width test mirrors the display below: a sanitizer entry always renders at 170 columns, any other entry at its own length with the \" and \` escaping reverted.
     { t=$0
       san = (index(t,"=ERROR")==1 || index(t,"ThreadSanitizer:")==1 || index(t,"runtime error:")==1 || index(t,"LeakSanitizer:")==1 || index(t,"MemorySanitizer:")==1)
-      if (san) { L=170 } else { gsub(/\\"/,"\"",t); L=length(t) }
+      if (san) { L=170 } else { gsub(/\\"/,"\"",t); gsub(/\\`/,"`",t); L=length(t) }
       if (san || index($0,"SIG")) sig_or_san[++nss]=$0; else if (w>0 && L<w-43) fit[++nf]=$0; else ovf[++no]=$0 }
     END { for (i=1;i<=nf;i++) print fit[i]; for (i=1;i<=no;i++) print ovf[i]; for (i=1;i<=nss;i++) print sig_or_san[i] }' > "${STRINGS_CACHE}"
   if [ "${NTS}" == "-Fi" ]; then  # New text string (i.e. no regex, exact text string) mode

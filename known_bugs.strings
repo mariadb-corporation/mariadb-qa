@@ -100,6 +100,7 @@ GOT_ERROR|Got error 123|when reading table                     ## MDEV-36963
 # GOT_ERROR|Got error 127|when reading table                     ## MDEV-34472  ## Common error with different sources; don't filter
 # GOT_ERROR|Got error 127|when reading table (temptable)         ## MDEV-39562  ## Idem ^
 GOT_ERROR|Got error 128|when reading table                     ## MDEV-34991
+GOT_ERROR|Got error 131|when reading table X                   ## MDEV-40834
 GOT_ERROR|Got error 134|when reading table                     ## MDEV-34230
 GOT_ERROR|Got error 140|"Wrong create options" from storage engine InnoDB Error_code: 1030  ## MDEV-33961
 GOT_ERROR|Got error 146|when reading table                     ## MDEV-37523

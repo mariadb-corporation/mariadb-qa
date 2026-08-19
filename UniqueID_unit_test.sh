@@ -162,6 +162,29 @@ CORES="$(nproc 2>/dev/null || echo 4)"
 xargs -a "${WORK}/trials" -r -d '\n' -P "${CORES}" -I{} \
   bash -c 'run_one "$1" "$2" "$3" "$4" "$5"' _ {} "${WORK}" "${REF_DIR}" "${SCRIPT_PWD}" "${USE_GDB}"
 
+# pquery-results.sh reads a whole workdir at once rather than one trial, so it is
+# compared per workdir. The runs happen while the automation keeps writing to those
+# workdirs, so the current version runs on both sides of the reference run and a
+# difference only counts when those two agree
+echo
+echo "=== pquery-results.sh check ==="
+PR_CHECKED=0
+if [ -x "${REF_DIR}/pquery-results.sh" ]; then
+  for PR_WD in $(sed 's|/[^/]*$||' "${WORK}/trials" | sort -u | head -n 8); do
+    [ "${PR_CHECKED}" -ge 3 ] && break
+    [ -z "$(ls "${PR_WD}"/reducer[0-9]* 2>/dev/null | head -n1)" ] && continue
+    PR_A1="$( cd "${PR_WD}" && "${SCRIPT_PWD}/pquery-results.sh" 2>&1 )"
+    PR_B="$(  cd "${PR_WD}" && "${REF_DIR}/pquery-results.sh"    2>&1 )"
+    PR_A2="$( cd "${PR_WD}" && "${SCRIPT_PWD}/pquery-results.sh" 2>&1 )"
+    if [ "${PR_A1}" == "${PR_A2}" ] && [ "${PR_A1}" != "${PR_B}" ]; then
+      printf '%s\tpquery-results.sh\n' "${PR_WD}" >> "${WORK}/diffs"
+      { echo "--- ${PR_WD} pquery-results.sh"; diff <(printf '%s\n' "${PR_B}") <(printf '%s\n' "${PR_A1}"); } >> "${WORK}/detail"
+    fi
+    PR_CHECKED=$(( PR_CHECKED + 1 ))
+  done
+fi
+echo "    ${PR_CHECKED} workdirs compared"
+
 # capped_error_log.sh owns the cap size, and every caller that decides whether to
 # build a temp directory holds its own copy of that number. A caller left behind
 # stops capping logs between the two sizes, silently, so the numbers are compared

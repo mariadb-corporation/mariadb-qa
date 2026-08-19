@@ -50,6 +50,7 @@ Failed to acquire lock due to rocksdb_max_row_locks limit.*Internal MariaDB erro
 Error finishing bulk load                             RocksDB, Not a real issue, ref SPECIAL-36
 ERROR. Got error 122 when reading table               MDEV-31896
 ERROR. Got error 123 when reading table               MDEV-36963
+ERROR. Got error 131 when reading table               MDEV-40834
 ERROR. Got error 221 when reading table               RocksDB, Not a real issue, ref SPECIAL-37
 ERROR. Got error 505 when reading table               MDEV-38100 (Rocks corruption, may mask other bugs)
 ERROR. Got error 510 when reading table               MDEV-38198 (Rocks corruption, may mask other bugs)

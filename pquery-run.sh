@@ -2980,10 +2980,17 @@ EOF
     fi
   fi
   if [ ! -z "${ERROR_LOG_SCAN}" ] && ${SCRIPT_PWD}/error_log_scan.sh check ${ERROR_LOG_SCAN}; then  # error_log_scan.sh: unified REGEX_ERRORS_* scanner; see that script for the regex config & cleanup pipeline
-    touch ${RUNDIR}/${TRIAL}/ERROR_LOG_SCAN_ISSUE  # Mark trial as containing an error log issue. pquery-prep-red.sh uses this (plus a known-bug check on the MYBUG UniqueID) to decide whether to override reducer TEXT with the cleaned error log bug from error_log_scan.sh.
-    echoit "Error log bug found: \"$(${SCRIPT_PWD}/error_log_scan.sh top ${ERROR_LOG_SCAN} 2>/dev/null)\""
-    savetrial
-    TRIAL_SAVED=1
+    ELS_UID="$(${SCRIPT_PWD}/error_log_scan.sh top ${ERROR_LOG_SCAN} 2>/dev/null)"
+    # An error log bug that is already on the known bug list does not keep the trial, the same way a known crash does not
+    if [ "${ELIMINATE_KNOWN_BUGS}" == "1" -a -r ${SCRIPT_PWD}/known_bugs.strings ] && [ ! -z "${ELS_UID}" ] && [ ! -z "$(set +H; grep -Fi --binary-files=text "${ELS_UID}" ${SCRIPT_PWD}/known_bugs.strings 2>/dev/null | grep --binary-files=text -v '^[ \t]*#')" ]; then
+      echoit "Error log bug found, already logged and still open: \"${ELS_UID}\""
+    else
+      touch ${RUNDIR}/${TRIAL}/ERROR_LOG_SCAN_ISSUE  # Mark trial as containing an error log issue. pquery-prep-red.sh uses this (plus a known-bug check on the MYBUG UniqueID) to decide whether to override reducer TEXT with the cleaned error log bug from error_log_scan.sh.
+      echoit "Error log bug found: \"${ELS_UID}\""
+      savetrial
+      TRIAL_SAVED=1
+    fi
+    ELS_UID=
   fi
   ERROR_LOG_SCAN=
   # Now continue with main processing

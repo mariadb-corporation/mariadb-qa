@@ -1,0 +1,3 @@
+INSTALL SONAME 'ha_duckdb';
+CREATE TABLE t (c INT KEY) ENGINE=DuckDB;
+SELECT 'a' IN (SELECT * FROM t);
