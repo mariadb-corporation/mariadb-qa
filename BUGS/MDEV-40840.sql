@@ -1,0 +1,4 @@
+CREATE TABLE t (a INT);
+UPDATE mysql.innodb_index_stats SET stat_value=18446744073709551615;
+RENAME TABLE t TO t2;
+SELECT * FROM t2;

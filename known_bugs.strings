@@ -258,6 +258,8 @@ SIGABRT|__cxa_throw|duckdb::HandleCastError::AssignError|duckdb::Blob::TryGetBlo
 SIGABRT|__cxa_throw|duckdb::HandleCastError::AssignError|duckdb::HandleCastError::AssignError|duckdb::Blob::TryGetBlobSize                                                     ## MDEV-40841
 SIGABRT|__cxa_throw|duckdb::Cast::Operation<duckdb::string_t, float>|duckdb::Value::GetValueInternal<float>|duckdb::Value::GetValue<float>                                     ## MDEV-40838
 SIGABRT|__cxa_throw|float duckdb::Value::GetValueInternal<float>|store_duckdb_field_in_mysql_format|ha_duckdb_select_handler::next_row                                         ## MDEV-40838
+SIGSEGV|String::append|String::append|Optimizer_context_recorder::dump_sql_script|store_optimizer_context                                                                      ## MDEV-40837
+stat_value != UINT64_UNDEFINED|SIGABRT|ut_dbg_assertion_failed|dict_stats_fetch_index_stats_step|fetch_step|que_thr_step                                                       ## MDEV-40840
 SIGSEGV|my_time_fraction_remainder|my_datetime_trunc|Datetime::trunc|Datetime::round                                                                                           ## MDEV-40836
 dec <= 6|SIGABRT|Field_datetime_with_dec::Field_datetime_with_dec|Field_datetime_hires::Field_datetime_hires|new_Field_datetime|Type_handler_datetime2::make_table_field       ## MDEV-40836
 n < m_size|SIGABRT|Bounds_checked_array<Item*>::operator[]|Item::split_sum_func2|Item_func::split_sum_func|JOIN::prepare
