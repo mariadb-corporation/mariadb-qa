@@ -243,6 +243,7 @@ ERROR.*InnoDB.*Operation interrupted.*while reading FTS index  MDEV-40806 (error
 ERROR.*InnoDB.*Operation interrupted.*while reading words  MDEV-40806 (error log line only, SPECIAL-57)
 ERROR.*InnoDB.*Operation interrupted.*during SYNC of table  MDEV-40806 (error log line only, SPECIAL-57)
 ERROR.*InnoDB.*Operation interrupted.*matching document  MDEV-40806 (error log line only, SPECIAL-57)
+ERROR.*InnoDB.*Operation interrupted.*writing .use_stopword  MDEV-40804 (loses the table stopword setting; filed with a testcase, so the run no longer keeps a trial per occurrence)
 Slave SQL: Could not.*Write_rows_v1 event on table.*Cannot add or update a child row: a foreign key constraint fails.*Error_code: 1452.*HA_ERR_NO_REFERENCED_ROW  MDEV-33378
 Slave SQL: Error .Cannot add or update a child row: a foreign key constraint fails.*Internal MariaDB error code: 1452  MDEV-33378
 Slave SQL: Could not.*Write_rows_v1 event on table.*Error_code: 1062.*HA_ERR.*DUPP_KEY  MDEV-33350
