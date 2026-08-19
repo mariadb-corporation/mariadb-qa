@@ -15,7 +15,7 @@ set +H
 # This script reads MYBUG files written by pquery-run.sh (via new_text_string.sh)
 # as the per-trial UniqueID source. See the MYBUG content rule in
 # new_text_string.sh for the four valid shapes (crash signal, crash with assert,
-# SAN finding, typed-prefix UID — in decreasing severity).
+# SAN finding, typed-prefix UID - in decreasing severity).
 #
 # TODO: special-case handling exists for the case where nts could not produce
 # one of those shapes AND the error-log scan flagged a separate issue
@@ -50,7 +50,7 @@ SAN_BUG=0  # Do not remove
 # Disable history substitution and avoid  -bash: !: event not found  like errors
 set +H
 
-# nts_chain_newer <path> — true when any UID-generation script in the nts chain
+# nts_chain_newer <path> - true when any UID-generation script in the nts chain
 # is newer than <path>. nts (new_text_string.sh) delegates to els
 # (error_log_scan.sh) for tier-5 fallback, to san_text_string.sh for SAN bugs,
 # and to fallback_text_string.sh as last resort; all four read the log through

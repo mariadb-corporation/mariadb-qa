@@ -26,7 +26,7 @@ export DEBUGINFOD_PROGRESS=0
 #      (emitted by san_text_string.sh: ASAN, UBSAN, LSAN, TSAN, MSAN)
 #
 #   4. Typed-prefix UID:        PREFIX|body
-#      (lowest priority — log-derived only; no core, no SAN)
+#      (lowest priority - log-derived only; no core, no SAN)
 #      Emitted by this script's find_other_possible_issue_strings(),
 #      fallback_text_string.sh, or by error_log_scan.sh's uid_prefix().
 #      Prefix vocabulary covers: ASSERT, INNODB_ERROR, INNODB_WARNING,
@@ -46,7 +46,7 @@ export DEBUGINFOD_PROGRESS=0
 # INTO shape 2 as the leading <assert-text>, never emitted alone as
 # `ASSERT|<text>`. The bare `ASSERT|<text>` form (shape 4) is reserved for the
 # no-core path: an assert that aborted the server without dumping a core
-# typically lands as the final line of the error log — hence
+# typically lands as the final line of the error log - hence
 # error_log_scan.sh's LASTLINE mode covers the same signal. The no-core flow
 # below (find_other_possible_issue_strings) extracts this form when no other
 # typed prefix matches and no core was found. error_log_scan.sh also honours
@@ -377,7 +377,7 @@ find_other_possible_issue_strings(){
     fi
   fi
   WRONGMUTEXUSAGE=
-  # GLIBC|... — glibc heap-corruption / double-free / munmap_chunk family. Tier-3 severity (same band as MUTEX_ERROR). Mirrors error_log_scan.sh uid_prefix line 181: both line-start markers (modern glibc) and the older "*** glibc detected" / "*** Error in `" preludes are accepted.
+  # GLIBC|... - glibc heap-corruption / double-free / munmap_chunk family. Tier-3 severity (same band as MUTEX_ERROR). Mirrors error_log_scan.sh uid_prefix line 181: both line-start markers (modern glibc) and the older "*** glibc detected" / "*** Error in `" preludes are accepted.
   GLIBC="$(grep --binary-files=text -hEo '^(corrupted|malloc\(|free\(|double free|munmap_chunk).*|\*\*\* (glibc detected|Error in `).*' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n')"
   if [ ! -z "${GLIBC}" ]; then
     TEXT="GLIBC|${GLIBC}"
@@ -436,7 +436,7 @@ find_other_possible_issue_strings(){
     exit 0
   fi
   MARKEDASCRASHED=
-  # [Warning] InnoDB: "Record in index ... was not found on rollback/update: TUPLE ... at: (COMPACT )?RECORD" — paired emission with the [ERROR] update variant, same logical event. Promoted to INNODB_ERROR so MYBUG (nts) agrees with error_log_scan.sh's uid_prefix rollback-fold (els line 142-148). All 4 body variants (rollback/update × COMPACT/non-COMPACT) fold to the same 4 normalised UIDs that the INNODBERROR sed pipeline below produces for the [ERROR] case. Must be checked BEFORE MARIADBD_ERROR (line 432) so an "Out of sort memory" line co-emitted in the same log does not win UID assignment.
+  # [Warning] InnoDB: "Record in index ... was not found on rollback/update: TUPLE ... at: (COMPACT )?RECORD" - paired emission with the [ERROR] update variant, same logical event. Promoted to INNODB_ERROR so MYBUG (nts) agrees with error_log_scan.sh's uid_prefix rollback-fold (els line 142-148). All 4 body variants (rollback/update × COMPACT/non-COMPACT) fold to the same 4 normalised UIDs that the INNODBERROR sed pipeline below produces for the [ERROR] case. Must be checked BEFORE MARIADBD_ERROR (line 432) so an "Out of sort memory" line co-emitted in the same log does not win UID assignment.
   INNODBWARNROLLBACK="$(grep -hio '\[Warning\] InnoDB: Record in index.*was not found on \(update\|rollback, trying to insert\): TUPLE.*at: \(COMPACT \)\?RECORD.*' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|"||g' | sed "s|'||g" | sed 's|.*\[Warning\] InnoDB: ||')"
   if [ ! -z "${INNODBWARNROLLBACK}" ]; then
     TEXT="INNODB_ERROR|$(echo "${INNODBWARNROLLBACK}" | sed \
@@ -478,7 +478,7 @@ find_other_possible_issue_strings(){
     exit 0
   fi
   INNODBERROR=
-  # MYSQL_HA_READ|... — [ERROR] mysql_ha_read: ... (tier 4). Mirrors error_log_scan.sh uid_prefix line 154.
+  # MYSQL_HA_READ|... - [ERROR] mysql_ha_read: ... (tier 4). Mirrors error_log_scan.sh uid_prefix line 154.
   MYSQL_HA_READ="$(grep -hio '\[ERROR\] mysql_ha_read: .*' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|^\[ERROR\] mysql_ha_read: ||')"
   if [ ! -z "${MYSQL_HA_READ}" ]; then
     TEXT="MYSQL_HA_READ|${MYSQL_HA_READ}"
@@ -486,7 +486,7 @@ find_other_possible_issue_strings(){
     exit 0
   fi
   MYSQL_HA_READ=
-  # ROCKSDB_ERROR|... — [ERROR] RocksDB: ... (tier 4). Mirrors error_log_scan.sh uid_prefix line 171.
+  # ROCKSDB_ERROR|... - [ERROR] RocksDB: ... (tier 4). Mirrors error_log_scan.sh uid_prefix line 171.
   ROCKSDB_ERROR="$(grep -hio '\[ERROR\] RocksDB: .*' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|^\[ERROR\] RocksDB: |RocksDB: |')"
   if [ ! -z "${ROCKSDB_ERROR}" ]; then
     TEXT="ROCKSDB_ERROR|${ROCKSDB_ERROR}"
@@ -494,7 +494,7 @@ find_other_possible_issue_strings(){
     exit 0
   fi
   ROCKSDB_ERROR=
-  # CHECKTABLE|... — [ERROR] CHECKTABLE ... (tier 4). Mirrors error_log_scan.sh uid_prefix line 172.
+  # CHECKTABLE|... - [ERROR] CHECKTABLE ... (tier 4). Mirrors error_log_scan.sh uid_prefix line 172.
   CHECKTABLE_E="$(grep -hio '\[ERROR\] CHECKTABLE .*' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|^\[ERROR\] CHECKTABLE |CHECKTABLE |')"
   if [ ! -z "${CHECKTABLE_E}" ]; then
     TEXT="CHECKTABLE|${CHECKTABLE_E}"
@@ -518,7 +518,7 @@ find_other_possible_issue_strings(){
     exit 0
   fi
   MDBDERROR=
-  # MARIADBD_ERROR|Table ... — [ERROR] Table ... (tier 4). Mirrors error_log_scan.sh uid_prefix line 173 (mapped to MARIADBD_ERROR there, same here).
+  # MARIADBD_ERROR|Table ... - [ERROR] Table ... (tier 4). Mirrors error_log_scan.sh uid_prefix line 173 (mapped to MARIADBD_ERROR there, same here).
   MDBD_TABLE="$(grep -hio '\[ERROR\] Table .*' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|^\[ERROR\] Table |Table |')"
   if [ ! -z "${MDBD_TABLE}" ]; then
     TEXT="MARIADBD_ERROR|${MDBD_TABLE}"
@@ -547,7 +547,7 @@ find_other_possible_issue_strings(){
     exit 0
   fi
   SLAVE_ERROR2=
-  # Tier-5 fallback — delegate to error_log_scan.sh `top` for any line that the
+  # Tier-5 fallback - delegate to error_log_scan.sh `top` for any line that the
   # rules above did NOT catch. Covers INNODB_WARNING (other variants),
   # SLAVE_WARNING, WARNING_ABORTED, INNODB_NOTE, plus any future prefix added to
   # error_log_scan.sh uid_prefix(). Using els here (rather than per-rule mirrors)
@@ -561,11 +561,11 @@ find_other_possible_issue_strings(){
     exit 0
   fi
   ELS_UID=
-  # ASSERT|<text> — emitted ONLY in the no-core path (this function is only
+  # ASSERT|<text> - emitted ONLY in the no-core path (this function is only
   # called from the `if [ -z "${LATEST_CORE}" ]` branch). Per the "Core priority
   # rule" at the top of this script: when a core exists, the assertion line is
   # folded into shape 2 (<assert-text>|SIGABRT|frame1..4) by the main gdb path
-  # below — never as a standalone ASSERT|. Two extraction forms mirror the
+  # below - never as a standalone ASSERT|. Two extraction forms mirror the
   # with-core path at lines ~550-553. Placed near the end of this function so
   # any more-specific typed prefix above (MUTEX_ERROR, INNODB_ERROR, etc.)
   # wins when both signals coexist in the log.
@@ -609,12 +609,12 @@ if [ "${SAN_BUG}" -eq 1 ]; then
 fi
 
 if [ -z "${LATEST_CORE}" ]; then
-  # No core present — apply shape-4 typed-prefix extraction from error logs.
+  # No core present - apply shape-4 typed-prefix extraction from error logs.
   # Per the "Core priority rule" at the top of this script, this branch is the
   # ONLY caller of find_other_possible_issue_strings, which includes the
   # ASSERT|<text> fallback for "Assertion ... failed" lines. When a core IS
   # present (the `else` flow below), the assertion text is folded into shape 2
-  # (<assert>|SIGABRT|frame1..4) via gdb — never as a standalone ASSERT|.
+  # (<assert>|SIGABRT|frame1..4) via gdb - never as a standalone ASSERT|.
   if [ "${SHOWINFO}" -eq 1 ]; then # Squirrel/process_testcases (to stderr)
     1>&2 echo "${SHOWTEXT}"
   fi

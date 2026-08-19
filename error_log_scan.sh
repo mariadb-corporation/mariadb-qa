@@ -73,12 +73,12 @@ if [ ! -z "${CAP_DIR}" ]; then
 fi
 
 # Pre-normalisation cleanups applied before UID typing / extraction. Two stages:
-#  1) INNODB_RECORD_COLLAPSE: pattern-specific. Collapses multi-KB InnoDB "Record in index ... TUPLE ... at: (COMPACT )?RECORD ..." dumps into a stable signature. Form aligned with new_text_string.sh's INNODB_ERROR rules so MYBUG (nts source) and reducer<N>.sh TEXT (override source) produce the same UID body — kb entries (nts-style) match either source. Update / rollback / COMPACT / non-COMPACT each fold to their own UID.
+#  1) INNODB_RECORD_COLLAPSE: pattern-specific. Collapses multi-KB InnoDB "Record in index ... TUPLE ... at: (COMPACT )?RECORD ..." dumps into a stable signature. Form aligned with new_text_string.sh's INNODB_ERROR rules so MYBUG (nts source) and reducer<N>.sh TEXT (override source) produce the same UID body - kb entries (nts-style) match either source. Update / rollback / COMPACT / non-COMPACT each fold to their own UID.
 #  2) UNIVERSAL_COLLAPSE: pattern-agnostic. Squashes long whitespace runs (5+) and long 0x-hex blobs (12+ hex chars) to "..."; catches binary-payload noise that lands in the error log.
 INNODB_RECORD_COLLAPSE='s|Record in index.*of table.*was not found on update: TUPLE.*at: COMPACT RECORD.*|Record in index X of table Y was not found on update: TUPLE Z at: COMPACT RECORD|; s|Record in index.*of table.*was not found on update: TUPLE.*at: RECORD.*|Record in index X of table Y was not found on update: TUPLE Z at: RECORD|; s|Record in index.*of table.*was not found on rollback, trying to insert: TUPLE.*at: COMPACT RECORD.*|Record in index X of table Y was not found on rollback, trying to insert: TUPLE Z at: COMPACT RECORD|; s|Record in index.*of table.*was not found on rollback, trying to insert: TUPLE.*at: RECORD.*|Record in index X of table Y was not found on rollback, trying to insert: TUPLE Z at: RECORD|'
 UNIVERSAL_COLLAPSE='s| \{5,\}|...|g; s|0x[0-9A-Fa-f]\{12,\}|0x...|g'
 
-# UID-line normalisations for the errors / lastline / aggregate output paths. Strips per-trial volatile detail (timestamps, port numbers, binlog positions, GTID values, hex IDs, identifier quoting, table-name suffixes, etc.) so semantically-identical events fold to the same UID. "Clean" mode does NOT use these — it has its own regex-friendly pipeline (below) that pquery-del-trial.sh feeds into reducer TEXT.
+# UID-line normalisations for the errors / lastline / aggregate output paths. Strips per-trial volatile detail (timestamps, port numbers, binlog positions, GTID values, hex IDs, identifier quoting, table-name suffixes, etc.) so semantically-identical events fold to the same UID. "Clean" mode does NOT use these - it has its own regex-friendly pipeline (below) that pquery-del-trial.sh feeds into reducer TEXT.
 UID_NORMALIZE_TS='s|^[0-9]{4}-[0-9]{2}-[0-9]{2}  *[0-9]+:[0-9]+:[0-9]+ +[0-9]+ +||'
 UID_NORMALIZE_TT='s|#sql-temptable-[0-9a-f]+-[0-9]+-[0-9a-f]+|#sql-temptable-X|g'
 UID_NORMALIZE_BACKUP='s|#sql-backup-[0-9a-f]+-[0-9]+|#sql-backup-X|g'
@@ -152,7 +152,7 @@ uid_normalize() {
   uid_normalize_nodedup | awk '!seen[$0]++'
 }
 
-# uid_prefix: route each normalised line to its UID form (<TYPE>|<short body>). Order matters — most specific match wins. Prefixes shared with new_text_string.sh (INNODB_ERROR, INNODB_WARNING, SLAVE_ERROR, MARIADBD_ERROR, MARKED_AS_CRASHED, GOT_ERROR, OPENTABLE, MUTEX_ERROR) and known_bugs.strings (ASAN, LSAN, MSAN). Prefixes scoped to this script: INNODB_NOTE, SLAVE_WARNING, WARNING_ABORTED, WARNING, MYSQL_HA_READ, WSREP_ERROR, WSREP_WARNING, ROCKSDB_ERROR, CHECKTABLE, GLIBC, ASSERT. ASSERT form drops the `/test/<ver>/` leading path and the line number, leaving `ASSERT|<repo-relative-path>|Assertion '<x>' failed`; it is a log-derived shadow of the same crash that nts captures with frames as `<assert>|SIGABRT|f1..f4`, so consumers that already have an nts frame UID must call `top` with EXCLUDE_ASSERT=1 to suppress this shadow (else MYBUG / reducer TEXT lose the frame info).
+# uid_prefix: route each normalised line to its UID form (<TYPE>|<short body>). Order matters - most specific match wins. Prefixes shared with new_text_string.sh (INNODB_ERROR, INNODB_WARNING, SLAVE_ERROR, MARIADBD_ERROR, MARKED_AS_CRASHED, GOT_ERROR, OPENTABLE, MUTEX_ERROR) and known_bugs.strings (ASAN, LSAN, MSAN). Prefixes scoped to this script: INNODB_NOTE, SLAVE_WARNING, WARNING_ABORTED, WARNING, MYSQL_HA_READ, WSREP_ERROR, WSREP_WARNING, ROCKSDB_ERROR, CHECKTABLE, GLIBC, ASSERT. ASSERT form drops the `/test/<ver>/` leading path and the line number, leaving `ASSERT|<repo-relative-path>|Assertion '<x>' failed`; it is a log-derived shadow of the same crash that nts captures with frames as `<assert>|SIGABRT|f1..f4`, so consumers that already have an nts frame UID must call `top` with EXCLUDE_ASSERT=1 to suppress this shadow (else MYBUG / reducer TEXT lose the frame info).
 uid_prefix() {
   awk '
     {
@@ -170,7 +170,7 @@ uid_prefix() {
       }
       if (sub(/^\[ERROR\] InnoDB: /,     "INNODB_ERROR|"))   { print; next }
       if (sub(/^\[Warning\] InnoDB: /,   "INNODB_WARNING|")) {
-        # Fold the [Warning] rollback variant of "Record in index ... was not found" into INNODB_ERROR — paired emission of the same logical event as the [ERROR] update variant. Other [Warning] InnoDB bodies keep the INNODB_WARNING prefix. The match shape mirrors the four bodies INNODB_RECORD_COLLAPSE emits (update/rollback × COMPACT/non-COMPACT).
+        # Fold the [Warning] rollback variant of "Record in index ... was not found" into INNODB_ERROR - paired emission of the same logical event as the [ERROR] update variant. Other [Warning] InnoDB bodies keep the INNODB_WARNING prefix. The match shape mirrors the four bodies INNODB_RECORD_COLLAPSE emits (update/rollback × COMPACT/non-COMPACT).
         if ($0 ~ /^INNODB_WARNING\|Record in index X of table Y was not found on rollback, trying to insert: TUPLE Z at: (COMPACT )?RECORD$/) {
           sub(/^INNODB_WARNING\|/, "INNODB_ERROR|")
         }
@@ -214,7 +214,7 @@ uid_prefix() {
       if ($0 ~ /AddressSanitizer/)                      { print "ASAN|" $0; next }
       if ($0 ~ /MemorySanitizer/)                       { print "MSAN|" $0; next }
       if ($0 ~ /^(corrupted|malloc\(|free\(|double free|munmap_chunk)/ || $0 ~ /\*\*\* (glibc detected|Error in `)/) { print "GLIBC|" $0; next }   # Line-start markers cover modern glibc (just the keyword line); the *** preludes cover older glibc emit format on legacy systems / unusual binaries.
-      print "UNTYPED|Please add a typed prefix rule to error_log_scan.sh uid_prefix() for: " $0   # Catch-all: ensures the MYBUG-is-always-a-UID invariant holds even when no typed-prefix rule above matched. Seeing UNTYPED| in pquery-results.sh aggregate output is an action signal — add a rule for this log shape.
+      print "UNTYPED|Please add a typed prefix rule to error_log_scan.sh uid_prefix() for: " $0   # Catch-all: ensures the MYBUG-is-always-a-UID invariant holds even when no typed-prefix rule above matched. Seeing UNTYPED| in pquery-results.sh aggregate output is an action signal - add a rule for this log shape.
     }
   '
 }
