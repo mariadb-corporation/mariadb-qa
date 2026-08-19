@@ -70,12 +70,31 @@ export DEBUGINFOD_PROGRESS=0
 
 # Quick check to see if sleep can be skipped for *SAN issues (much faster output and automation)
 if [ $(grep -m1 --binary-files=text -E "=ERROR:|ThreadSanitizer:|runtime error:|LeakSanitizer:|MemorySanitizer:" ./log/master.err ./log/slave.err ./node*/node*.err 2>/dev/null | wc -l) -eq 0 ]; then  # If no such issue found (count is 0), sleep x seconds to allow core, if any, to finish writing
-  # Whilst 2 seconds is almost surely not sufficient for all cores to finish writing on heavily loaded machines,
-  # There is a tradeoff here - this script is very often called during automation and all sorts of other processing,
-  # thus many things are affected even by a single second more. On the flip side, more failures may be observed
-  # with a shorter sleep duration. Test over time. 3 Seconds was the original setting and this worked reasonably,
-  # now testing with a shorter 2 seconds sleep
-  sleep 2  # Do not remove, sometimes cores are slow to write!
+  # Wait only for as long as a core is still growing, rather than for a fixed time. A core already written in full
+  # needs no wait at all, which is the common case as this script is very often called long after the crash, and a
+  # large core on a loaded machine needs far longer than any fixed sleep would have given it. The wait ends as soon
+  # as the size stops changing, and stops at 10 seconds. A core no longer being written to is skipped outright.
+  # With no core present there is nothing to measure, so the original fixed wait stands: one may still be about to appear
+  NTS_CORE="$(ls -t ./*/*core* 2>/dev/null | grep -v 'data.PREV' | head -n1)"  # Same shape as the LATEST_CORE search below, so a trial's own *_parse_core helper script cannot be mistaken for a core
+  if [ -z "${NTS_CORE}" ]; then
+    sleep 2  # Do not remove, sometimes cores are slow to write!
+  elif [ -z "$(find "${NTS_CORE}" -newermt '-10 seconds' 2>/dev/null)" ]; then
+    :  # Nothing has been written to the core for 10 seconds, so it is complete and no wait is needed at all
+  else
+    NTS_CORE_SIZE=-1; NTS_CORE_STABLE=0
+    for NTS_CORE_WAIT in $(seq 1 50); do
+      NTS_CORE_SIZE_NEW="$(stat -c%s "${NTS_CORE}" 2>/dev/null)"
+      if [ "${NTS_CORE_SIZE_NEW}" == "${NTS_CORE_SIZE}" ]; then
+        NTS_CORE_STABLE=$[ ${NTS_CORE_STABLE} + 1 ]
+        [ "${NTS_CORE_STABLE}" -ge 3 ] && break  # Three readings the same. One reading is not enough, as a write to a large core stalls for a moment now and then on a loaded machine
+      else
+        NTS_CORE_STABLE=0
+      fi
+      NTS_CORE_SIZE="${NTS_CORE_SIZE_NEW}"
+      sleep 0.2
+    done
+    NTS_CORE=; NTS_CORE_SIZE=; NTS_CORE_SIZE_NEW=; NTS_CORE_WAIT=; NTS_CORE_STABLE=
+  fi
 fi
 
 SCRIPT_PWD=$(dirname $(readlink -f "${0}"))
@@ -315,6 +334,21 @@ elif [[ "${LATEST_CORE}" == *"data/core"* ]]; then
 fi
 #echo "DEBUG: errs: ${ERROR_LOGS} | core: ${LATEST_CORE}"
 # TODO: MDG needs similar code for node1/2/3
+
+# The scans below read each error log in full. A log over 10MB is replaced by a copy of its first and last 5MB, as reading a runaway log in full takes minutes. NTS_CAP_DIR stays empty while every log is within size, which is the usual case, and then nothing is copied at all
+NTS_CAP_DIR=
+for NTS_LOG in ${ERROR_LOGS}; do
+  if [ "$(stat -Lc%s "${NTS_LOG}" 2>/dev/null || echo 0)" -gt 10485760 ]; then
+    NTS_CAP_DIR="$(mktemp -d)" || NTS_CAP_DIR=
+    break
+  fi
+done
+if [ ! -z "${NTS_CAP_DIR}" ]; then
+  trap 'rm -rf "${NTS_CAP_DIR}"' EXIT
+  NTS_CAPPED="$("${SCRIPT_PWD}/capped_error_log.sh" "${NTS_CAP_DIR}" ${ERROR_LOGS} 2>/dev/null | tr '\n' ' ')"
+  [ ! -z "${NTS_CAPPED}" ] && ERROR_LOGS="${NTS_CAPPED}"
+  NTS_CAPPED=
+fi
 
 # Disabled when ERROR_LOG was changed to ERROR_LOGS (multi-scanning for issues in all applicable error logs)
 #if [ ! -r "${ERROR_LOG}" ]; then

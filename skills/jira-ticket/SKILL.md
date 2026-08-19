@@ -307,14 +307,16 @@ Present the overview to the user in this canonical layout (keep identical across
 
 `~/jira` = `~/mariadb-qa/log_jira_ticket.sh`. Do NOT re-read the script to learn its flags - they are fixed and listed here.
 
-**Modes:** default = create; `--whoami` (auth check); `--createmeta -p MDEV -t Bug` (required fields); `--comment KEY` (body via `-d`/`--description-file`); `--link KEY --relates OTHER [--link-type Relates|Duplicate|Blocks]`; `--edit KEY --affects-version X.Y ...` (ADDITIVE version add to an existing issue, never replaces - use mainline X.Y).
+**Modes:** default = create; `--whoami` (auth check); `--createmeta -p MDEV -t Bug` (required fields); `--comment KEY` (body via `-d`/`--description-file`); `--link KEY --relates OTHER [--link-type Relates] [--reverse]`; `--edit KEY --affects-version X.Y ...` (ADDITIVE version add to an existing issue, never replaces - use mainline X.Y).
 
 **Create flags:** `-p MDEV` / `-t Bug` / `-s "<summary>"` / `--description-file <file>` (Jira wiki markup) / `--affects-version V` (CS Affects, repeatable) / `--es-version V` (Enterprise Affects -> `customfield_13204`, repeatable, SEPARATE from CS) / `--fix-version V` (repeatable) / `-c NAME` (component, repeatable) / `-l NAME` (label, repeatable) / `--priority NAME` / `--assignee USER` (Jira username, e.g. `some_user`) / `--dry-run` / `-y`.
+
+**Argument checks:** a flag whose value is missing is rejected by name; two mode flags in one call are rejected; a flag belonging to another mode is rejected, not ignored (`--relates` / `--reverse` / `--link-type` outside `--link`, `--dev-only` outside `--comment`, `--security-bug` / `--sec-comment` outside create).
 
 **Auth:** PAT from `$JIRA_PAT` then `~/.config/mariadb-qa/jira.pat` (already set up). **Output on success:** `Created: MDEV-xxxxx` + URL - relay both. On HTTP error it prints Jira's `errors` block; fix the field and re-run.
 
 **Confirmation - this is the gotcha:** after printing the payload the script reads `Enter` 3x from **`/dev/tty`** (NOT stdin), so it cannot be satisfied by a pipe. In an interactive terminal a human presses Enter 3x. In a non-interactive/agent shell there is no `/dev/tty`, so:
-1. First run with `--dry-run` (no auth, no POST) and verify the payload (versions, fixVersions, `customfield_13204` ES, components, labels, priority).
+1. First run with `--dry-run` (no auth, no POST; `--link` is the one mode that still reads the link types from the server) and verify the payload (versions, fixVersions, `customfield_13204` ES, components, labels, priority).
 2. Then submit with `-y` (skips the tty confirm). The user's explicit in-conversation approval of `log_jira_ticket.txt` (the Step 8 gate) IS the confirmation the tty prompt would otherwise capture - `-y` is correct ONLY after that approval, never before.
 
 ```bash
@@ -338,7 +340,7 @@ The dedup (step 3) usually surfaces same-family issues that are NOT strict dupli
 ~/jira --link MDEV-xxxxx --relates MDEV-aaaaa --relates MDEV-bbbbb   # type defaults to "Relates"
 ```
 
-`--link-type` can be `Relates` (default), `Duplicate`, `Blocks`, `PartOf`, etc. A confirmed duplicate would have been actioned in step 3 (not filed), so here the type is almost always `Relates`.
+`--link-type` is one of `Blocks`, `Duplicate`, `Issue split`, `PartOf`, `Problem/Incident`, `Relates` (default); the script rejects anything else and prints the list. `Problem/Incident` is the caused-by type (inward "is caused by" / outward "causes"), used to point a regression at the ticket that introduced it. `--reverse` flips a link to the outward wording. A confirmed duplicate would have been actioned in step 3 (not filed), so here the type is almost always `Relates`.
 
 **Tracking-TODO link (do for every ticket filed in a session):** also link each filed ticket as **part of** the session's tracking TODO. ASK the user for the TODO key at the start of a filing session; do not assume it across sessions. Use `PartOf` (inward "is part of" / outward "includes"). DIRECTION (verified, counter-intuitive): the script sets `inwardIssue = --link key`, `outwardIssue = --relates`; the issue on `--relates` ends up "is part of" the issue on `--link`. So to get "MDEV is part of TODO" put the **TODO on `--link`** and the **MDEV on `--relates`** (NOT the reverse):
 

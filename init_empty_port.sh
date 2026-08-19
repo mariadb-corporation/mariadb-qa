@@ -25,13 +25,16 @@ init_empty_port(){  # Find an empty port
     return 1
   fi
   mkdir -p "${_INIT_EMPTY_PORT_CLAIM_DIR}" 2>/dev/null
-  # Best-effort reap of claims whose owner PID is no longer alive. Scoped to this picker's range to bound cost.
+  # Best-effort reap of stale claims. Scoped to this picker's range to bound cost. A claim is stale when it is
+  # older than 600s (5x the worst-case 120s bind window it protects) or its owner PID is no longer alive.
   # Race-tolerant: if a concurrent picker rewrites the file between read and rm, we re-verify ownership before unlinking.
-  local _stale _owner _port _verify
+  local _stale _owner _port _verify _now
+  _now=$(date +%s)
   for _stale in "${_INIT_EMPTY_PORT_CLAIM_DIR}"/[0-9]*; do
     [ -f "${_stale}" ] || continue
     _port=${_stale##*/}
     if [ "${_port}" -lt 10001 ] || [ "${_port}" -gt 13000 ]; then continue; fi
+    if [ "$(( _now - $(stat -c %Y "${_stale}" 2>/dev/null || echo "${_now}") ))" -ge 600 ]; then rm -f "${_stale}"; continue; fi
     read -r _owner 2>/dev/null < "${_stale}"
     [ -n "${_owner}" ] || continue
     kill -0 "${_owner}" 2>/dev/null && continue
@@ -58,8 +61,7 @@ init_empty_port(){  # Find an empty port
         trap '_init_empty_port_cleanup' EXIT
         _INIT_EMPTY_PORT_TRAP_SET=1
       fi
-      # Auto-release the claim ~600s later. Sized to comfortably exceed the worst-case caller bind window (SAN/UBASAN/MSAN builds use seq 0 480 = 120s ping-wait in start; 600s = 5x safety margin). Cost is bounded: max in-flight claims <= port-range size (3000 entries). Double-fork detaches so long-lived pickers don't accumulate zombies and the reaper survives if the parent exits before the timer fires.
-      ( ( sleep 600; rm -f "${_INIT_EMPTY_PORT_CLAIM_DIR}/${NEWPORT}" ) & ) </dev/null >/dev/null 2>&1
+      # The claim is released by the EXIT trap, or expired (>600s old) by any later picker's reaper above.
       break
     fi
     # Port is in use by an unrelated process; release the claim and retry.

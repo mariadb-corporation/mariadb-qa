@@ -28,6 +28,8 @@ ASSIGNEE=""
 DRY_RUN=0
 ASSUME_YES=0
 MODE="create"
+MODE_FLAG=""
+LINK_TYPE_SET=0
 WHOAMI=""
 PAT=""
 SEC_BUG=0
@@ -40,6 +42,15 @@ declare -a AFFECTS=() FIXINS=() COMPONENTS=() LABELS=() RELATES=() ESVERS=() SEC
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 
+# Guard a flag that takes a value: need "$@" from inside its case branch.
+need() { [ "$#" -ge 2 ] || die "$1 requires a value (see --help)"; }
+
+# Guard against two mode flags in one call.
+mode_once() {
+  [ -z "$MODE_FLAG" ] || die "one mode at a time: $MODE_FLAG and $1 both given"
+  MODE_FLAG="$1"; MODE="$2"
+}
+
 usage() {
   cat <<EOF
 Usage: log_jira_ticket.sh [MODE] [options]
@@ -51,9 +62,12 @@ Modes:
   --createmeta       List required fields for --project / --type
   --comment KEY      Add a comment to issue KEY (body via -d / --description-file)
                        Add --dev-only to restrict it to the $SEC_ROLE role
-  --link KEY         Link KEY to related issues: --link KEY --relates OTHER [--relates …] [--link-type Relates] [--reverse]
+  --link KEY         Link KEY to related issues: --link KEY --relates OTHER [--relates ...] [--link-type Relates] [--reverse]
                        Default reads "OTHER <type-inward> KEY" (e.g. PartOf: "OTHER is part of KEY");
                        --reverse flips to "OTHER <type-outward> KEY" (e.g. PartOf: "OTHER includes KEY").
+                       Valid --link-type values: Blocks, Duplicate, "Issue split", PartOf,
+                       Problem/Incident ("is caused by" / "causes"), Relates. An unknown
+                       value is rejected; the list is read back from the server.
   --edit KEY         Add versions and/or labels to an EXISTING issue (additive, never replaces):
                        --edit KEY --affects-version 13.0 [--affects-version 13.1] [--fix-version 13.0] [--es-version 13.0]
                        --edit KEY --label corruption [--label security]
@@ -75,7 +89,8 @@ Create options:
       --assignee USER      Assignee Jira username (e.g. psergei)
       --environment TEXT   Environment field
       --json-extra FILE    Merge extra "fields" JSON (custom fields)
-      --dry-run            Print the payload, do not POST (no auth needed)
+      --dry-run            Print the payload/preview, do not POST. No auth needed,
+                           except --link, which reads the link types from the server.
   -y, --yes                Skip the 3x confirmation (for automation)
   -h, --help               This help
 
@@ -101,31 +116,31 @@ EOF
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --login|--auth) MODE="login" ;;
-    --whoami) MODE="whoami" ;;
-    --createmeta) MODE="createmeta" ;;
-    --comment) MODE="comment"; COMMENT_KEY="$2"; shift ;;
-    --link) MODE="link"; LINK_KEY="$2"; shift ;;
-    --edit) MODE="edit"; EDIT_KEY="$2"; shift ;;
-    --relates) RELATES+=("$2"); shift ;;
-    --link-type) LINK_TYPE="$2"; shift ;;
+    --login|--auth) mode_once "$1" login ;;
+    --whoami) mode_once "$1" whoami ;;
+    --createmeta) mode_once "$1" createmeta ;;
+    --comment) need "$@"; mode_once "$1" comment; COMMENT_KEY="$2"; shift ;;
+    --link) need "$@"; mode_once "$1" link; LINK_KEY="$2"; shift ;;
+    --edit) need "$@"; mode_once "$1" edit; EDIT_KEY="$2"; shift ;;
+    --relates) need "$@"; RELATES+=("$2"); shift ;;
+    --link-type) need "$@"; LINK_TYPE="$2"; LINK_TYPE_SET=1; shift ;;
     --reverse) LINK_REVERSE=1 ;;
-    -p|--project) PROJECT="$2"; shift ;;
-    -t|--type) ISSUETYPE="$2"; shift ;;
-    -s|--summary) SUMMARY="$2"; shift ;;
-    -d|--description) DESCRIPTION="$2"; shift ;;
-    --description-file) DESC_FILE="$2"; shift ;;
-    --affects-version) AFFECTS+=("$2"); shift ;;
-    --es-version) ESVERS+=("$2"); shift ;;
-    --fix-version) FIXINS+=("$2"); shift ;;
-    -c|--component) COMPONENTS+=("$2"); shift ;;
-    -l|--label) LABELS+=("$2"); shift ;;
-    --priority) PRIORITY="$2"; shift ;;
-    --assignee) ASSIGNEE="$2"; shift ;;
-    --environment) ENVIRONMENT="$2"; shift ;;
-    --json-extra) EXTRA_FILE="$2"; shift ;;
+    -p|--project) need "$@"; PROJECT="$2"; shift ;;
+    -t|--type) need "$@"; ISSUETYPE="$2"; shift ;;
+    -s|--summary) need "$@"; SUMMARY="$2"; shift ;;
+    -d|--description) need "$@"; DESCRIPTION="$2"; shift ;;
+    --description-file) need "$@"; DESC_FILE="$2"; shift ;;
+    --affects-version) need "$@"; AFFECTS+=("$2"); shift ;;
+    --es-version) need "$@"; ESVERS+=("$2"); shift ;;
+    --fix-version) need "$@"; FIXINS+=("$2"); shift ;;
+    -c|--component) need "$@"; COMPONENTS+=("$2"); shift ;;
+    -l|--label) need "$@"; LABELS+=("$2"); shift ;;
+    --priority) need "$@"; PRIORITY="$2"; shift ;;
+    --assignee) need "$@"; ASSIGNEE="$2"; shift ;;
+    --environment) need "$@"; ENVIRONMENT="$2"; shift ;;
+    --json-extra) need "$@"; EXTRA_FILE="$2"; shift ;;
     --security-bug) SEC_BUG=1 ;;
-    --sec-comment) SEC_COMMENTS+=("$2"); shift ;;
+    --sec-comment) need "$@"; SEC_COMMENTS+=("$2"); shift ;;
     --dev-only) DEV_ONLY=1 ;;
     --dry-run) DRY_RUN=1 ;;
     -y|--yes) ASSUME_YES=1 ;;
@@ -134,6 +149,20 @@ while [ $# -gt 0 ]; do
   esac
   shift
 done
+
+# Reject an option that belongs to another mode, rather than ignoring it.
+if [ "$MODE" != "link" ]; then
+  [ "${#RELATES[@]}" -eq 0 ] || die "--relates is only valid with --link"
+  [ "$LINK_REVERSE" = 0 ]    || die "--reverse is only valid with --link"
+  [ "$LINK_TYPE_SET" = 0 ]   || die "--link-type is only valid with --link"
+fi
+if [ "$MODE" != "comment" ]; then
+  [ "$DEV_ONLY" = 0 ] || die "--dev-only is only valid with --comment"
+fi
+if [ "$MODE" != "create" ]; then
+  [ "$SEC_BUG" = 0 ]              || die "--security-bug is only valid when creating an issue"
+  [ "${#SEC_COMMENTS[@]}" -eq 0 ] || die "--sec-comment is only valid when creating an issue"
+fi
 
 command -v jq >/dev/null || die "jq is required"
 command -v curl >/dev/null || die "curl is required"
@@ -160,6 +189,7 @@ whoami_check() {
 }
 
 prompt_and_store_pat() {
+  { : < /dev/tty; } 2>/dev/null || die "No terminal to read the token. Store it once from a terminal, or set JIRA_PAT_FILE."
   cat >&2 <<EOF
 
 No Jira credentials stored yet.
@@ -262,12 +292,18 @@ case "$MODE" in
   whoami)  require_auth; echo "Authenticated as: $WHOAMI"; exit 0 ;;
   createmeta)
     require_auth
-    jira_curl -H 'Accept: application/json' \
-      "$JIRA_URL/rest/api/2/issue/createmeta?projectKeys=$PROJECT&issuetypeNames=$ISSUETYPE&expand=projects.issuetypes.fields" \
-      | jq -r '
+    jira_curl -H 'Accept: application/json' --get \
+      --data-urlencode "projectKeys=$PROJECT" \
+      --data-urlencode "issuetypeNames=$ISSUETYPE" \
+      --data-urlencode "expand=projects.issuetypes.fields" \
+      "$JIRA_URL/rest/api/2/issue/createmeta" \
+      | jq -r --arg proj "$PROJECT" --arg itype "$ISSUETYPE" '
           (.projects // []) as $p
-          | if ($p|length)==0 then "No such project/type, or no create permission." else
-              $p[].issuetypes[].fields | to_entries[]
+          | [$p[].issuetypes[]?] as $t
+          | if ($p|length)==0 then "No project \($proj), or no create permission."
+            elif ($t|length)==0 then "No issue type \($itype) in project \($proj)."
+            else
+              $t[].fields | to_entries[]
               | select(.value.required==true)
               | "required: \(.key)\t(\(.value.name))"
             end'
@@ -279,14 +315,14 @@ case "$MODE" in
       DESCRIPTION="$(< "$DESC_FILE")"
     fi
     [ -n "$DESCRIPTION" ] || die "comment body required (-d or --description-file)"
-    require_auth
+    [ "$DRY_RUN" = 1 ] || require_auth
     if [ "$DEV_ONLY" = 1 ]; then
       payload="$(jq -n --arg b "$DESCRIPTION" --arg r "$SEC_ROLE" \
         '{body: $b, visibility: {type: "role", value: $r}}')"
     else
       payload="$(jq -n --arg b "$DESCRIPTION" '{body: $b}')"
     fi
-    echo "=== Comment on: $JIRA_URL/browse/$COMMENT_KEY  (as $WHOAMI) ===" >&2
+    echo "=== Comment on: $JIRA_URL/browse/$COMMENT_KEY${WHOAMI:+  (as $WHOAMI)} ===" >&2
     if [ "$DEV_ONLY" = 1 ]; then echo "=== Visible to: role $SEC_ROLE ===" >&2; fi
     echo "=== Body ===" >&2
     printf '%s\n' "$DESCRIPTION" >&2
@@ -313,11 +349,16 @@ case "$MODE" in
     [ -n "$LINK_KEY" ] || die "--link requires a source issue key (e.g. MDEV-12345)"
     [ "${#RELATES[@]}" -gt 0 ] || die "--link needs at least one --relates <KEY>"
     require_auth
-    lt_json="$(jira_curl "$JIRA_URL/rest/api/2/issueLinkType" 2>/dev/null)"
-    IN_DESC="$(printf '%s' "$lt_json" | jq -r --arg t "$LINK_TYPE" '.issueLinkTypes[]? | select(.name==$t) | .inward' 2>/dev/null)"
-    OUT_DESC="$(printf '%s' "$lt_json" | jq -r --arg t "$LINK_TYPE" '.issueLinkTypes[]? | select(.name==$t) | .outward' 2>/dev/null)"
-    [ -n "$IN_DESC" ] || IN_DESC="$LINK_TYPE"
-    [ -n "$OUT_DESC" ] || OUT_DESC="$LINK_TYPE"
+    lt_resp="$(jira_curl -H 'Accept: application/json' -w $'\n%{http_code}' "$JIRA_URL/rest/api/2/issueLinkType")" \
+      || die "Cannot reach $JIRA_URL to read the issue link types."
+    lt_code="${lt_resp##*$'\n'}"; lt_json="${lt_resp%$'\n'*}"
+    LT_NAMES="$(printf '%s' "$lt_json" | jq -r '.issueLinkTypes[]?.name' 2>/dev/null || true)"
+    [ -n "$LT_NAMES" ] || die "Cannot read the issue link types from $JIRA_URL (HTTP $lt_code)."
+    IN_DESC="$(printf '%s' "$lt_json" | jq -r --arg t "$LINK_TYPE" '.issueLinkTypes[]? | select(.name==$t) | .inward')"
+    OUT_DESC="$(printf '%s' "$lt_json" | jq -r --arg t "$LINK_TYPE" '.issueLinkTypes[]? | select(.name==$t) | .outward')"
+    if [ -z "$IN_DESC" ] || [ -z "$OUT_DESC" ]; then
+      die "Unknown --link-type '$LINK_TYPE'. Valid: $(printf '%s' "$LT_NAMES" | paste -sd, - | sed 's/,/, /g')"
+    fi
     if [ "$LINK_REVERSE" = 1 ]; then REL_DESC="$OUT_DESC"; else REL_DESC="$IN_DESC"; fi
     echo "=== Link on $JIRA_URL/browse/$LINK_KEY  (type: $LINK_TYPE, as $WHOAMI) ===" >&2
     for r in "${RELATES[@]}"; do echo "  $r $REL_DESC $LINK_KEY" >&2; done

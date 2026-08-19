@@ -1128,6 +1128,28 @@ ctrl-c() {
   exit 2
 }
 
+# An error log that ran away to many times its normal size is a problem of its own, and it also slows
+# every later scan of it. LARGE_ERROR_LOG carries the outcome to the save decision, and the flag file
+# marks the trial for pquery-results.sh. Called from savetrial() as well, so a trial saved for any
+# other reason carries the flag too. The flag file being present means the scan already ran
+check_large_error_log() {
+  LARGE_ERROR_LOG=0
+  if [ -f "${RUNDIR}/${TRIAL}/LARGE_ERROR_LOG_ISSUE" ]; then
+    LARGE_ERROR_LOG=1
+    return
+  fi
+  for LARGE_LOG in ${RUNDIR}/${TRIAL}/log/*.err ${RUNDIR}/${TRIAL}/node*/node*.err; do
+    LARGE_LOG_SIZE="$(stat -Lc%s "${LARGE_LOG}" 2>/dev/null || echo 0)"
+    if [ "${LARGE_LOG_SIZE}" -gt 5242880 ]; then
+      echoit "Error log ${LARGE_LOG} is ${LARGE_LOG_SIZE} bytes, over the 5MB mark; flagging this trial as a LARGE_ERROR_LOG_ISSUE"
+      touch ${RUNDIR}/${TRIAL}/LARGE_ERROR_LOG_ISSUE
+      LARGE_ERROR_LOG=1
+      break
+    fi
+  done
+  LARGE_LOG=; LARGE_LOG_SIZE=
+}
+
 savetrial() {  # Only call this if we definitely want to save a trial
   if [ "${TRIAL_SAVED}" == "1" ]; then
     echoit "Warning: savetrial() was called but TRIAL_SAVED was already 1. Ensure this trial has been actually saved as we don't attempt to save it again now"
@@ -1137,6 +1159,7 @@ savetrial() {  # Only call this if we definitely want to save a trial
     echoit "Warning: savetrial() was called, however the trial rundir (${RUNDIR}/${TRIAL}) was already removed, likely by removetrial() or similar"  # TODO: needs occurences to debug further, likely 100% cosmetic; likely removetrial() was called before a later savetrial(), requiring some extra coverage code in the place it happened
     return 1
   fi
+  check_large_error_log
   if [ ! -z "$(ls ${RUNDIR}/${TRIAL}/*/*core* 2>/dev/null)" ]; then  # ./data/*core* and ./node*/*core* compatible
     add_handy_scripts
   fi
@@ -3585,6 +3608,7 @@ EOF
     # ...If any "=ERROR:|runtime error:|AddressSanitizer:|ThreadSanitizer:|LeakSanitizer:|MemorySanitizer:" mentions (checked in the long if/elif/elif... below) remain, it thus means that those issues are new and should be saved
     if [ ${TRIAL_SAVED} -eq 0 ]; then
       TRIAL_TO_SAVE=0
+      check_large_error_log  # Sets LARGE_ERROR_LOG for the save decision below
       # Checking for a core has to always come before all other checks; If there is a core, there is the possibility of gaining a unique bug identifier using new_text.string.sh.
       # The /*/ in the /*/*core* core search pattern is for to the /node1/ dir setup for cluster runs
       # TODO: verify if this means that /data/ is completely replaced by /node1/ at the same level
@@ -3661,6 +3685,10 @@ EOF
         TRIAL_SAVED=1
       elif [ $(grep -im1 --binary-files=text "MemorySanitizer:" ${RUNDIR}/${TRIAL}/log/*.err ${RUNDIR}/${TRIAL}/node*/node*.err 2>/dev/null | wc -l) -ge 1 ]; then
         echoit "Uknown/new MSAN issue detected in the mysqld/mariadbd error log for this trial; saving this trial"
+        savetrial
+        TRIAL_SAVED=1
+      elif [ ${LARGE_ERROR_LOG} -eq 1 ]; then
+        echoit "An error log over 5MB was seen for this trial and no other issue was found; saving this trial"
         savetrial
         TRIAL_SAVED=1
       elif [ ${SAVE_TRIALS_WITH_BUGS_ONLY} -eq 0 ]; then

@@ -1048,7 +1048,8 @@ static void _init_empty_port_cleanup() {
 
 static int init_empty_port() {
   util::mkdir_p(state::INIT_EMPTY_PORT_CLAIM_DIR);
-  // Stale-claim reaper: scoped to 13001..47001 port range.
+  // Stale-claim reaper: scoped to 13001..47001 port range. A claim is stale when it is older than
+  // 600s (5x the worst-case 120s bind window it protects) or its owner PID is no longer alive.
   {
     std::error_code ec;
     for (const auto& entry : fs::directory_iterator(state::INIT_EMPTY_PORT_CLAIM_DIR, ec)) {
@@ -1058,6 +1059,12 @@ static int init_empty_port() {
       int port = 0;
       try { port = std::stoi(name); } catch (...) { continue; }
       if (port < 13001 || port > 47001) continue;
+      std::error_code mec;
+      const auto mtime = fs::last_write_time(entry.path(), mec);
+      if (!mec && fs::file_time_type::clock::now() - mtime >= std::chrono::seconds(600)) {
+        fs::remove(entry.path(), ec);
+        continue;
+      }
       std::string owner = util::sh_capture_trimmed("{ read -r line < \"" + entry.path().string() + "\"; echo \"$line\"; } 2>/dev/null");
       if (owner.empty()) continue;
       if (util::sh("kill -0 " + owner + " 2>/dev/null") == 0) continue;
@@ -1094,8 +1101,7 @@ static int init_empty_port() {
         std::atexit(_init_empty_port_cleanup);
         state::INIT_EMPTY_PORT_TRAP_SET = 1;
       }
-      // Auto-release ~600s later via a detached background sleeper.
-      util::sh("( ( sleep 600; rm -f \"" + claim + "\" ) & ) </dev/null >/dev/null 2>&1");
+      // The claim is released at exit by _init_empty_port_cleanup, or expired (>600s old) by any later picker's reaper above.
       state::NEWPORT = new_port;
       return new_port;
     }

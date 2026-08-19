@@ -53,6 +53,25 @@ for f in "$@"; do
 done
 [ -z "${LOGS}" ] && exit 1
 
+# A log over 10MB is replaced by a copy of its first and last 5MB, as reading a
+# runaway log in full takes minutes. CAP_DIR stays empty while every log is
+# within size, which is the usual case, and then nothing is copied at all
+CAP_DIR=
+AGG_TMP=
+cleanup(){ [ ! -z "${CAP_DIR}" ] && rm -rf "${CAP_DIR}"; [ ! -z "${AGG_TMP}" ] && rm -rf "${AGG_TMP}"; }
+trap cleanup EXIT
+# The size of the largest log decides it. One stat for all of them, rather than a
+# process per log: with a whole workdir passed in that is the largest part of what
+# this check costs. The echo keeps a number in the pipe when no log can be read
+if [ "$( { stat -Lc%s ${LOGS} 2>/dev/null; echo 0; } | sort -rn | head -n1)" -gt 10485760 ]; then
+  CAP_DIR="$(mktemp -d)" || CAP_DIR=
+fi
+if [ ! -z "${CAP_DIR}" ]; then
+  CAPPED_LOGS="$("${SCRIPT_PWD}/capped_error_log.sh" "${CAP_DIR}" ${LOGS} 2>/dev/null | tr '\n' ' ')"
+  [ ! -z "${CAPPED_LOGS}" ] && LOGS="${CAPPED_LOGS}"
+  CAPPED_LOGS=
+fi
+
 # Pre-normalisation cleanups applied before UID typing / extraction. Two stages:
 #  1) INNODB_RECORD_COLLAPSE: pattern-specific. Collapses multi-KB InnoDB "Record in index ... TUPLE ... at: (COMPACT )?RECORD ..." dumps into a stable signature. Form aligned with new_text_string.sh's INNODB_ERROR rules so MYBUG (nts source) and reducer<N>.sh TEXT (override source) produce the same UID body — kb entries (nts-style) match either source. Update / rollback / COMPACT / non-COMPACT each fold to their own UID.
 #  2) UNIVERSAL_COLLAPSE: pattern-agnostic. Squashes long whitespace runs (5+) and long 0x-hex blobs (12+ hex chars) to "..."; catches binary-payload noise that lands in the error log.
@@ -203,7 +222,6 @@ uid_prefix() {
 # aggregate mode: emits <UID><tab><trial> rows for pquery-results.sh's sort-then-awk grouper, deduped per (trial,UID). Trial number is read from the first numeric component of the log path (./<trial>/log/master.err, ./<trial>/node<N>/node<N>.err). Fully batched: regex compilation dominates the per-log cost (REGEX_ERRORS_SCAN alone takes ~0.1s to compile; the scan itself is microseconds per log), so all logs go through ONE grep and the normalisation pipeline runs ONCE over all surviving lines. The trial rides in a separate column so the ^/$-anchored rules keep seeing pure log lines; the content-level regexes run on the content column alone via line-number round trips, keeping grep as the regex engine.
 if [ "${MODE}" = "aggregate" ]; then
   AGG_TMP="$(mktemp -d)" || exit 1
-  trap 'rm -rf "${AGG_TMP}"' EXIT
   # Scan hits, "path<tab>content" rows. sort -u on the path-prefixed rows equals a per-log sort/dedup of content (the path holds no ':').
   grep --binary-files=text -H -Ei "${REGEX_ERRORS_SCAN}" ${LOGS} 2>/dev/null | sort -u | sed 's|:|\t|' > "${AGG_TMP}/err"
   # Last line of every log in one pass; kept when it matches REGEX_ERRORS_LASTLINE (case-sensitive).
@@ -217,7 +235,8 @@ if [ "${MODE}" = "aggregate" ]; then
   cut -f2- "${AGG_TMP}/cand" | grep --binary-files=text -nvE -e "${REGEX_ERRORS_FILTER}" -e '^[ \t]*$|^==>' 2>/dev/null | sed 's|:.*||' > "${AGG_TMP}/keep"
   awk -v kf="${AGG_TMP}/keep" 'FILENAME==kf{k[$1];next}(FNR in k)' "${AGG_TMP}/keep" "${AGG_TMP}/cand" > "${AGG_TMP}/rows"
   # Split trial and content columns; rows without a leading ./<trial>/ path component are dropped.
-  awk -F'\t' -v T="${AGG_TMP}/trials" -v C="${AGG_TMP}/content" '{ if ($1 !~ /^\.\/[0-9]+\//) next; t=$1; sub(/^\.\//,"",t); sub(/\/.*/,"",t); c=$0; sub(/^[^\t]*\t/,"",c); print t > T; print c > C }' "${AGG_TMP}/rows"
+  awk -F'\t' -v T="${AGG_TMP}/trials" -v C="${AGG_TMP}/content" -v CAP="${CAP_DIR:+${CAP_DIR}/}" '{ p=$1; if (CAP != "" && index(p, CAP) == 1) { p=substr(p, length(CAP)+1) }  # A capped log carries the temp prefix; the trial number comes from the path it was copied from
+    if (p !~ /^\.\/[0-9]+\//) next; t=p; sub(/^\.\//,"",t); sub(/\/.*/,"",t); c=$0; sub(/^[^\t]*\t/,"",c); print t > T; print c > C }' "${AGG_TMP}/rows"
   [ -s "${AGG_TMP}/content" ] || exit 0
   # One normalisation pass for all rows (every stage is line-preserving); dedup after re-pairing with the trial column.
   sed -E "${INNODB_RECORD_COLLAPSE}" < "${AGG_TMP}/content" | sed "${UNIVERSAL_COLLAPSE}" | uid_normalize_nodedup | uid_prefix > "${AGG_TMP}/uids"

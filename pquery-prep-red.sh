@@ -53,34 +53,52 @@ set +H
 # nts_chain_newer <path> — true when any UID-generation script in the nts chain
 # is newer than <path>. nts (new_text_string.sh) delegates to els
 # (error_log_scan.sh) for tier-5 fallback, to san_text_string.sh for SAN bugs,
-# and to fallback_text_string.sh as last resort; freshness of any of these
-# changes the MYBUG that nts would emit today.
+# and to fallback_text_string.sh as last resort; all four read the log through
+# capped_error_log.sh, which decides how much of an oversized log they see;
+# freshness of any of these changes the MYBUG that nts would emit today.
 nts_chain_newer(){
   [ "${SCRIPT_PWD}/new_text_string.sh"      -nt "${1}" ] ||
   [ "${SCRIPT_PWD}/error_log_scan.sh"       -nt "${1}" ] ||
   [ "${SCRIPT_PWD}/san_text_string.sh"      -nt "${1}" ] ||
-  [ "${SCRIPT_PWD}/fallback_text_string.sh" -nt "${1}" ]
+  [ "${SCRIPT_PWD}/fallback_text_string.sh" -nt "${1}" ] ||
+  [ "${SCRIPT_PWD}/capped_error_log.sh"     -nt "${1}" ]
 }
 
 check_if_asan_or_ubsan_or_tsan(){
   SAN_BUG=0
   if [[ "${TEXT}" == *"Assert: no core file found in"* ]]; then
-    if [ $(grep -m1 --binary-files=text "=ERROR:" ./${TRIAL}/log/master.err ${TRIAL}/node${1}/node${1}.err 2>/dev/null | wc -l) -ge 1 ]; then
+    # A scan that does not match reads its log in full, and five of them on a runaway log take minutes. capped_error_log.sh bounds what they read, to the same first and last part of the log that nts and sts already work from. SAN_CAP_DIR stays empty while every log is within size, which is the usual case, and then nothing is copied at all
+    SAN_LOGS="./${TRIAL}/log/master.err ${TRIAL}/node${1}/node${1}.err"
+    SAN_CAP_DIR=
+    for SAN_LOG in ${SAN_LOGS}; do
+      if [ "$(stat -Lc%s "${SAN_LOG}" 2>/dev/null || echo 0)" -gt 10485760 ]; then
+        SAN_CAP_DIR="$(mktemp -d)" || SAN_CAP_DIR=
+        break
+      fi
+    done
+    if [ ! -z "${SAN_CAP_DIR}" ]; then
+      SAN_CAPPED="$("${SCRIPT_PWD}/capped_error_log.sh" "${SAN_CAP_DIR}" ${SAN_LOGS} 2>/dev/null | tr '\n' ' ')"
+      [ ! -z "${SAN_CAPPED}" ] && SAN_LOGS="${SAN_CAPPED}"
+      SAN_CAPPED=
+    fi
+    if [ $(grep -m1 --binary-files=text "=ERROR:" ${SAN_LOGS} 2>/dev/null | wc -l) -ge 1 ]; then
       echo "* ASAN bug found!"
       SAN_BUG=1
-    elif [ $(grep -im1 --binary-files=text "ThreadSanitizer:" ./${TRIAL}/log/master.err ${TRIAL}/node${1}/node${1}.err 2>/dev/null | wc -l) -ge 1 ]; then
+    elif [ $(grep -im1 --binary-files=text "ThreadSanitizer:" ${SAN_LOGS} 2>/dev/null | wc -l) -ge 1 ]; then
       echo "* TSAN bug found!"
       SAN_BUG=1
-    elif [ $(grep -im1 --binary-files=text "runtime error:" ./${TRIAL}/log/master.err ${TRIAL}/node${1}/node${1}.err 2>/dev/null | wc -l) -ge 1 ]; then
+    elif [ $(grep -im1 --binary-files=text "runtime error:" ${SAN_LOGS} 2>/dev/null | wc -l) -ge 1 ]; then
       echo "* UBSAN bug found!"
       SAN_BUG=1
-    elif [ $(grep -m1 --binary-files=text "LeakSanitizer:" ./${TRIAL}/log/master.err ${TRIAL}/node${1}/node${1}.err 2>/dev/null | wc -l) -ge 1 ]; then
+    elif [ $(grep -m1 --binary-files=text "LeakSanitizer:" ${SAN_LOGS} 2>/dev/null | wc -l) -ge 1 ]; then
       echo "* LSAN bug found!"
       SAN_BUG=1
-    elif [ $(grep -m1 --binary-files=text "MemorySanitizer:" ./${TRIAL}/log/master.err ${TRIAL}/node${1}/node${1}.err 2>/dev/null | wc -l) -ge 1 ]; then
+    elif [ $(grep -m1 --binary-files=text "MemorySanitizer:" ${SAN_LOGS} 2>/dev/null | wc -l) -ge 1 ]; then
       echo "* MSAN bug found!"
       SAN_BUG=1
     fi
+    [ ! -z "${SAN_CAP_DIR}" ] && rm -rf "${SAN_CAP_DIR}"
+    SAN_CAP_DIR=; SAN_LOGS=; SAN_LOG=
   fi
   if [ "${SAN_BUG}" -eq 1 ]; then
     if [ -r "./${TRIAL}/node${1}/node${1}.err" ]; then

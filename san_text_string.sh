@@ -97,6 +97,25 @@ if [ -z "${ERROR_LOGS}" ]; then  # -o ! -r "${ERROR_LOGS}" removed when ERROR_LO
   exit 1
 fi
 
+# The scans below read each error log in full. A log over 10MB is replaced by a copy of its first and last 5MB, as reading a runaway log in full takes minutes. STS_CAP_DIR stays empty while every log is within size, which is the usual case, and then nothing is copied at all
+STS_SCRIPT_PWD="$(dirname "$(readlink -f "${0}")")"
+if [ "${STS_SCRIPT_PWD}" == "${HOME}" -a -r "${HOME}/mariadb-qa/san_text_string.sh" ]; then  # Provision for the ~/sts symlink
+  STS_SCRIPT_PWD="${HOME}/mariadb-qa"
+fi
+STS_CAP_DIR=
+for STS_LOG in ${ERROR_LOGS}; do
+  if [ "$(stat -Lc%s "${STS_LOG}" 2>/dev/null || echo 0)" -gt 10485760 ]; then
+    STS_CAP_DIR="$(mktemp -d)" || STS_CAP_DIR=
+    break
+  fi
+done
+if [ ! -z "${STS_CAP_DIR}" ]; then
+  trap 'rm -rf "${STS_CAP_DIR}"' EXIT
+  STS_CAPPED="$("${STS_SCRIPT_PWD}/capped_error_log.sh" "${STS_CAP_DIR}" ${ERROR_LOGS} 2>/dev/null | tr '\n' ' ')"
+  [ ! -z "${STS_CAPPED}" ] && ERROR_LOGS="${STS_CAPPED}"
+  STS_CAPPED=
+fi
+
 # Error log verification
 ERROR_LOGS_LINES="$(cat ${ERROR_LOGS} 2>/dev/null | wc -l)"  # cat provides streamlined 0-line reporting
 if [ -z "${ERROR_LOGS_LINES}" ]; then
@@ -208,6 +227,10 @@ STARTED=0
 if ! grep -qi 'ready for connections' ${ERROR_LOGS} 2>/dev/null; then
   # If 'ready for connections' is not present in the input file, start from line #1 as explained above
   STARTED=1
+fi
+# With no sanitizer marker in any log, every branch of the scan below is switched off by its FLAG_*_PRESENT guard, so the scan can only produce nothing. An empty list skips it. The scan reads each log a line at a time, which is by far the slowest step in this script
+if [ ${FLAG_ASAN_PRESENT} -eq 0 -a ${FLAG_TSAN_PRESENT} -eq 0 -a ${FLAG_UBSAN_PRESENT} -eq 0 -a ${FLAG_MSAN_PRESENT} -eq 0 ]; then
+  ERROR_LOGS=
 fi
 for FILE in ${ERROR_LOGS}; do
   # Reset per-file SAN parse state so an incomplete SAN block at end of file-N cannot stitch onto frame-like lines in file-N+1

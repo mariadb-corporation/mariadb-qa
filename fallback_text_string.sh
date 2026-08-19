@@ -28,6 +28,23 @@ if [ ! -f ${ERROR_LOG} -o ! -a "${ERROR_LOG}" ]; then
   exit 1
 fi
 
+# The scans below read the error log in full. A log over 10MB is replaced by a copy of its first and last 5MB, as reading a runaway log in full takes minutes. FTS_CAP_DIR stays empty while the log is within size, which is the usual case, and then nothing is copied at all
+FTS_CAP_DIR=
+FTS_LOG_NAME="${ERROR_LOG}"  # The log to name in a message. A capped copy lives in a temporary directory that is gone by the time anything reads the message, so the log itself is named instead
+if [ "$(stat -Lc%s "${ERROR_LOG}" 2>/dev/null || echo 0)" -gt 10485760 ]; then
+  FTS_SCRIPT_PWD="$(dirname "$(readlink -f "${0}")")"
+  if [ "${FTS_SCRIPT_PWD}" == "${HOME}" -a -r "${HOME}/mariadb-qa/fallback_text_string.sh" ]; then  # Provision for a homedir symlink
+    FTS_SCRIPT_PWD="${HOME}/mariadb-qa"
+  fi
+  FTS_CAP_DIR="$(mktemp -d)" || FTS_CAP_DIR=
+  if [ ! -z "${FTS_CAP_DIR}" ]; then
+    trap 'rm -rf "${FTS_CAP_DIR}"' EXIT
+    FTS_CAPPED="$("${FTS_SCRIPT_PWD}/capped_error_log.sh" "${FTS_CAP_DIR}" "${ERROR_LOG}" 2>/dev/null | head -n1)"
+    [ ! -z "${FTS_CAPPED}" ] && ERROR_LOG="${FTS_CAPPED}"
+    FTS_CAPPED=
+  fi
+fi
+
 # The 4 egreps are individual commands executed in a subshell of which the output is then combined and processed further
 # Be not misled by the 'libgalera_smm' start of the egrep. note the OR (i.e. '|') in the egreps; mysqld(_ is also scanned for, etc.
 # This code block CAN NOT be changed without breaking backward compatibility, unless ALL bugs in known_bugs.strings are re-string'ed
@@ -144,7 +161,7 @@ STRING=$(echo "${STRING}" | sed "s|/sda/[PM]S[0-9]\+[^ ]\+/bin/mysqld||g")
 
 if [ -z "${STRING}" ]; then
   # The >&2 direction is important as pquery-run.sh redirects stderr output of fallback_text_string.sh to null to avoid any output by fallback_text_string.sh being interpreted as an actual relevant string. All echo's/asserts (and the 'No relevant strings were found' below), except any actual 'FALLBACK|<some bug string>' output should be >&2 redirected, i.e. to stderr. Finally, reducer.sh also redirects stderr output so no output is shown while reducing
-  echo "No relevant strings were found in ${ERROR_LOG} by fallback_text_string.sh" >&2
+  echo "No relevant strings were found in ${FTS_LOG_NAME} by fallback_text_string.sh" >&2
   exit 1
 else 
   # Ensure that fallback_text_string.sh string output is clearly indicated by a 'FALLBACK|' marker

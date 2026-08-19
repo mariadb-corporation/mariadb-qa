@@ -54,6 +54,14 @@ ERRORLOGS="${_PQ_TMPDIR}/errorlogs"
 ERROR_SIGS="${_PQ_TMPDIR}/error_sigs"
 LISTED_UIDS="${_PQ_TMPDIR}/listed_uids"
 
+# The scans below read each error log in full. A log over 10MB is replaced by a copy of its first and last 5MB, as reading a runaway log in full takes minutes. A capped copy sits under CAPPED_LOGS_DIR, keeping the trial directory in its path, so TRIAL_FROM_LOG strips that one prefix wherever a trial number is read from a log path
+CAPPED_LOGS_DIR="${_PQ_TMPDIR}/logs"
+mkdir -p "${CAPPED_LOGS_DIR}"
+CAPPED_LOGS="$("${SCRIPT_PWD}/capped_error_log.sh" "${CAPPED_LOGS_DIR}" ${ERROR_LOG_LOC} 2>/dev/null | tr '\n' ' ')"
+[ ! -z "${CAPPED_LOGS}" ] && ERROR_LOG_LOC="${CAPPED_LOGS}"  # Capping that cannot run leaves the logs as they are. Taking its empty output would drop every log, and every scan below would then report nothing at all
+CAPPED_LOGS=
+TRIAL_FROM_LOG="s|^${CAPPED_LOGS_DIR}/||"
+
 # String (TEXT=string) specific trials (commonly these are MODE=3 trials)
 NTS=  # Backwards compatible (and manually modified reducers scanning without using new text string)
 if grep -qi --binary-files=text "^USE_NEW_TEXT_STRING=1" reducer*.sh 2>/dev/null; then
@@ -166,7 +174,7 @@ if [[ $MDG -eq 0 && $GRP_RPL -eq 0 ]]; then  # Normal non-Galera, non-GR run
           else if (index(S,"runtime error:")==1)   { o=sprintf("%-164sUBSAN ",S); c=sc }
           else if (index(S,"LeakSanitizer:")==1)   { o=sprintf("%-164sASAN ",S);  c=sc }
           else if (index(S,"MemorySanitizer:")==1) { o=sprintf("%-164sMSAN ",S);  c=sc }
-          else                                     { o=S; gsub(/\\"/,"\"",o); if (index(S,"SIG")) c=sc; else if (index(S,"UNTYPED")==1) c=untypedcol; else if (index(S,"ERROR") || index(S,"WARNING")) c=dim }
+          else                                     { o=S; gsub(/\\"/,"\"",o); gsub(/\\`/,"`",o); if (index(S,"SIG")) c=sc; else if (index(S,"UNTYPED")==1) c=untypedcol; else if (index(S,"ERROR") || index(S,"WARNING")) c=dim }
           # A UniqueID that leaves room pushes its "(Seen ...)" to a fixed right-hand column, so the counts line up in one place instead of drifting with the text. A longer one falls back to the fixed layout.
           if (w > 0 && length(o) < w-43) { line=sprintf("%-*s(Seen %3s times: reducers %s)", w-43, o, cnt, j) }
           else                           { line=sprintf("%-170s (Seen %3s times: reducers %s)", o, cnt, j) }
@@ -324,6 +332,19 @@ if [ $(ls */SHUTDOWN_TIMEOUT_ISSUE 2>/dev/null | wc -l) -gt 0 ]; then
   _HANG_TRIALS=
 fi
 
+# Trials whose error log ran away in size. pquery-run.sh flags a trial when any of
+# its error logs passed 5MB, where a normal one is about 16KB. The trial is worth a
+# look on its own, and its log is also slow for every tool that has to read it
+if [ $(ls */LARGE_ERROR_LOG_ISSUE 2>/dev/null | wc -l) -gt 0 ]; then
+  COUNT=$(ls */LARGE_ERROR_LOG_ISSUE 2>/dev/null | wc -l)
+  STRING_OUT="$(echo "* ERROR LOG OVER 5MB *" | awk -F "\n" '{printf "%-55s",$1}')"
+  COUNT_OUT=$(echo $COUNT | awk '{printf "  (Seen %3s times: reducers ",$1}')
+  echo -e "${C_DIM}${STRING_OUT}${COUNT_OUT}$(ls */LARGE_ERROR_LOG_ISSUE 2>/dev/null | sed 's|/.*||' | sort -un | tr '\n' ',' | sed 's|,$||'))${C_OFF}"
+  COUNT=
+  STRING_OUT=
+  COUNT_OUT=
+fi
+
 # Binlog recovery trials (MARIADB_BINLOG_RECOVERY_TESTING=1): replay error in mariadb-binlog | mariadb pipeline
 if [ $(ls */BINLOG_RECOVERY_ERROR 2>/dev/null | wc -l) -gt 0 ]; then
   COUNT=$(ls */BINLOG_RECOVERY_ERROR 2>/dev/null | wc -l)
@@ -357,7 +378,7 @@ MODE0_TRIALS=
 # Other MDEV related issues worth highlighting, aiding issue management
 # MDEV-26492: SET key_cache_segments in SQL plus '[ERROR] Got an error' in the err log. Independent of SHUTDOWN_TIMEOUT_ISSUE; narrowed by scanning the (small) err logs first, then SQL only of trials matching that err-log marker.
 TRIALS_MDEV_26492=
-_T1="$(grep --binary-files=text -lim1 'ERROR] Got an error' ${ERROR_LOG_LOC} 2>/dev/null | sed 's|/.*||' | sort -u)"
+_T1="$(grep --binary-files=text -lim1 'ERROR] Got an error' ${ERROR_LOG_LOC} 2>/dev/null | sed "${TRIAL_FROM_LOG}" | sed 's|/.*||' | sort -u)"
 if [ -n "${_T1}" ]; then
   _sql_files=()
   for _t in ${_T1}; do
@@ -383,7 +404,7 @@ fi
 
 # 'SIGKILL myself' trials
 if [ $(grep --binary-files=text -l "SIGKILL myself" ${ERROR_LOG_LOC} 2>/dev/null | wc -l) -gt 0 ]; then
-  echo "'** SIGKILL myself' trials found: $(grep --binary-files=text -l "SIGKILL myself" ${ERROR_LOG_LOC} 2>/dev/null | sed 's|/.*||' | sort -un | tr '\n' ',' | sed 's|,$||')"
+  echo "'** SIGKILL myself' trials found: $(grep --binary-files=text -l "SIGKILL myself" ${ERROR_LOG_LOC} 2>/dev/null | sed "${TRIAL_FROM_LOG}" | sed 's|/.*||' | sort -un | tr '\n' ',' | sed 's|,$||')"
   echo "(> 'SIGKILL myself' trials are of interest, but are not handled correctly yet by pquery-prep-red.sh (feel free to expand it), and cannot be filtered easily (idem). Frequency unknown. Easiest way to handle these ftm is to set them to MODE=3, USE_NEW_TEXT_STRING=0, and TEXT='SIGKILL myself' in their reducer<trialnr>.sh files (in the 'Machine configurable variables section'!). Then, simply reduce as normal.)"
 fi
 
@@ -404,7 +425,7 @@ if [ $COUNT -gt 0 ]; then
 fi
 
 # Likely out of disk space trials
-OOS1="$(egrep --binary-files=text -i "device full error|no space left on device|errno[:]* enospc|can't write.*bytes|errno[:]* 28|disk full|waiting for someone to free some space|out of disk space|InnoDB: preallocating.*bytes for file.*failed with error 28|innodb: error while writing|bytes should have been written|error number[:]* 28|error[:]* 28|Disk is full writing|Errcode: 28|No space left on device|Waiting for someone to free space|up to 60 secs delay for server to continue after freeing disk space" ${ERROR_LOG_LOC} 2>/dev/null | sed 's|/.*||' | tr '\n' ' ')"
+OOS1="$(egrep --binary-files=text -i "device full error|no space left on device|errno[:]* enospc|can't write.*bytes|errno[:]* 28|disk full|waiting for someone to free some space|out of disk space|InnoDB: preallocating.*bytes for file.*failed with error 28|innodb: error while writing|bytes should have been written|error number[:]* 28|error[:]* 28|Disk is full writing|Errcode: 28|No space left on device|Waiting for someone to free space|up to 60 secs delay for server to continue after freeing disk space" ${ERROR_LOG_LOC} 2>/dev/null | sed "${TRIAL_FROM_LOG}" | sed 's|/.*||' | tr '\n' ' ')"
 OOS2="$(ls -s */data/*core* 2>/dev/null | grep --binary-files=text -o "^ *0 [^/]\+" 2>/dev/null | awk '{print $2}' | tr '\n' ' ')"  # Cores with a file size of 0: good indication of OOS
 OOS3="$(ls --color=never -l */pquery.log 2>/dev/null | grep --binary-files=text '   0' | grep -o '[0-9]\+/pquery.log' | grep -o '[0-9]\+' | tr '\n' ' ')"  # pquery.log has a file size of 0: good indication of OOS
 OOS4="$(grep 'Assert: /tmp does not have enough free space' */MYBUG 2>/dev/null | sed 's|/.*||' | tr '\n' ' ')"
@@ -416,7 +437,7 @@ if [ "$(echo "${OOS}" | sed "s| ||g")" != "" ]; then
 fi
 
 # Likely disk I/O issues trials
-DI1=$(grep --binary-files=text "bytes should have been read. Only" ${ERROR_LOG_LOC} 2>/dev/null | sed 's|/.*||' | tr '\n' ' ')
+DI1=$(grep --binary-files=text "bytes should have been read. Only" ${ERROR_LOG_LOC} 2>/dev/null | sed "${TRIAL_FROM_LOG}" | sed 's|/.*||' | tr '\n' ' ')
 DI="$(echo "${DI1}" | sed "s|  | |g")"
 if [ "$(echo "${DI}" | sed "s| ||g")" != "" ]; then
   echo "** Likely disk I/O issues trials (unable to read from disk etc.):"
@@ -445,7 +466,7 @@ fi
 # Stack smashing overview
 if [ ! -z "$(grep --binary-files=text 'smashing' ${ERROR_LOG_LOC} 2>/dev/null)" ]; then
   echo "** Stack smashing detected:"
-  grep --binary-files=text 'smashing' ${ERROR_LOG_LOC} 2>/dev/null
+  grep --binary-files=text 'smashing' ${ERROR_LOG_LOC} 2>/dev/null | sed "${TRIAL_FROM_LOG}"
 fi
 
 # Significant/major error scanning. The REGEX_ERRORS_* application is centralised in error_log_scan.sh (shared with pquery-run.sh / pquery-prep-red.sh / pquery-del-trial.sh). This script applies its own additional ERROR_MSG_FILTER on top of the helper's output (see ERROR_MSG_FILTER below).
@@ -504,7 +525,7 @@ fi
 
 extract_valgrind_error(){
   for i in $( ls  ${ERROR_LOG_LOC} 2>/dev/null); do
-    TRIAL=$(echo $i | cut -d'/' -f1)
+    TRIAL=$(echo $i | sed "${TRIAL_FROM_LOG}" | cut -d'/' -f1)
     echo "** Trial $TRIAL"
     grep --binary-files=text -E --no-group-separator  -A4 "Thread[ \t][0-9]+:" $i 2>/dev/null | cut -d' ' -f2- |  sed 's/0x.*:[ \t]\+//' |  sed 's/(.*)//' | rev | cut -d '(' -f2- | sed 's/^[ \t]\+//' | rev  | sed 's/^[ \t]\+//'  |  tr '\n' '|' |xargs |  sed 's/Thread[ \t][0-9]\+:/\nIssue #/ig'
   done
