@@ -478,6 +478,14 @@ find_other_possible_issue_strings(){
     exit 0
   fi
   INNODBERROR=
+  # DUCKDB ERRORS
+  DUCKDBERROR="$(grep -hio '\[ERROR\] DuckDB: .*' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|^\[ERROR\] DuckDB: ||' | sed 's|Table.*could not be found|Table X could not be found|')"
+  if [ ! -z "${DUCKDBERROR}" ]; then
+    TEXT="DUCKDB_ERROR|${DUCKDBERROR}"
+    echo "${TEXT}"
+    exit 0
+  fi
+  DUCKDBERROR=
   # MYSQL_HA_READ|... - [ERROR] mysql_ha_read: ... (tier 4). Mirrors error_log_scan.sh uid_prefix line 154.
   MYSQL_HA_READ="$(grep -hio '\[ERROR\] mysql_ha_read: .*' ${ERROR_LOGS} 2>/dev/null | head -n1 | tr -d '\n' | sed 's|^\[ERROR\] mysql_ha_read: ||')"
   if [ ! -z "${MYSQL_HA_READ}" ]; then

@@ -254,6 +254,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+DUCKDB_ERROR|Appender init error: {"exception_type":"Catalog","exception_message":"Table X could not be found"}                                                                ## MDEV-40843
 SIGABRT|__cxa_throw|duckdb::HandleCastError::AssignError|duckdb::Blob::TryGetBlobSize|duckdb::Blob::GetBlobSize                                                                ## MDEV-40841
 SIGABRT|__cxa_throw|duckdb::HandleCastError::AssignError|duckdb::HandleCastError::AssignError|duckdb::Blob::TryGetBlobSize                                                     ## MDEV-40841
 SIGABRT|__cxa_throw|duckdb::Cast::Operation<duckdb::string_t, float>|duckdb::Value::GetValueInternal<float>|duckdb::Value::GetValue<float>                                     ## MDEV-40838
