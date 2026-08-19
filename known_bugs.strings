@@ -254,6 +254,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|my_time_fraction_remainder|my_datetime_trunc|Datetime::trunc|Datetime::round                                                                                           ## MDEV-40836
+dec <= 6|SIGABRT|Field_datetime_with_dec::Field_datetime_with_dec|Field_datetime_hires::Field_datetime_hires|new_Field_datetime|Type_handler_datetime2::make_table_field       ## MDEV-40836
+n < m_size|SIGABRT|Bounds_checked_array<Item*>::operator[]|Item::split_sum_func2|Item_func::split_sum_func|JOIN::prepare
 SIGSEGV|json_string_set_cs|json_find_path|Item_func_json_array_append::val_str|Item_str_func::val_real                                                                         ## MDEV-32331
 SIGSEGV|json_string_set_cs|json_find_path|Item_func_json_remove::val_str|Item_str_func::val_real                                                                               ## MDEV-32331
 SIGSEGV|json_string_set_cs|json_find_path|Item_func_json_array_append::val_str|Item_str_func::val_decimal                                                                      ## MDEV-32331
