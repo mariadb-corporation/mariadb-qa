@@ -254,6 +254,12 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|GetTraceValue|xtrc|BLOCK::operator new|JDOC::ParseObject                                                                                                               ## MDEV-40855
+SIGSEGV|GetTraceValue|xtrc|BLOCK::operator new|JDOC::ParseValue                                                                                                                ## MDEV-40855
+SIGSEGV|intern_sys_var_ptr|GetTraceValue|xtrc|BLOCK::operator new                                                                                                              ## MDEV-40855
+SIGSEGV|mysql_sys_var_ulonglong|GetTraceValue|xtrc|BLOCK::operator new                                                                                                         ## MDEV-40855
+SIGSEGV|xtrc|BLOCK::operator new|JDOC::ParseObject|JDOC::ParseValue                                                                                                            ## MDEV-40855
+SIGSEGV|xtrc|BLOCK::operator new|JDOC::ParseValue|JDOC::ParseObject                                                                                                            ## MDEV-40855
 SIGABRT|__cxa_throw|duckdb::TryCast::Operation<duckdb::timestamp_tz_t, float>|duckdb::Cast::Operation<duckdb::timestamp_tz_t, float>|duckdb::Value::GetValueInternal<float>    ## MDEV-40846
 SIGABRT|__cxa_throw|float duckdb::Value::GetValueInternal<float>|store_duckdb_field_in_mysql_format|ha_duckdb_select_handler::next_row                                         ## MDEV-40846
 DUCKDB_ERROR|Appender init error: {"exception_type":"Catalog","exception_message":"Table X could not be found"}                                                                ## MDEV-40843
