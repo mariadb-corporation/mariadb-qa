@@ -254,6 +254,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|TDBCSV::ReadBuffer|TDBDOS::ReadDB|CntReadNext|ha_connect::rnd_next                                                                                                     ## MDEV-40856
+SIGSEGV|TDBCSV::ReadBuffer|CntReadNext|ha_connect::rnd_next|handler::ha_rnd_next                                                                                               ## MDEV-40856
 SIGSEGV|GetTraceValue|xtrc|BLOCK::operator new|JDOC::ParseObject                                                                                                               ## MDEV-40855
 SIGSEGV|GetTraceValue|xtrc|BLOCK::operator new|JDOC::ParseValue                                                                                                                ## MDEV-40855
 SIGSEGV|intern_sys_var_ptr|GetTraceValue|xtrc|BLOCK::operator new                                                                                                              ## MDEV-40855
