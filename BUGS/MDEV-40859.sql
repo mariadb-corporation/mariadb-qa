@@ -1,0 +1,3 @@
+INSTALL SONAME 'ha_connect';
+CREATE TABLE t1 (fname VARCHAR(256) NOT NULL, ftype CHAR(4) NOT NULL) ENGINE=CONNECT CHARSET=latin1 TABLE_TYPE=DIR FILE_NAME='*.deeptest_no_such_extension_xyz';
+SELECT * FROM t1;
