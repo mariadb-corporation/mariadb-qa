@@ -22,6 +22,7 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|get_new_start_alter_info|Query_log_event::handle_split_alter_query_log_event                                               ## MDEV-37770 (needs testcase)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+MSAN|use-of-uninitialized-value|storage/federated/ha_federated.cc|ha_federated::end_bulk_insert|mysql_insert|mysql_execute_command|mysql_parse                                 ## MDEV-40854
 ASAN|global-buffer-overflow|sql/sql_type.h|Type_handler_datetime::hires_bytes|Field_datetime_hires::pack_length|Create_tmp_table::add_field|Create_tmp_table::add_fields       ## MDEV-40836
 UBSAN|member call on address X which does not point to an object of type 'TDB'|storage/connect/ha_connect.cc|ha_connect::rnd_pos|handler::ha_rnd_pos|rr_from_pointers|Sql_cmd_delete::delete_from_single_table  ## MDEV-40842
 UBSAN|index X out of bounds for type 'uint[7]' (aka 'unsigned int[7]')|sql/sql_type.h|Type_handler_datetime::hires_bytes|Field_datetime_hires::pack_length|Create_tmp_table::add_field|Create_tmp_table::add_fields ## MDEV-40836
