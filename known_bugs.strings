@@ -254,6 +254,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|Item::fix_fields_if_needed|Item_func::fix_fields|Item::fix_fields_if_needed|Item_func::fix_fields                                                                      ## MDEV-39593
+SIGSEGV|to_lower_utf8mb3|Used_tables_and_const_cache::used_tables_and_const_cache_join|Item_func::fix_fields|Item::fix_fields_if_needed                                        ## MDEV-39593
+SIGSEGV|to_upper_utf8mb3|Item::fix_fields_if_needed|Item_func::fix_fields|Item::fix_fields_if_needed                                                                           ## MDEV-39593
 SIGSEGV|__strnlen_evex|__vsnprintf_internal|__GI___snprintf|BDOC::ParseValue                                                                                                   ## MDEV-40858
 SIGSEGV|TDBCSV::ReadBuffer|TDBDOS::ReadDB|CntReadNext|ha_connect::rnd_next                                                                                                     ## MDEV-40856
 SIGSEGV|TDBCSV::ReadBuffer|CntReadNext|ha_connect::rnd_next|handler::ha_rnd_next                                                                                               ## MDEV-40856
