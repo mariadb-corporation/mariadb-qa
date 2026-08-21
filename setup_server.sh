@@ -262,6 +262,7 @@ sudo apt autoremove
 sudo apt install libasan6 gcc-9 g++-9 gcc g++ build-essential  # logout login  - drop gcc
 sudo apt install libasio-dev check scons libboost-program-options-dev libboost-filesystem-dev libboost-dev libssl-dev  # For Galera
 sudo apt install libubsan1  # Added here, mostly as a reminder it is required for UBSAN testing; should be installed already
+sudo apt install libp11-kit-dev  # Required by corlogic/build.sh static mode; a static gnutls link needs libp11-kit.a
 sudo apt install libc++-dev libc++abi-dev  # Required by generatorcpp/build.sh (clang + -stdlib=libc++ -lc++abi); provides libc++.so.1 / libc++abi.so.1 runtime + headers for release/debug/ubsan/asan profiles
 
 # Packages so far not available on 20.04:

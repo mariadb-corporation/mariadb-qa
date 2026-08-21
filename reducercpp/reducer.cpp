@@ -4282,6 +4282,13 @@ static int process_outcome_impl() {
             save_rr_trace(cfg::NEW_BUGS_SAVE_DIR + "/" + epoch_ran + "_rr_trace");
             echoit("[NewBug] Saved RR trace in " + cfg::NEW_BUGS_SAVE_DIR + "/" + epoch_ran + "_rr_trace");
           }
+          // Curate the deposit dir before adding to it: clean_newbugs drops
+          // duplicates and known bugs, and limits how often it truly runs.
+          if (!cfg::NEW_BUGS_SAVE_DIR.empty()) {
+            std::string cnb = cfg::SCRIPT_PWD + "/mariadb-build-qa/clean_newbugs";
+            if (!util::file_readable(cnb)) cnb = util::getenv_or("HOME") + "/mariadb-qa/mariadb-build-qa/clean_newbugs";
+            if (util::file_readable(cnb)) util::sh("\"" + cnb + "\" \"" + cfg::NEW_BUGS_SAVE_DIR + "\" >/dev/null 2>&1");
+          }
           diskspace(cfg::NEW_BUGS_SAVE_DIR);
           util::sh("cp \"" + state::WORKT + "\" \"" + newbug_so + "\"");
           echoit("[NewBug] Saved the new testcase to: " + newbug_so);

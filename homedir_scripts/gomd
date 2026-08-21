@@ -80,6 +80,8 @@ if [ -z "${BASEDIR}" ]; then
   exit 1
 fi
 
+${HOME}/mariadb-qa/mariadb-build-qa/clean_newbugs >/dev/null 2>&1 &  # Free up disk space before the runs fill it
+
 COMPILER="unknown"
 if [ -r ${BASEDIR}/BUILD_CMD_CMAKE ]; then
   COMPILER="GCC"  # GCC is not specified, but the old/previous default on test servers

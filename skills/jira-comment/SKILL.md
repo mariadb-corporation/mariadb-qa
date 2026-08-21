@@ -38,7 +38,7 @@ Target the whole comment at well under 15 lines. If it needs more, file a separa
 
 ## Markup rules
 
-Follow `~/mariadb-qa/skills/_shared/jira_markup.md` (Jira wiki markup, `{{monospace}}`, single `*bold*`, hyphen-escape in `MDEV-`/`MENT-` keys and before a leading `--` option (`{{\--ssl-crl}}`), no leading `#`, timeless prose, full CS/ES version names). Two comment-specific reminders:
+Follow `~/mariadb-qa/skills/_shared/jira_markup.md` (Jira wiki markup, `{{monospace}}`, single `*bold*`, hyphen-escape only inside `{{..}}` (`{{MDEV\-12345}}`, and a leading `--` option as `{{\--ssl-crl}}`), no leading `#`, timeless prose, full CS/ES version names). Two comment-specific reminders:
 
 - Never hard-wrap a prose line. Jira treats every newline as a forced line break, so a paragraph wrapped at 78 or 80 columns renders as a column of short, broken lines, and a sentence cut in the middle reads as an error. Write each paragraph as one long line and let the browser wrap it. Blank lines between paragraphs are correct and stay. This overrides the general short-line habit; a Jira comment is the exception. Inside `{code}` and `{noformat}` the line breaks are real content, so keep one statement per line there.
 - Tester-to-dev tone: professional, neutral, brief, factual. No hyperbole ("obviously / clearly / unfortunately"), no idioms.
@@ -83,7 +83,7 @@ Could you confirm whether {{ha_innodb.cc:5260}} needs the same guard?
 
 - No backticks (markdown code) and no `**bold**` (markdown bold).
 - No em-dash inside the comment content (only the two display-only delimiter lines use them).
-- Hyphen escaped inside `MDEV-` / `MENT-` issue keys and before a leading `--` option (`{{\--ssl-crl}}`); nowhere else.
+- Hyphen escaped only inside `{{..}}`: `{{MDEV\-12345}}` and a leading `--` option (`{{\--ssl-crl}}`). A bare `MDEV-12345` in prose stays unescaped, so Jira auto-links the key. Nowhere else.
 - No leading `#` in any prose line.
 - No hard-wrapped prose. Every paragraph outside `{code}` / `{noformat}` is one unbroken line. Check with `awk 'length>0 && length<70' <file>` and confirm each short line is a deliberate one, not a wrap.
 - No tickboxes, status icons, or emoji.

@@ -1,20 +1,17 @@
 #!/bin/bash
 set +H
 
-# This script, by default, cleans up /data/NEWBUGS (or instead any directory passed as the first option to this script) by indexing all seen bugs into a newbugs.list (using 'find' as 'ls' will easily report 'ls: Argument list too long' for this directory as it often has 300-800k files in it). Then this list is reviewed line by line and for the first 3 occurrences of any string, that bug/index is kept (iow the three string, sql and reducer files are kept). This thus eliminates >3 duplicates.
+# This script, by default, cleans up /data/NEWBUGS (or instead any directory passed as the first option to this script) by indexing all seen bugs into a newbugs.list (using 'find' as 'ls' will easily report 'ls: Argument list too long' for this directory as it often has 300-800k files in it). Then this list is reviewed and for the first KEEP_OCCURRENCES occurrences of any string, that bug/index is kept (iow the string, sql, varmod and reducer files are kept). This thus eliminates duplicates beyond KEEP_OCCURRENCES, as well as any bug which is listed as known in known_bugs.strings. The string files are read, and the filtered bugs are deleted, by THREADS parallel workers. All temporary files are written to a work directory on /dev/shm (or on the target or /tmp filesystem if /dev/shm has less than MIN_WORK_SPACE free), so a target disk which is out of space does not stop this script from freeing space on it.
 
 # User variables
 ENABLE_OUTPUT=1    # 0 For silence, 1 For output
 KNOWN_BUGS="${HOME}/mariadb-qa/known_bugs.strings"
 KEEP_OCCURRENCES=2  # 1, 2, or 3. Keep this number of occurrences
+THREADS=16          # Parallel workers reading string files and deleting files
+MIN_WORK_SPACE=1048576  # Free space (in KB) a filesystem needs to host the work directory
+MIN_INTERVAL=600    # Minimum nr of seconds between two runs for the same target directory
 
 # System variable(s) and options check
-NEWBUG_COUNT="$(ps -ef | grep clean_newbug | grep -v grep | wc -l)"  # +1 occurrence due to subshell
-if [ "${NEWBUG_COUNT}" -gt 2 ]; then  # Ensure clean_newbugs is not running already!
-  echo "Assert: ./clean_newbug is already running elsewhere!"
-  exit 1
-fi
-
 TARGET=
 if [ ! -r ${KNOWN_BUGS} ]; then echo "Assert: KNOWN_BUGS file ('${KNOWN_BUGS}' as set in this script) not readable!"; exit 1; fi
 if [ ! -z "${1}" ]; then 
@@ -34,113 +31,145 @@ else
 fi
 if [ -z "${TARGET}" ]; then echo "Assert: TARGET is empty."; exit 1; fi  # Dev assert
 
+# This script is called from many places (~/ds, ~/pr, ~/gomd, ~/newbug, ~/kb, ~/kba and the reducer), so the lock file below both locks out a second run on the same target and holds the time of the last run: a run started within MIN_INTERVAL seconds of the last one stops here. The time is set before the work starts, so an interrupted run does not open the door to a run per call
+LOCK="/tmp/clean_newbugs.$(basename "$(readlink -f "${TARGET}")").lock"
+LAST=0
+if [ -f "${LOCK}" ]; then LAST="$(stat -c %Y "${LOCK}" 2>/dev/null)"; fi
+if [ -z "${LAST}" ]; then LAST=0; fi
+exec 9>>"${LOCK}"
+if ! flock -n 9; then
+  if [ ${ENABLE_OUTPUT} -eq 1 ]; then echo "Assert: ./clean_newbugs is already running for ${TARGET}!"; fi
+  exit 1
+fi
+AGE=$[ $(date +%s) - ${LAST} ]
+if [ ${AGE} -lt ${MIN_INTERVAL} ]; then
+  if [ ${ENABLE_OUTPUT} -eq 1 ]; then echo "The last cleanup of ${TARGET} was ${AGE} seconds ago, and MIN_INTERVAL is ${MIN_INTERVAL} seconds: nothing to do"; fi
+  exit 0
+fi
+touch "${LOCK}"
+
+# Work directory: /dev/shm is used first as it is memory backed and it leaves the target disk untouched
+WORK=
+for DIR in /dev/shm "${TARGET}" /tmp; do
+  SPACE="$(df -kP "${DIR}" 2>/dev/null | awk 'NR==2{print $4}')"
+  if [ -n "${SPACE}" ] && [ "${SPACE}" -ge ${MIN_WORK_SPACE} ]; then
+    WORK="$(mktemp -d "${DIR}/cnb.XXXXXX" 2>/dev/null)"
+    if [ -n "${WORK}" ]; then break; fi
+  fi
+done
+if [ -z "${WORK}" ]; then echo "Assert: no filesystem with ${MIN_WORK_SPACE}KB free was found to hold the work directory (tried /dev/shm, ${TARGET}, /tmp)"; exit 1; fi
+trap "rm -Rf ${WORK}" EXIT INT TERM
+
 # Start main de-duplicaton and known bugs cleanup
 if [ ${ENABLE_OUTPUT} -eq 1 ]; then
   echo "Commencing de-duplication and known bugs cleanup of ${TARGET}"
   echo ".. Changing to target directory ${TARGET}"
+  echo ".. Using work directory ${WORK}"
 fi
-cd ${TARGET}
+cd "${TARGET}" || exit 1
 if [ ${ENABLE_OUTPUT} -eq 1 ]; then
-  echo ".. Compiling sorted newbugs.list of strings (takes ~2-3 minutes on high end server with ~250k .string files)"
+  echo ".. Compiling sorted newbugs.list of strings"
 fi
 # The following find/sort ensures that the oldest seen issues are listed first, ensuring that the same reducers are kept run-over-run of ./clean_newbugs and thereby avoiding deletion of running reducers by for example the ~/ds watchdog
-# With thanks for the original idea at https://www.tecmint.com/find-and-sort-files-modification-date-and-time-in-linux/
-find -maxdepth 1 -type f -name '*.string' -printf "\n%AD %AT %p" | sort -t' ' -k1.7,1.8n -k1.1,1.2n -k1.4,1.5n -k2.1,2.2n -k2.4,2.5n -k2.7,2.8n -k2.10,2.19n | awk '{print $3}' | grep '\.string$' > newbugs.list
-if [ ! -r ./newbugs.list ]; then echo "Assert: './list' does not exist after creating the same"; exit 1; fi
+/usr/bin/find . -maxdepth 1 -type f -name '*.string' -printf '%A@\t%p\n' 2>/dev/null | LC_ALL=C sort -t$'\t' -k1,1n -T "${WORK}" | cut -f2- > "${WORK}/newbugs.list"
+if [ ! -r "${WORK}/newbugs.list" ]; then echo "Assert: '${WORK}/newbugs.list' does not exist after creating the same"; exit 1; fi
 
-COUNT=$(wc -l ./newbugs.list 2>/dev/null | sed 's| .*||')
+COUNT="$(wc -l < "${WORK}/newbugs.list" 2>/dev/null)"
 if [ -z "${COUNT}" -o "${COUNT}" -le 0 ]; then 
   if [ ${ENABLE_OUTPUT} -eq 1 ]; then
     echo "Nothing to do!"
-    exit 0
   fi
+  exit 0
 fi
 if [ ${ENABLE_OUTPUT} -eq 1 ]; then
   echo ".. Found ${COUNT} string files"
+  echo ".. Reading the string files using ${THREADS} parallel workers"
 fi
 
-delete_newbug(){
-  # String file
-  if [[ "${STRING_FILE}" == "./newbug_"* ]]; then
-    if [[ "${STRING_FILE}" == *".string" ]]; then
-      rm ${STRING_FILE} 
-    fi
-  fi
-  # SQL file
-  DELETE="$(echo "${STRING_FILE}" | sed 's|\.string|.sql|')"
-  if [[ "${DELETE}" == "./newbug_"* ]]; then
-    if [[ "${DELETE}" == *".sql" ]]; then
-      rm ${DELETE}
-    fi
-  fi
-  # varmod file
-  DELETE="$(echo "${STRING_FILE}" | sed 's|\.string|.varmod|')"
-  if [[ "${DELETE}" == "./newbug_"* ]]; then
-    if [[ "${DELETE}" == *".varmod" ]]; then
-      if [ -r ${DELETE} ]; then  # TODO: Remove this check later (mid 2021), as some older NEWBUGS dirs do not have varmod files yet
-        rm ${DELETE}
-      fi
-    fi
-  fi
-  # Reducer file
-  DELETE="$(echo "${STRING_FILE}" | sed 's|\.string|.reducer.sh|')"
-  if [[ "${DELETE}" == "./newbug_"* ]]; then
-    if [[ "${DELETE}" == *".reducer.sh" ]]; then
-      if [ -r ${DELETE} ]; then  # TODO: Remove this check later (mid 2021), as some older NEWBUGS dirs do not have reducer files yet
-        rm ${DELETE}
-      fi
-    fi
-  fi
-} 
+# Read every string file into one 'file<TAB>string' list, in the same oldest-first order, using THREADS workers
+split -d -a 6 -n "l/${THREADS}" "${WORK}/newbugs.list" "${WORK}/chunk."
+for CHUNK in "${WORK}"/chunk.*; do
+  awk '{RET=(getline STRING < $0); close($0); if (RET<0){next}; if (RET==0){STRING=""}; print $0 "\t" STRING}' "${CHUNK}" > "${CHUNK}.strings" &
+done
+wait
+cat "${WORK}"/chunk.*.strings > "${WORK}/newbugs.strings"
 
 if [ ${ENABLE_OUTPUT} -eq 1 ]; then
-  echo ".. De-duplicating ({$KEEP_OCCURRENCES} occurrences max), and removing known bugs"
+  echo ".. De-duplicating (${KEEP_OCCURRENCES} occurrences max), and removing known bugs"
 fi
-IDX=0
-rm -f newbugs.dedup
-touch newbugs.dedup
-while IFS=$'\n' read STRING_FILE; do
-  IDX=$[ ${IDX} + 1 ] 
-  STRING="$(cat ${STRING_FILE})"
-  # Look if the issue is known already
-  FINDBUG="$(grep -Fi --binary-files=text "${STRING}" ${KNOWN_BUGS})"
-  if [ "$(echo "${FINDBUG}" | sed 's|[ \t]*\(.\).*|\1|')" == "#" ]; then FINDBUG=""; fi  # Bugs marked as fixed need to be excluded. This cannot be done by using "^${TEXT}" as the grep is not regex aware (-F used), nor can it be made to be, due to the many special (regex-like) characters in the unique bug strings.
-  if [ ! -z "${FINDBUG}" ]; then  # Bug is known already
-    if [ ${ENABLE_OUTPUT} -eq 1 ]; then
-      echo ".... [${IDX}/${COUNT}] ${STRING_FILE}: already known issue: filtering"
-    fi
-    delete_newbug
-  else
-    # Count nr of occurrences in ./newbugs.dedup, a file used to count/add up to KEEP_OCCURRENCES times the same bug: the rest is discarded
-    DUPS="$(grep -Fic --binary-files=text "${STRING}" ./newbugs.dedup)"
-    if [ -z "${DUPS}" ]; then DUPS=0; fi
-    if [ "${DUPS}" -gt $[ ${KEEP_OCCURRENCES} - 1 ] ]; then
-      if [ ${ENABLE_OUTPUT} -eq 1 ]; then
-        echo "... [${IDX}/${COUNT}] ${STRING_FILE}: new issue, occurrence >=$[ ${DUPS} + 1 ]: filtering"
-      fi
-      delete_newbug
-    else
-      if [ ${ENABLE_OUTPUT} -eq 1 ]; then
-        echo "... [${IDX}/${COUNT}] ${STRING_FILE}: new issue, occurrence $[ ${DUPS} + 1 ]/${KEEP_OCCURRENCES}, adding to ./newbugs.dedup"
-      fi
-      echo "${STRING}" >> ./newbugs.dedup
-    fi 
-  fi 
-done < ./newbugs.list
+# Each filtered bug adds its string, sql, varmod and reducer file to the delete list. Strings already seen KEEP_OCCURRENCES times, and strings which are known bugs, are remembered, so each unique string is compared once only
+awk -v KB="${KNOWN_BUGS}" -v KEEP="${KEEP_OCCURRENCES}" -v OUT="${ENABLE_OUTPUT}" -v COUNT="${COUNT}" -v DEL="${WORK}/delete.list" '
+  BEGIN{
+    while ((getline KBLINE < KB) > 0) {
+      TRIM=KBLINE; sub(/^[ \t]+/,"",TRIM)
+      if (TRIM=="") { continue }
+      if (substr(TRIM,1,1)=="#") { continue }  # Bugs marked as fixed need to be excluded
+      KBN++; KBLIST[KBN]=tolower(KBLINE)
+    }
+    close(KB)
+    BACKTRACE="backtrace stopped: cannot access memory at address"
+  }
+  {
+    TAB=index($0,"\t"); if (TAB==0) { next }
+    FILE=substr($0,1,TAB-1); STRING=tolower(substr($0,TAB+1))
+    IDX++
+    if (!(STRING in KNOWN)) {
+      KNOWN[STRING]=0
+      for (I=1; I<=KBN; I++) { if (index(KBLIST[I],STRING)>0) { KNOWN[STRING]=1; break } }
+    }
+    if (KNOWN[STRING]==1) {
+      if (OUT==1) { print ".... [" IDX "/" COUNT "] " FILE ": already known issue: filtering" }
+      FILTER=1
+    } else if (index(STRING,BACKTRACE)>0) {  # An unusable backtrace: no UniqueID can be established
+      if (OUT==1) { print "... [" IDX "/" COUNT "] " FILE ": backtrace stopped: filtering" }
+      FILTER=1
+    } else if (STRING in FULL) {
+      if (OUT==1) { print "... [" IDX "/" COUNT "] " FILE ": new issue, occurrence >=" FULL[STRING] ": filtering" }
+      FILTER=1
+    } else {
+      DUPS=0
+      for (I=1; I<=KEPTN; I++) { if (index(KEPT[I],STRING)>0) { DUPS++ } }
+      if (DUPS > KEEP-1) {
+        FULL[STRING]=DUPS+1
+        if (OUT==1) { print "... [" IDX "/" COUNT "] " FILE ": new issue, occurrence >=" DUPS+1 ": filtering" }
+        FILTER=1
+      } else {
+        KEPTN++; KEPT[KEPTN]=STRING
+        if (OUT==1) { print "... [" IDX "/" COUNT "] " FILE ": new issue, occurrence " DUPS+1 "/" KEEP ": keeping" }
+        FILTER=0
+      }
+    }
+    if (FILTER==1) {
+      if (FILE !~ /^\.\/newbug_/) { next }  # Only ever delete newbug files
+      if (FILE !~ /\.string$/) { next }
+      STEM=substr(FILE,1,length(FILE)-7)
+      print STEM ".string" > DEL
+      print STEM ".sql" > DEL
+      print STEM ".varmod" > DEL
+      print STEM ".reducer.sh" > DEL
+    }
+  }' "${WORK}/newbugs.strings"
+
+if [ -s "${WORK}/delete.list" ]; then
+  if [ ${ENABLE_OUTPUT} -eq 1 ]; then
+    echo ".. Deleting $(wc -l < "${WORK}/delete.list") files using ${THREADS} parallel workers"
+  fi
+  xargs -r -d '\n' -P ${THREADS} -n 500 rm -f < "${WORK}/delete.list"
+fi
 
 # Other data cleanup
-rm 16*_* 2>/dev/null # {epoch}_run, {epoch}_start etc. scripts created by reducer (can easily be recreated if needed)
-
-# Delete trials that have 'Backtrace stopped: Cannot access memory at address' as part of their UniqueID
-grep --binary-files=text -i 'Backtrace stopped: Cannot access memory at address' newbug*.string | sed 's|.string.*||' | grep --binary-files=text '^newbug_' | xargs -I{} echo "rm {}.*" | tr '\n' '\0' | xargs -0 -I{} bash -c "{}"
+rm 1[6-9]*_* 2>/dev/null  # {epoch}_run, {epoch}_start etc. scripts created by reducer (can easily be recreated if needed)
+rm -f ./newbugs.list ./newbugs.dedup  # Leftovers of an interrupted run
 
 # Fireworks cleanup
 if [ -d /data/FIREWORKS ]; then 
-  grep --binary-files=text -vE '^[ \t]*$|^#' ${KNOWN_BUGS} 2>/dev/null | sed 's|[ \t]\+##.*$||' | xargs -I{} grep --binary-files=text -Fi "{}" /data/FIREWORKS/*.string 2>/dev/null | sed 's|.string:.*$|.*|' | xargs -I{} echo "rm {}" | xargs -I{} bash -c "{}"
+  awk '!/^#/ { LINE=$0; sub(/[ \t]+##.*$/,"",LINE); if (LINE !~ /^[ \t]*$/) { print LINE } }' "${KNOWN_BUGS}" > "${WORK}/known.patterns"  # An empty pattern would match every string file, so blank lines are dropped after the trailing comment is stripped
+  /usr/bin/find /data/FIREWORKS -maxdepth 1 -type f -name '*.string' -print0 2>/dev/null | xargs -0 -r -P ${THREADS} -n 500 grep -liF --binary-files=text -f "${WORK}/known.patterns" 2>/dev/null | sed 's|\.string$||' | xargs -r -d '\n' -P ${THREADS} -n 100 bash -c 'for BASE; do rm -f "${BASE}".*; done' _
   if [ ${ENABLE_OUTPUT} -eq 1 ]; then
     echo '.. Fireworks cleaned'
   fi
 fi
 
-# Cleanup
-rm newbugs.dedup newbugs.list
+if [ ${ENABLE_OUTPUT} -eq 1 ]; then
+  echo ".. Done"
+fi

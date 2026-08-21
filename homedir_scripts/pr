@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# A 7-digit directory is a corlogic workdir; it carries its own ./pr results script
+if [[ "$(basename "${PWD}")" =~ ^[0-9]{7}$ ]]; then
+  if [ -x ./pr ]; then exec ./pr "$@"; fi
+  echo "This looks like a corlogic workdir (7-digit name) but it has no ./pr script. Terminating."
+  exit 1
+fi
+
 ~/mariadb-qa/pquery-results.sh
+if [ $[ ${RANDOM} % 10 ] -eq 0 ]; then ${HOME}/mariadb-qa/mariadb-build-qa/clean_newbugs >/dev/null 2>&1 & fi  # Curate the deposit dir now and then
 #~/mariadb-qa/pquery-results.sh scan  # Disabled; ref TODO inside the file
 #~/mariadb-qa/pquery-results.sh $1  # Alternative implementation if you want to have non-scan output by default, but still be able to use 'scan' as option to ~/pr i.e. ~/pr scan

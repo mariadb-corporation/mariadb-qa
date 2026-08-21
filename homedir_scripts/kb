@@ -1,1 +1,2 @@
 vi ~/mariadb-qa/known_bugs.strings
+${HOME}/mariadb-qa/mariadb-build-qa/clean_newbugs >/dev/null 2>&1 &  # Newly known bugs are removable from the deposit dir
