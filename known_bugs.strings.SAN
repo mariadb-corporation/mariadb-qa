@@ -22,6 +22,7 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|get_new_start_alter_info|Query_log_event::handle_split_alter_query_log_event                                               ## MDEV-37770 (needs testcase)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|member access within null pointer of type 'struct ha_table_option_struct'|storage/connect/ha_connect.cc|ha_connect::create|handler::ha_create|ha_mroonga::wrapper_create|ha_mroonga::create   ## MDEV-40869
 ASAN|stack-buffer-overflow|crtstuff.c|scanf_common|__isoc23_sscanf|TDBTBL::TestFil|TDBTBL::InitTableList                                                                       ## MDEV-40867
 ASAN|stack-buffer-overflow|storage/connect/plugutil.cpp|strcpy|PlugSetPath|TDBDIR::Path|TDBDIR::OpenDB                                                                         ## MDEV-40858
 UBSAN|addition of unsigned offset to X overflowed to Y|storage/connect/bson.cpp|BDOC::ParseValue|BDOC::ParseJson|TDBBSON::MakeDocument|TDBBSON::Cardinality                    ## MDEV-40858
