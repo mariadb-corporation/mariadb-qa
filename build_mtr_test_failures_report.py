@@ -21,7 +21,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from urllib.request import Request, urlopen
 from collections import Counter
 from difflib import SequenceMatcher
@@ -32,10 +32,24 @@ DEFAULT_BASE_URL = "http://buildbot.mariadb.org/cr/api/testfailures/"
 FAIL_URL_BASE = "https://buildbot.mariadb.org/cr/api/testfailures/"
 MAX_LIMIT = 200
 TOP_FAIL_TESTS_COUNT = 5
+# The cross-reference API is slow and occasionally stalls outright, in particular on the
+# unbounded fail_url queries, so every request gets a few attempts with a growing timeout
+# and a backoff in between before it is given up on.
+REQUEST_TIMEOUT = 60
+REQUEST_ATTEMPTS = 3
+RETRY_BACKOFF = 5
+# nginx 504s these are worth another go; anything else (404, 400, ...) will not fix itself
+RETRYABLE_HTTP_CODES = frozenset((429, 500, 502, 503, 504))
+# Rows per fail_url request. A busy test asked for MAX_LIMIT rows in one go makes the API
+# exceed nginx's gateway timeout and answer 504 (measured: 100 rows answers in under a
+# second, 150 and 200 both time out), so the per-branch lookup pages instead.
+FAIL_URL_LIMIT = 100
+# Ceiling on the rows one per-branch breakdown is built from. The signature grouping is
+# quadratic in the number of failures, so this bounds the report's runtime as well.
+FAIL_ROWS_MAX = 1000
 # Version-like branches, e.g. 10.6, 11.4, 12.0, 13.1, main. Entries on any other branch
 # (refs/pull/5403/head and the like) are dropped from the per-branch breakdown.
-#VERSION_REGEX = re.compile(r"^(((10|11|12|13)\.\d+)|main)$")
-VERSION_REGEX = re.compile(r"^(((10)\.\d+))$")
+VERSION_REGEX = re.compile(r"^(((10|11|12|13)\.\d+)|main)$")
 # Per-run details masked out of failure_text before failures are compared: the mtr worker
 # id on the header line, timestamps (the 'Test ended at' line and the .result/.reject diff
 # header), and the buildbot worker's paths, which carry both its hostname and worker id.
@@ -231,12 +245,74 @@ def top_fail_tests(counts: Counter, limit: int = TOP_FAIL_TESTS_COUNT) -> dict[s
 
 
 def fail_url_for(test_name: str, until_date: str, from_date: str | None) -> str:
-    """API query listing the failures behind one reported test, over the run's date range."""
-    params: dict[str, Any] = {"test_name": test_name, "dt": until_date}
+    """API query listing the failures behind one reported test, over the run's date range.
+    Same parameter names export_failures() pages with: min_date/max_date are the only date
+    bounds this endpoint honours - dt/max_dt are accepted and then silently ignored, which
+    turns the query into an all-history scan the API answers with a 504."""
+    params: dict[str, Any] = {
+        "test_name": test_name,
+        "min_date": format_api_date(parse_api_date(until_date)),
+        "limit": FAIL_URL_LIMIT,
+        "sort_order": "desc",
+    }
     if from_date:
-        params["max_dt"] = from_date
-    params["limit"] = MAX_LIMIT
+        params["max_date"] = format_api_date(parse_api_date(from_date))
     return f"{FAIL_URL_BASE}?{urlencode(params)}"
+
+
+def fail_url_rows(fail_url: str) -> list[dict[str, Any]]:
+    """The failures behind one fail_url, fetched in FAIL_URL_LIMIT-row pages. Paging walks
+    max_date back over the oldest row of each page, the way export_failures() does, because
+    the API has no offset parameter. Stops at FAIL_ROWS_MAX rows, which a suite-wide filter
+    over a long date range can reach; that is reported rather than passed over quietly."""
+    split = urlsplit(fail_url)
+    params = dict(parse_qsl(split.query))
+    params["limit"] = str(FAIL_URL_LIMIT)
+    # The oldest date the fail_url asks for; rows older than it are not ours to report
+    until_dt = parse_api_date(params["min_date"]) if params.get("min_date") else None
+
+    rows: list[dict[str, Any]] = []
+    seen: set[tuple[Any, ...]] = set()
+    while True:
+        page = fetch_json(urlunsplit(split._replace(query=urlencode(params))))
+        if not page:
+            break
+
+        dated = sorted(
+            ((parse_api_date(str(row["dt"])), row) for row in page if row.get("dt")),
+            key=lambda item: item[0],
+            reverse=True,
+        )
+        if not dated:
+            break
+
+        oldest_dt = dated[-1][0]
+        new_rows = 0
+        for row_dt, row in dated:
+            if until_dt is not None and row_dt < until_dt:
+                continue
+            identity = row_identity(row)
+            if identity in seen:
+                continue
+            seen.add(identity)
+            rows.append(row)
+            new_rows += 1
+
+        if len(rows) >= FAIL_ROWS_MAX:
+            print(
+                f"Stopped at {len(rows)} failures for {fail_url}; the per-branch "
+                f"breakdown does not cover the rest of the date range",
+                file=sys.stderr,
+            )
+            break
+        if len(page) < FAIL_URL_LIMIT or (until_dt is not None and oldest_dt <= until_dt):
+            break
+        # max_date is inclusive, so without this the boundary row repeats forever
+        if new_rows == 0:
+            oldest_dt = oldest_dt - timedelta(seconds=1)
+        params["max_date"] = format_api_date(oldest_dt)
+
+    return rows
 
 
 def normalize_failure_text(failure_text: str) -> str:
@@ -284,6 +360,14 @@ def matching_signature(
     return best
 
 
+def is_version_branch(row: dict[str, Any]) -> bool:
+    """Whether a failure is on a version-like branch (10.x/11.x/12.x/13.x, main) rather
+    than a feature or pull-request branch (bb-13.1-bar-MDEV-39563, refs/pull/5566/head).
+    Only failures that pass this are worth ranking: a test that fails exclusively on a
+    development branch is that branch's problem, not a regression in a release branch."""
+    return bool(VERSION_REGEX.match(str(row.get("branch", ""))))
+
+
 def branch_failures(fail_url: str) -> dict[str, dict[str, Any]]:
     """filter_testfailures.py logic applied to one fail_url: keep only entries on a
     version-like branch (10.x/11.x/12.x/13.x, main) and drop the rest (refs/pull/... and
@@ -294,10 +378,10 @@ def branch_failures(fail_url: str) -> dict[str, dict[str, Any]]:
     branch is hitting several genuinely different failures."""
     # branch -> [{"text": masked failure_text, "count": how often, "row": first row seen}]
     per_branch: dict[str, list[dict[str, Any]]] = {}
-    for row in fetch_json(fail_url):
-        branch = str(row.get("branch", ""))
-        if not VERSION_REGEX.match(branch):
+    for row in fail_url_rows(fail_url):
+        if not is_version_branch(row):
             continue
+        branch = str(row.get("branch", ""))
         normalized = normalize_failure_text(str(row.get("failure_text", "")))
         signatures = per_branch.setdefault(branch, [])
         signature = matching_signature(signatures, normalized)
@@ -333,7 +417,9 @@ def top_fail_tests_list(
     from_date: str | None,
     limit: int = TOP_FAIL_TESTS_COUNT,
 ) -> list[dict[str, Any]]:
-    """Same ranking as top_fail_tests(), as an array of records instead of a mapping."""
+    """Same ranking as top_fail_tests(), as an array of records instead of a mapping. The
+    counts it is given cover version-like branches only (see is_version_branch), so every
+    entry has a non-empty per-branch breakdown."""
     return [
         {
             "test_name": test_name,
@@ -349,17 +435,51 @@ def fetch_page(base_url: str, params: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def fetch_json(url: str) -> list[dict[str, Any]]:
+    """One API request, retried on a timeout or a transport error. Every failure mode ends
+    up as a RuntimeError: a bare TimeoutError from the socket read is not a URLError, so
+    without this it would escape the callers' 'except RuntimeError' and abort the report."""
     request = Request(url, headers={"Accept": "application/json"})
+    payload = None
 
-    try:
-        with urlopen(request, timeout=60) as response:
-            charset = response.headers.get_content_charset() or "utf-8"
-            payload = response.read().decode(charset)
-    except HTTPError as exc:
-        body = exc.read().decode("utf-8", errors="replace")
-        raise RuntimeError(f"API returned HTTP {exc.code}: {body}") from exc
-    except URLError as exc:
-        raise RuntimeError(f"Could not reach API: {exc.reason}") from exc
+    for attempt in range(1, REQUEST_ATTEMPTS + 1):
+        # A stalled request is retried with a longer deadline rather than the same one
+        timeout = REQUEST_TIMEOUT * attempt
+        try:
+            with urlopen(request, timeout=timeout) as response:
+                charset = response.headers.get_content_charset() or "utf-8"
+                payload = response.read().decode(charset)
+            break
+        except HTTPError as exc:
+            body = exc.read().decode("utf-8", errors="replace")
+            if exc.code not in RETRYABLE_HTTP_CODES or attempt == REQUEST_ATTEMPTS:
+                raise RuntimeError(f"API returned HTTP {exc.code}: {body}") from exc
+            print(
+                f"API returned HTTP {exc.code}, retrying in {RETRY_BACKOFF}s "
+                f"[attempt {attempt}/{REQUEST_ATTEMPTS}]",
+                file=sys.stderr,
+            )
+            time.sleep(RETRY_BACKOFF)
+        except (TimeoutError, URLError) as exc:
+            # URLError wraps a socket timeout on connect; TimeoutError is raised directly
+            # once the connection is up and the response body is what times out
+            reason = getattr(exc, "reason", exc) or exc
+            if isinstance(exc, TimeoutError) or isinstance(reason, TimeoutError):
+                reason = f"read timed out after {timeout}s"
+            if attempt == REQUEST_ATTEMPTS:
+                raise RuntimeError(
+                    f"Could not reach API after {REQUEST_ATTEMPTS} attempts "
+                    f"({url}): {reason}"
+                ) from exc
+            print(
+                f"API request failed ({reason}), retrying in {RETRY_BACKOFF}s "
+                f"[attempt {attempt}/{REQUEST_ATTEMPTS}]",
+                file=sys.stderr,
+            )
+            time.sleep(RETRY_BACKOFF)
+
+    if payload is None:
+        # Not reachable: the last attempt either breaks with a payload or raises
+        raise RuntimeError(f"No response from API: {url}")
 
     try:
         data = json.loads(payload)
@@ -592,7 +712,8 @@ def export_failures(
 ) -> tuple[int, Counter]:
     # all_seen/all_counts are shared by every --test-name filter of the run, so a row
     # matched by two overlapping filters is counted once across all suites (it is still
-    # exported in full to the files of both filters).
+    # exported in full to the files of both filters). They only take failures on a
+    # version-like branch; everything else is exported but left out of the ranking.
     max_dt = from_dt
     seen: set[tuple[Any, ...]] = set()
     total = 0
@@ -673,10 +794,15 @@ def export_failures(
                 new_rows += 1
                 row_test_name = str(row.get("test_name", ""))
                 counts[row_test_name] += 1
-                if all_seen is not None and identity not in all_seen:
-                    all_seen.add(identity)
-                    if all_counts is not None:
-                        all_counts[row_test_name] += 1
+                # The pooled ranking only counts failures on a version-like branch, so a
+                # test that only ever fails on a feature or pull-request branch does not
+                # reach top_fail_tests_all_suites at all. The per-suite counts above, and
+                # the exported files, still carry every row the filter matched.
+                if is_version_branch(row) and all_seen is not None:
+                    if identity not in all_seen:
+                        all_seen.add(identity)
+                        if all_counts is not None:
+                            all_counts[row_test_name] += 1
                 if writer is not None:
                     writer.writerow(normalize_row(row))
                 if html_file is not None:
@@ -743,7 +869,8 @@ def main() -> int:
         print("--from-date must be newer than or equal to --until-date", file=sys.stderr)
         return 2
 
-    # Failure counts of every filter fetched in this run, pooled across suites
+    # Version-like-branch failure counts of every filter fetched in this run, pooled
+    # across suites
     all_counts: Counter = Counter()
     all_seen: set[tuple[Any, ...]] = set()
 
@@ -800,7 +927,7 @@ def main() -> int:
         final_rpt['unique_fail_tests'] = sorted(counts)
         print(json.dumps(final_rpt))
 
-    # Top failing tests pooled across every suite fetched in this run
+    print("\nTop failing tests pooled across every suite fetched in this run\n")
     top_all_suites = top_fail_tests_list(all_counts, args.until_date, args.from_date)
     for entry in top_all_suites:
         try:
@@ -810,7 +937,7 @@ def main() -> int:
             print(f"Could not fetch {entry['fail_url']}: {exc}", file=sys.stderr)
             entry['branches'] = {}
         time.sleep(args.sleep)
-    print(json.dumps({'top_fail_tests_all_suites': top_all_suites}))
+    print(json.dumps({'top_fail_tests_all_suites': top_all_suites}, indent=4))
     return 0
 
 

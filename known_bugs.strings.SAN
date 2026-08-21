@@ -22,6 +22,15 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|get_new_start_alter_info|Query_log_event::handle_split_alter_query_log_event                                               ## MDEV-37770 (needs testcase)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::append_select_sql_part|ha_spider::index_read_map_internal|handler::ha_index_read_map|mysql_ha_read             ## MDEV-40549
+ASAN|heap-use-after-free|storage/spider/ha_spider.cc|spider_send_query|ha_spider::index_read_map_internal|handler::ha_index_read_map|mysql_ha_read                             ## MDEV-40549
+ASAN|heap-use-after-free|storage/spider/spd_db_conn.cc|spider_db_open_handler|ha_spider::index_handler_init|ha_spider::index_read_map_internal|handler::ha_index_read_map      ## MDEV-40549
+UBSAN|member access within null pointer of type 'struct ha_table_option_struct'|storage/connect/ha_connect.cc|ha_connect::create|handler::ha_create|ha_mroonga::wrapper_create|ha_mroonga::create   ## MDEV-40869
+ASAN|stack-buffer-overflow|crtstuff.c|scanf_common|__isoc23_sscanf|TDBTBL::TestFil|TDBTBL::InitTableList                                                                       ## MDEV-40867
+ASAN|stack-buffer-overflow|storage/connect/plugutil.cpp|strcpy|PlugSetPath|TDBDIR::Path|TDBDIR::OpenDB                                                                         ## MDEV-40858
+UBSAN|addition of unsigned offset to X overflowed to Y|storage/connect/bson.cpp|BDOC::ParseValue|BDOC::ParseJson|TDBBSON::MakeDocument|TDBBSON::Cardinality                    ## MDEV-40858
+ASAN|heap-buffer-overflow|storage/connect/tabfmt.cpp|TDBCSV::ReadBuffer|CntReadNext|ha_connect::rnd_next|handler::ha_rnd_next                                                  ## MDEV-40856
+MSAN|use-of-uninitialized-value|storage/federated/ha_federated.cc|ha_federated::end_bulk_insert|mysql_insert|mysql_execute_command|mysql_parse                                 ## MDEV-40854
 ASAN|global-buffer-overflow|sql/sql_type.h|Type_handler_datetime::hires_bytes|Field_datetime_hires::pack_length|Create_tmp_table::add_field|Create_tmp_table::add_fields       ## MDEV-40836
 UBSAN|member call on address X which does not point to an object of type 'TDB'|storage/connect/ha_connect.cc|ha_connect::rnd_pos|handler::ha_rnd_pos|rr_from_pointers|Sql_cmd_delete::delete_from_single_table  ## MDEV-40842
 UBSAN|index X out of bounds for type 'uint[7]' (aka 'unsigned int[7]')|sql/sql_type.h|Type_handler_datetime::hires_bytes|Field_datetime_hires::pack_length|Create_tmp_table::add_field|Create_tmp_table::add_fields ## MDEV-40836
@@ -35,7 +44,6 @@ UBSAN|load of value X, which is not a valid value for type 'bool'|storage/connec
 MSAN|use-of-uninitialized-value|sql/sql_lex.cc|LEX::find_type_def|MYSQLparse|parse_sql|mysql_parse                                                                             ## MDEV-40654
 pkg|SIGABRT|is_package_public_routine_quick|Sp_handler::sp_resolve_package_routine_implicit|Create_sp_func::create_with_db|Create_qfunc::create_func                           ## MDEV-40654
 MSAN|use-of-uninitialized-value|storage/innobase/handler/ha_innodb.cc|create_index|create_table_info_t::create_table|ha_innobase::create|handler::ha_create                    ## MDEV-40734
-UBSAN|member call on null pointer of type 'Field'|storage/duckdb/convertor/duckdb_select.cc|store_duckdb_field_in_mysql_format|ha_duckdb::rnd_next|handler::ha_rnd_next|rr_sequential ## MDEV-40651
 MSAN|use-of-uninitialized-value|sql/item_timefunc.cc|extract_date_time|Item_func_str_to_date::get_date_common|Type_handler_temporal_with_date::Item_update_null_value|Item_func::is_null  ## MDEV-40616
 UBSAN|member call on null pointer of type 'Item'|sql/filesort.cc|sortlength|filesort|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner                    ## MDEV-33121
 MSAN|use-of-uninitialized-value|sql/opt_range_mrr.cc|sel_arg_range_seq_next|trace_ranges|get_best_group_min_max|SQL_SELECT::test_quick_select                                  ## MDEV-40607
@@ -1213,3 +1221,4 @@ UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/u
 # SIGSEGV|Sp_handler::db_find_routine|Sp_handler::db_find_and_cache_routine|Sp_handler::sp_cache_routine|Sp_handler::sp_cache_routine_reentrant                       ## Fixed ## MDEV-40420
 # ASAN|heap-buffer-overflow|sql/sql_path.cc|Sql_path::from_text|Sys_var_path::from_item|Sys_var_path::do_check|sys_var::check                                         ## Fixed ## MDEV-40009
 # UBSAN|load of value X, which is not a valid value for type 'wkbByteOrder'|sql/spatial.cc|Gis_point::init_from_wkb|Gis_multi_point::init_from_wkb|Geometry::create_from_wkb|Item_func_geometry_from_wkb::val_str ## Fixed ## MDEV-40552
+# UBSAN|member call on null pointer of type 'Field'|storage/duckdb/convertor/duckdb_select.cc|store_duckdb_field_in_mysql_format|ha_duckdb::rnd_next|handler::ha_rnd_next|rr_sequential ## Fixed ## MDEV-40651

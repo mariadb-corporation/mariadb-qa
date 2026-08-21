@@ -1,0 +1,3 @@
+INSTALL SONAME 'ha_federated';
+CREATE TEMPORARY TABLE t (c INT) CONNECTION='mysql://@//' ENGINE=Federated;
+INSERT INTO t VALUES (),();

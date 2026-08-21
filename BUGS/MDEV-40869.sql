@@ -1,0 +1,3 @@
+INSTALL SONAME 'ha_mroonga';
+INSTALL SONAME 'ha_connect';
+CREATE TABLE t1 (c INT KEY) ENGINE=mroonga COMMENT='ENGINE "CONNECT"';
