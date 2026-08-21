@@ -254,6 +254,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|ha_spider::append_select_sql_part|ha_spider::index_read_map_internal|handler::ha_index_read_map|mysql_ha_read                                                          ## MDEV-40549
+SIGSEGV|ha_spider::append_select_sql_part|spider_db_append_select|ha_spider::index_read_map_internal|ha_spider::index_read_map                                                 ## MDEV-40549
+SIGSEGV|spider_db_open_handler|ha_spider::index_handler_init|ha_spider::index_read_map_internal|ha_spider::index_read_map                                                      ## MDEV-40549
+SIGSEGV|spider_send_query|ha_spider::index_read_map_internal|ha_spider::index_read_map|handler::ha_index_read_map                                                              ## MDEV-40549
 SIGSEGV|ha_connect::create|handler::ha_create|ha_mroonga::wrapper_create|ha_mroonga::create                                                                                    ## MDEV-40869
 options|SIGABRT|ha_connect::create|handler::ha_create|ha_mroonga::wrapper_create|ha_mroonga::create                                                                            ## MDEV-40869
 SIGABRT|__cxa_throw|duckdb::Value::CastAs|duckdb::Value::DefaultCastAs|duckdb::Vector::SetValue                                                                                ## MDEV-40868
