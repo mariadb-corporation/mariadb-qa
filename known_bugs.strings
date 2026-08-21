@@ -290,10 +290,6 @@ stat_value != UINT64_UNDEFINED|SIGABRT|ut_dbg_assertion_failed|dict_stats_fetch_
 SIGSEGV|my_time_fraction_remainder|my_datetime_trunc|Datetime::trunc|Datetime::round                                                                                           ## MDEV-40836
 dec <= 6|SIGABRT|Field_datetime_with_dec::Field_datetime_with_dec|Field_datetime_hires::Field_datetime_hires|new_Field_datetime|Type_handler_datetime2::make_table_field       ## MDEV-40836
 n < m_size|SIGABRT|Bounds_checked_array<Item*>::operator[]|Item::split_sum_func2|Item_func::split_sum_func|JOIN::prepare
-SIGSEGV|json_string_set_cs|json_find_path|Item_func_json_array_append::val_str|Item_str_func::val_real                                                                         ## MDEV-32331
-SIGSEGV|json_string_set_cs|json_find_path|Item_func_json_remove::val_str|Item_str_func::val_real                                                                               ## MDEV-32331
-SIGSEGV|json_string_set_cs|json_find_path|Item_func_json_array_append::val_str|Item_str_func::val_decimal                                                                      ## MDEV-32331
-SIGSEGV|json_string_set_cs|json_find_path|Item_func_json_remove::val_str|Item_str_func::val_decimal                                                                            ## MDEV-32331
 SIGSEGV|Window_funcs_sort::setup|Window_funcs_computation::setup|JOIN::make_aggr_tables_info|JOIN::optimize_stage2                                                             ## MDEV-40821
 SIGABRT|__cxa_throw|duckdb::DuckDBAssertInternal|duckdb::Time::Convert|duckdb::StringAsTime<false>                                                                             ## MDEV-40819
 ha_count_rw_2pc(thd_arg, thd_arg->in_multi_stmt_transaction_mode())|SIGABRT|Gtid_log_event::Gtid_log_event|MYSQL_BIN_LOG::write_gtid_event|MYSQL_BIN_LOG::write_transaction_or_stmt|MYSQL_BIN_LOG::trx_group_commit_leader ## MDEV-40818
@@ -323,16 +319,11 @@ SIGSEGV|copy_funcs|multi_delete::send_data|select_result_sink::send_data_with_ch
 del_table == table_being_deleted|SIGABRT|multi_delete::send_data|select_result_sink::send_data_with_check|JOIN::exec_inner|JOIN::exec                                          ## MDEV-40573
 m_prebuilt->trx == thd_to_trx(m_user_thd)|SIGABRT|ut_dbg_assertion_failed|ha_innobase::change_active_index|handler::ha_index_init|ha_partition::index_init                     ## MDEV-24808
 m_user_thd == ha_thd()|SIGABRT|ha_innobase::change_active_index|ha_innobase::index_init|handler::ha_index_init|ha_partition::index_init                                        ## MDEV-24808
-#SIGSEGV|__GI___nptl_deallocate_tsd|__GI___nptl_deallocate_tsd|start_thread|clone3                                                                                              ## MDEV-40651 (filtering ftm; may be a generic/dud DuckDB stack)
 SIGSEGV|Dynamic_array<sp_type_def*>::elements|sp_type_def_list::find_type_def|sp_pcontext::find_type_def|LEX::find_type_def                                                    ## MDEV-40654
 SIGSEGV|sp_type_def_list::find_type_def|sp_pcontext::find_type_def|MYSQLparse|parse_sql                                                                                        ## MDEV-40654
 pkg|SIGABRT|is_package_public_routine_quick|Sp_handler::sp_resolve_package_routine_implicit|Sp_handler::sp_resolve_package_routine|Create_sp_func::create_with_db              ## MDEV-40654
 pkg|SIGABRT|is_package_public_routine_quick|Sp_handler::sp_resolve_package_routine_implicit|Sql_path::resolve|Create_sp_func::create_with_db                                   ## MDEV-40654
-SIGSEGV|store_duckdb_field_in_mysql_format|ha_duckdb::rnd_next|handler::ha_rnd_next|rr_sequential                                                                              ## MDEV-40651
 SIGSEGV|collect_indexed_vcols_for_table|collect_indexed_vcols_for_join|substitute_indexed_vcols_for_join|JOIN::optimize_inner                                                  ## MDEV-40633
-doc_id == src_node->last_doc_id|SIGABRT|ut_dbg_assertion_failed|fts_optimize_compact|fts_optimize_words|fts_optimize_index                                                     ## MDEV-40621
-*start|SIGABRT|fts_decode_vlc|fts_optimize_node|fts_optimize_word|fts_optimize_compact                                                                                         ## MDEV-40621
-lsn == first_lsn + os_file_get_size(log.m_file) - START_OFFSET|SIGABRT|log_t::archive_create|buf_flush_archive_create|buf_flush_page_cleaner|std::__invoke_impl<void, void     ## MDEV-40080
 SIGSEGV|sortlength|filesort|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner                                                                             ## MDEV-33121
 pos->field != __null || pos->item != __null|SIGABRT|Filesort::make_sortorder|filesort|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner                   ## MDEV-33121
 !order->item[0]->with_sum_func()|SIGABRT|simple_remove_const|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner|Sql_cmd_dml::execute                       ## MDEV-33121
@@ -361,7 +352,6 @@ opt->value.str|SIGABRT|append_create_options|generate_partition_syntax|generate_
 thd->free_list == __null|SIGABRT|MYSQLparse|parse_sql|mysql_parse|dispatch_command                                                                                             ## MDEV-22013
 info->type == READ_CACHE || info->type == WRITE_CACHE|SIGABRT|reinit_io_cache|MYSQL_BIN_LOG::find_log_pos|MYSQL_BIN_LOG::reset_logs|Master_info_index::remove_master_info      ## MDEV-40501
 !(thd->lex)->if_exists()|SIGABRT|MYSQLparse|parse_sql|mysql_parse|dispatch_command                                                                                             ## MDEV-36371
-n_reserved > 0|SIGABRT|fseg_create|btr_create|dict_create_index_tree_step|dict_create_index_step                                                                               ## MDEV-39795
 items.elements == s->fields|SIGABRT|Virtual_tmp_table::sp_set_from_select_list|sp_cursor::Select_fetch_into_spvars::send_data_with_return_type|sp_cursor::Select_fetch_into_spvars::send_data|Materialized_cursor::fetch ## MDEV-40527
 item->name.str && item->name.str[0]|SIGABRT|TABLE_LIST::create_field_translation|TABLE_LIST::init_derived|mysql_derived_prepare|mysql_handle_single_derived                    ## MDEV-40521
 s|SIGABRT|buf_page_get_gen|btr_copy_blob_prefix|btr_copy_externally_stored_field_prefix_low|btr_copy_externally_stored_field                                                   ## MDEV-39792
@@ -588,8 +578,6 @@ m_alloced_field_count|SIGABRT|Create_tmp_table::start|create_tmp_table|JOIN::cre
 SIGSEGV|Item_field::Item_field|Window_funcs_sort::setup|Window_funcs_computation::setup|JOIN::make_aggr_tables_info                                                            ## MDEV-37565
 SIGSEGV|Field::is_null|Item_field::val_real|Item_sum_sum::add_helper|Item_sum_sum::add                                                                                         ## MDEV-37565
 SIGSEGV|Item_sum_hybrid_simple::clear|compute_window_func|Window_func_runner::exec|Window_funcs_sort::exec                                                                     ## MDEV-37741
-decimals == 0|SIGABRT|Item_func_mod::fix_length_and_dec_int|Type_handler_int_result::Item_func_mod_fix_length_and_dec|Item_func_mod::fix_length_and_dec|Item_func::fix_fields  ## MDEV-35920
-decimals == 0|SIGABRT|Item_func_mod::fix_length_and_dec_int|Type_handler_int_result::Item_func_mod_fix_length_and_dec|Item_func::fix_fields|Item::fix_fields_if_needed         ## MDEV-35920
 !order->item[0]->with_sum_func()|SIGABRT|simple_remove_const|Sql_cmd_update::update_single_table|Sql_cmd_update::execute_inner|Sql_cmd_dml::execute                            ## MDEV-33177
 SIGSEGV|sortlength|filesort|Sql_cmd_update::update_single_table|Sql_cmd_update::execute_inner                                                                                  ## MDEV-33177
 #SIGABRT|__libc_message_impl|__GI___fortify_fail|__stack_chk_fail|filesort                                                                                                      ## MDEV-33177 (Likely)
@@ -3788,3 +3776,15 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # SIGSEGV|my_mb_wc_utf16_quick|my_utf16_uni|get_first_nonspace|json_scan_next                                                                                         ## Fixed ## MDEV-40572
 # SIGSEGV|my_mb_wc_ucs2_quick|my_ucs2_uni|get_first_nonspace|json_scan_next                                                                                           ## Fixed ## MDEV-40572
 # SIGSEGV|LEX::sp_package_spec_check_cyclic_dependency|LEX::set_field_type_typedef_package_spec|ORAparse|parse_sql                                                    ## Fixed ## MDEV-40721
+# SIGSEGV|json_string_set_cs|json_find_path|Item_func_json_array_append::val_str|Item_str_func::val_real                                                              ## Fixed ## MDEV-32331
+# SIGSEGV|json_string_set_cs|json_find_path|Item_func_json_remove::val_str|Item_str_func::val_real                                                                    ## Fixed ## MDEV-32331
+# SIGSEGV|json_string_set_cs|json_find_path|Item_func_json_array_append::val_str|Item_str_func::val_decimal                                                           ## Fixed ## MDEV-32331
+# SIGSEGV|json_string_set_cs|json_find_path|Item_func_json_remove::val_str|Item_str_func::val_decimal                                                                 ## Fixed ## MDEV-32331
+# decimals == 0|SIGABRT|Item_func_mod::fix_length_and_dec_int|Type_handler_int_result::Item_func_mod_fix_length_and_dec|Item_func_mod::fix_length_and_dec|Item_func::fix_fields  ## Fixed ## MDEV-35920
+# decimals == 0|SIGABRT|Item_func_mod::fix_length_and_dec_int|Type_handler_int_result::Item_func_mod_fix_length_and_dec|Item_func::fix_fields|Item::fix_fields_if_needed         ## Fixed ## MDEV-35920
+# n_reserved > 0|SIGABRT|fseg_create|btr_create|dict_create_index_tree_step|dict_create_index_step                                                                    ## Fixed ## MDEV-39795
+# lsn == first_lsn + os_file_get_size(log.m_file) - START_OFFSET|SIGABRT|log_t::archive_create|buf_flush_archive_create|buf_flush_page_cleaner|std::__invoke_impl<void, void     ## Fixed ## MDEV-40080
+# doc_id == src_node->last_doc_id|SIGABRT|ut_dbg_assertion_failed|fts_optimize_compact|fts_optimize_words|fts_optimize_index                                          ## Fixed ## MDEV-40621
+# *start|SIGABRT|fts_decode_vlc|fts_optimize_node|fts_optimize_word|fts_optimize_compact                                                                              ## Fixed ## MDEV-40621
+# #SIGSEGV|__GI___nptl_deallocate_tsd|__GI___nptl_deallocate_tsd|start_thread|clone3                                                                                   ## Fixed ## MDEV-40651 (filtering ftm; may be a generic/dud DuckDB stack)
+# SIGSEGV|store_duckdb_field_in_mysql_format|ha_duckdb::rnd_next|handler::ha_rnd_next|rr_sequential                                                                   ## Fixed ## MDEV-40651

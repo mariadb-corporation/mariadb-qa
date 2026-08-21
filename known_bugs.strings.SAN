@@ -44,7 +44,6 @@ UBSAN|load of value X, which is not a valid value for type 'bool'|storage/connec
 MSAN|use-of-uninitialized-value|sql/sql_lex.cc|LEX::find_type_def|MYSQLparse|parse_sql|mysql_parse                                                                             ## MDEV-40654
 pkg|SIGABRT|is_package_public_routine_quick|Sp_handler::sp_resolve_package_routine_implicit|Create_sp_func::create_with_db|Create_qfunc::create_func                           ## MDEV-40654
 MSAN|use-of-uninitialized-value|storage/innobase/handler/ha_innodb.cc|create_index|create_table_info_t::create_table|ha_innobase::create|handler::ha_create                    ## MDEV-40734
-UBSAN|member call on null pointer of type 'Field'|storage/duckdb/convertor/duckdb_select.cc|store_duckdb_field_in_mysql_format|ha_duckdb::rnd_next|handler::ha_rnd_next|rr_sequential ## MDEV-40651
 MSAN|use-of-uninitialized-value|sql/item_timefunc.cc|extract_date_time|Item_func_str_to_date::get_date_common|Type_handler_temporal_with_date::Item_update_null_value|Item_func::is_null  ## MDEV-40616
 UBSAN|member call on null pointer of type 'Item'|sql/filesort.cc|sortlength|filesort|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner                    ## MDEV-33121
 MSAN|use-of-uninitialized-value|sql/opt_range_mrr.cc|sel_arg_range_seq_next|trace_ranges|get_best_group_min_max|SQL_SELECT::test_quick_select                                  ## MDEV-40607
@@ -1222,3 +1221,4 @@ UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/u
 # SIGSEGV|Sp_handler::db_find_routine|Sp_handler::db_find_and_cache_routine|Sp_handler::sp_cache_routine|Sp_handler::sp_cache_routine_reentrant                       ## Fixed ## MDEV-40420
 # ASAN|heap-buffer-overflow|sql/sql_path.cc|Sql_path::from_text|Sys_var_path::from_item|Sys_var_path::do_check|sys_var::check                                         ## Fixed ## MDEV-40009
 # UBSAN|load of value X, which is not a valid value for type 'wkbByteOrder'|sql/spatial.cc|Gis_point::init_from_wkb|Gis_multi_point::init_from_wkb|Geometry::create_from_wkb|Item_func_geometry_from_wkb::val_str ## Fixed ## MDEV-40552
+# UBSAN|member call on null pointer of type 'Field'|storage/duckdb/convertor/duckdb_select.cc|store_duckdb_field_in_mysql_format|ha_duckdb::rnd_next|handler::ha_rnd_next|rr_sequential ## Fixed ## MDEV-40651
