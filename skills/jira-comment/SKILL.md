@@ -38,8 +38,9 @@ Target the whole comment at well under 15 lines. If it needs more, file a separa
 
 ## Markup rules
 
-Follow `~/mariadb-qa/skills/_shared/jira_markup.md` (Jira wiki markup, `{{monospace}}`, single `*bold*`, hyphen-escape only inside `{{..}}` (`{{MDEV\-12345}}`, and a leading `--` option as `{{\--ssl-crl}}`), no leading `#`, timeless prose, full CS/ES version names). Two comment-specific reminders:
+Follow `~/mariadb-qa/skills/_shared/jira_markup.md` (Jira wiki markup, `{{monospace}}`, single `*bold*`, no leading `#`, timeless prose, full CS/ES version names). Comment-specific reminders:
 
+- Hyphen escape - the one rule: `\-` is allowed ONLY inside a `{{..}}` monospace span, and only for an issue key (`{{MDEV\-12345}}`) or a leading `--` option (`{{\--ssl-crl}}`). In ordinary prose write the plain hyphen: `non-default`, `follow-up`, `server-side`, `10.6 - 13.1`, `{{a}} - {{b}}`, `{{a}} -> {{b}}`. A bare `MDEV-12345` in prose stays unescaped so Jira auto-links it. `non\-default` in prose is the recurring error.
 - Never hard-wrap a prose line. Jira treats every newline as a forced line break, so a paragraph wrapped at 78 or 80 columns renders as a column of short, broken lines, and a sentence cut in the middle reads as an error. Write each paragraph as one long line and let the browser wrap it. Blank lines between paragraphs are correct and stay. This overrides the general short-line habit; a Jira comment is the exception. Inside `{code}` and `{noformat}` the line breaks are real content, so keep one statement per line there.
 - Tester-to-dev tone: professional, neutral, brief, factual. No hyperbole ("obviously / clearly / unfortunately"), no idioms.
 - Username casing: `[~handle]` mentions use the lowercase Jira username/key (e.g. `[~some_user]`), never the capitalised display form. If matching a comment's author programmatically, note `author.name` is capitalised (`Some_user`) while the key is lowercase (`some_user`) - compare `author.key`, not `author.name`.
@@ -83,7 +84,7 @@ Could you confirm whether {{ha_innodb.cc:5260}} needs the same guard?
 
 - No backticks (markdown code) and no `**bold**` (markdown bold).
 - No em-dash inside the comment content (only the two display-only delimiter lines use them).
-- Hyphen escaped only inside `{{..}}`: `{{MDEV\-12345}}` and a leading `--` option (`{{\--ssl-crl}}`). A bare `MDEV-12345` in prose stays unescaped, so Jira auto-links the key. Nowhere else.
+- No `\-` outside a `{{..}}` span. Run `grep -n '\\-' <file>`: every hit must sit inside `{{..}}` and be an issue key or a leading `--` option. Any other hit is wrong - remove the backslash.
 - No leading `#` in any prose line.
 - No hard-wrapped prose. Every paragraph outside `{code}` / `{noformat}` is one unbroken line. Check with `awk 'length>0 && length<70' <file>` and confirm each short line is a deliberate one, not a wrap.
 - No tickboxes, status icons, or emoji.

@@ -15,7 +15,9 @@ Referenced by the `jira-comment`, `mtr_testcase`, and `jira-ticket` skills.
 
 ## Escaping (high-frequency error class)
 
-- Backslash-escape the hyphen in two cases only: (1) inside `MDEV-` / `MENT-` issue keys: `{{MDEV\-12345}}`, `{{MENT\-1234}}`; (2) a leading `--` option name inside `{{..}}`: `{{\--ssl-crl}}` - one backslash before the leading `--`, intra-word hyphens stay unescaped (`{{\--ssl-crl}}`, not `{{\-\-ssl\-crl}}`), else the leading `--` renders as strikethrough. Nowhere else: do NOT escape hyphens after a `}}` closer, in compound words (follow-up, server-side), in version ranges (10.6-13.1), or anywhere else in prose. Over-escaping is a recurring error.
+- Hyphen escape - the one rule: `\-` is allowed ONLY inside a `{{..}}` monospace span. Never anywhere else. Not in a compound word (write `non-default`, `follow-up`, `server-side`), not in a version range (`10.6 - 13.1`), not after a `}}` closer (`{{a}} - {{b}}`, `{{a}} -> {{b}}`), not as a standalone dash, not at all in ordinary prose. Over-escaping is the recurring error; `non\-default` in prose is the current form of it.
+- Inside `{{..}}` there are exactly two escapes: (1) an issue key, `{{MDEV\-12345}}` / `{{MENT\-1234}}`; (2) a LEADING `--` option name, `{{\--ssl-crl}}` - one backslash before the leading `--` only, intra-word hyphens stay bare (`{{\--ssl-crl}}`, not `{{\-\-ssl\-crl}}`), else the leading `--` renders as strikethrough. A bare `MDEV-12345` in prose stays unescaped, so Jira auto-links the key.
+- Check before posting: `grep -n '\\-' <file>`. Every hit must sit inside a `{{..}}` span. Any other hit is wrong - remove the backslash.
 - Never use an em-dash. Use a plain hyphen `-`. A lone hyphen with surrounding spaces is safe; strikethrough triggers only on `-text-` hugging a word with no spaces.
 - Never start a prose line with `#`; Jira turns it into a numbered-list item. Rephrase so the line starts with a word, or escape as `\#`.
 - Identifiers containing `*` or `_` go inside `{{...}}` (no escaping needed inside the braces): `{{char*}}`, `{{auth_string_length}}`.

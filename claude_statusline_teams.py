@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-# Claude Code status line: cwd, session, context, usage bands, cost, model, clock
-# Example: ~/mariadb-qa  abc123de  235k/1M  5h: 25%  13:10  wk: 23%  07:00  f5: 3%         Fri  $0.20  Opus 5 max  11:02:32
+# Claude Code status line: cwd, session, context, usage bands, session name, model, clock
+# Example: ~/mariadb-qa  abc123de  235k/1M  5h: 25% 13:10 wk: 23% 07:00 f5: 3%       Fri  corlogic-cf  Opus 5 max  11:02:32
 # The 5h and weekly numbers arrive with every render, in the JSON Claude Code feeds
 # this script, so they cost nothing and are always current. The Fable weekly number
 # is not in that JSON. It is read from GET /api/oauth/usage by a detached background
@@ -25,7 +25,7 @@ USAGE_URL = 'https://api.anthropic.com/api/oauth/usage'
 POLL = 300      # seconds between Fable-number reads
 STALE = 900     # seconds before the Fable number is drawn dimmed
 BACKOFF = 1800  # seconds to wait after a read fails, so a rate limit is not hammered
-BAR = 14        # width of a usage band, the same for all of them
+BAR = 13        # width of a usage band, the same for all of them
 LIMITS = (('5h', 'five_hour'), ('wk', 'seven_day'))
 SHORT = {'fable': 'f5', 'opus': 'op', 'sonnet': 'so'}
 
@@ -67,22 +67,40 @@ def band(label, pct, hhmm, stale):
   return f'{FADED if stale else INBAR}{fill(pct)}{text[:n]}{BARBG}{text[n:]}{RESET}'
 
 
-def record(session):
-  # pid -> session id map file for the screen lister, keyed by the claude process
+def claude_pid():
+  # walk up to the claude process, which is what both the map file and the name are keyed by
   p = os.getppid()
   for _ in range(6):
     try:
       with open(f'/proc/{p}/comm') as f:
         comm = f.read().strip()
       if comm == 'claude':
-        break
+        return p
       with open(f'/proc/{p}/stat') as f:
         p = int(f.read().rsplit(') ', 1)[1].split()[1])
     except (OSError, ValueError, IndexError):
-      return
+      return None
     if p <= 1:
-      return
-  else:
+      return None
+  return None
+
+
+def sname():
+  # the session name Claude Code shows to other sessions, e.g. corlogic-cf
+  p = claude_pid()
+  if p is None:
+    return ''
+  try:
+    with open(f'{os.path.expanduser("~")}/.claude/sessions/{p}.json') as f:
+      return json.load(f).get('name') or ''
+  except (OSError, ValueError):
+    return ''
+
+
+def record(session):
+  # pid -> session id map file for the screen lister, keyed by the claude process
+  p = claude_pid()
+  if p is None:
     return
   d = f'/tmp/.claude_session_ids.{os.getuid()}'
   try:
@@ -209,11 +227,12 @@ if scoped:
 days = [day for day in days if day]
 if bands and days:
   bands[-1] += f' {LINE}{days[-1]}{RESET}'
-parts += bands
+if bands:
+  parts.append(' '.join(bands))
 
-cost = (data.get('cost') or {}).get('total_cost_usd')
-if cost is not None:
-  parts.append(f'{LINE}${cost:.2f}{RESET}')
+name = sname()
+if name:
+  parts.append(f'{LINE}{name}{RESET}')
 
 model = (data.get('model') or {}).get('display_name', '')
 effort = (data.get('effort') or {}).get('level')
