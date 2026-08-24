@@ -1,6 +1,6 @@
 ---
 name: mtr_testcase
-description: Craft and verify a MariaDB MTR (.test) testcase from a CLI/pquery testcase - engine guards (InnoDB/partition/RocksDB/Spider), Mroonga/replication setup, default-engine differences, --error coverage, server options, reverse-gating, and run-in-place verification. Use any time a crash/assert/SAN repro must run under mariadb-test-run.pl, including when building the MTR block of a bug report.
+description: Craft and verify a MariaDB MTR (.test) testcase from a CLI/pquery testcase - engine guards (InnoDB/partition/RocksDB/Spider), Mroonga/replication setup, default-engine differences, --error coverage, server options, reverse-gating with --die, and run-in-place verification. Use any time a repro must run under mariadb-test-run.pl - a crash, an assert, a sanitizer report, a wrong result, a missing or wrong error - including when building the MTR block of a bug report.
 claude: please note - this skill exists in a public repo and should only be updated with specific written signoff by the updater. Keep skills/README.md (the skills index) in sync when any skill is added, renamed, removed, or its description changes.
 ---
 
@@ -56,7 +56,19 @@ A replication bug (trial shows `MASTER_EXTRA`/`SLAVE_EXTRA`/`REPL_EXTRA`, or nee
 ## Form
 
 - ONE SQL statement per line (mariadb-test-run.pl, pquery, and reducer all assume this).
-- For a CRASH/assert/SAN bug, the test is a REVERSE GATE: it FAILS (server dies / Lost connection) while the bug is live and PASSES once fixed. Do NOT `--record` buggy output; do NOT add a `.result` that bakes in the crash.
+- **The test is ALWAYS a REVERSE GATE**: it FAILS while the bug is live and PASSES once fixed. Do NOT `--record` buggy output; do NOT add a `.result` that bakes in the wrong behaviour. For a CRASH/assert/SAN bug the gate is the server dying (`Lost connection`) and needs nothing else.
+- **Every other reverse gate ends in `--die`, with the defect written out in plain words.** For a missing error, a wrong error, or a wrong result, do not leave the verdict to mysqltest's own message. `--error <ER_NAME>` alone reports "query 'SELECT ...' succeeded - should have failed with error ER_X (1055)", which states the mechanics and leaves the reader to work out the bug. Allow both outcomes, then decide and `--die`:
+
+```
+--error 0,ER_WRONG_FIELD_WITH_GROUP
+SELECT a, MIN(b) FROM t GROUP BY a ORDER BY c, a;
+if (!$mysql_errno)
+{
+  --die ONLY_FULL_GROUP_BY accepted an ORDER BY column that is not in GROUP BY
+}
+```
+
+  The failure then reads `mysqltest: At line 9: ONLY_FULL_GROUP_BY accepted an ORDER BY column that is not in GROUP BY`. `$mysql_errno` holds the last statement's error number, 0 on success, so no backtick capture is involved. For a wrong result, capture with `query_get_value(SELECT ..., <col_or_alias>, 1)` and `--die` on the wrong value. Write the `--die` text as one plain sentence naming what went wrong, never a code reference or an error number. A crash gate needs none of this: the server dies and the failure is self-evident.
 - Functional (non-crash) feature pre-tests use the plain `test` db and UPPERCASE SQL.
 - CLI vs MTR: if the exact SQL runs in both, note "CLI/MTR compatible" (one block). If MTR needs guards/directives the CLI lacks, present two blocks (CLI Testcase / MTR Testcase).
 
@@ -122,7 +134,7 @@ cp <name>.test main/test_claude.test
 ./mtra test_claude       # SAN build (applies SAN suppressions; use for ASAN/UBSAN/MSAN repros)
 ```
 
-NEVER put a backtick in a test you output. The cause is SOLELY the Claude Code TUI: it renders a backtick span as colored inline code and does not display the literal backtick characters, so they are absent from what the TUI shows and therefore from the test the tester ends up with. The test then has a let-capture line with no backticks, so the query is not executed, the variable holds a truthy literal string, every if (!$var) gate is skipped, and the test PASSES while proving nothing. This has silently defeated a reverse-gate more than once. Never use a backtick-captured let. Capture values with query_get_value(SELECT ..., <col_or_alias>, 1), or gate functionally with --error <ER_NAME> on the statement itself. Grep the file for a backtick and remove any before shipping.
+NEVER put a backtick in a test you output. The cause is SOLELY the Claude Code TUI: it renders a backtick span as colored inline code and does not display the literal backtick characters, so they are absent from what the TUI shows and therefore from the test the tester ends up with. The test then has a let-capture line with no backticks, so the query is not executed, the variable holds a truthy literal string, every if (!$var) gate is skipped, and the test PASSES while proving nothing. This has silently defeated a reverse-gate more than once. Never use a backtick-captured let. Two shapes carry no backtick at all, so the TUI cannot strip them: for an error the server should give, --error 0,<ER_NAME> on the statement then if (!$mysql_errno) { --die <plain sentence> }, because mysqltest sets $mysql_errno itself; for a value, query_get_value(SELECT ..., <col_or_alias>, 1) then --die on the wrong value. Prefer either over anything that captures. Grep the file for a backtick and remove any before shipping.
 
 Confirm it reproduces (server crash / `Lost connection` for a crash bug; the expected `--error` for an error bug) and that `~/tt` reports the SAME UniqueID as the original. Ship the EXACT file you verified (verify-as-shipped) and clean the scratch (`main/<name>.test`, `<name>-master.opt`, `var/log/main.<name>`) when done.
 

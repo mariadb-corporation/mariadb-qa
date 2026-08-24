@@ -21,8 +21,8 @@ task matches its description.
   file after approval.
 - `loop-screens-cleanup` - sweep the reducer screens and end the finished ones, reaping
   each ended trial's processes and its `/dev/shm` workdir; leave screens still reducing.
-- `mtr_testcase` - craft and verify a `.test` from a CLI/pquery repro: engine guards,
-  `--error` coverage, reverse-gating, and run-in-place verification.
+- `mtr_testcase` - craft and verify a `.test` from a CLI/pquery repro of any bug class: engine
+  guards, `--error` coverage, reverse-gating with `--die`, and run-in-place verification.
 - `qa-build` - build durable MariaDB basedirs in `/test` from a source tree (`ba`/`bas`/`bam`/`bat`
   = opt+dbg, UBASAN, MSAN, TSAN); feature/ticket trees get the `MDEV-..._`/`MENT-..._` rename.
 - `verify-fix` - end-to-end fix verification: draft the diff, build the fix, run the test

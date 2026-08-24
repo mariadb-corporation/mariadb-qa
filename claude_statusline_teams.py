@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Claude Code status line: cwd, session, context, usage bands, session name, model, clock
-# Example: ~/mariadb-qa  abc123de  235k/1M  5h: 25% 13:10 wk: 23% 07:00 f5: 3%       Fri  corlogic-cf  Opus 5 max  11:02:32
+# Example: ~/mariadb-qa  abc123de  235k/1M  5h: 25% 13:10  wk: 23% 07:00  f5: 3%   Fri  corlogic-cf  Opus 5 max  11:02:32
 # The 5h and weekly numbers arrive with every render, in the JSON Claude Code feeds
 # this script, so they cost nothing and are always current. The Fable weekly number
 # is not in that JSON. It is read from GET /api/oauth/usage by a detached background
@@ -218,17 +218,20 @@ for label, key in LIMITS:
   bands.append(band(label, pct, hhmm, False))
   days.append(day)
 
+days = [day for day in days if day]
+day = days[-1] if days else ''
+
 scoped, age = cached()
 if age is None or age >= POLL:
   spawn()
 if scoped:
-  bands.append(band(scoped[0], scoped[1], '', age >= STALE))
+  bands.append(band(scoped[0], scoped[1], day, age >= STALE))
+  day = ''
 
-days = [day for day in days if day]
-if bands and days:
-  bands[-1] += f' {LINE}{days[-1]}{RESET}'
+if bands and day:
+  bands[-1] += f' {LINE}{day}{RESET}'
 if bands:
-  parts.append(' '.join(bands))
+  parts.append('  '.join(bands))
 
 name = sname()
 if name:

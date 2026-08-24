@@ -5,7 +5,7 @@
 # The windows of a screen are listed below it, each with the process running in
 # it. A screen that was started inside another screen, or that is attached from
 # inside one now, is listed below that screen as well. A screen or window that
-# holds a claude session shows that session's short id after the pid.
+# holds a claude session shows that session's short id and name after the pid.
 
 screen_of(){  # ${1}=process. Sets INSIDE to the screen it was started under
   local ENTRY
@@ -36,14 +36,8 @@ if [ ! -z "${1}" ]; then
   screen -d -r "${ATTACH[@]}"
 fi
 
-MONTHS='JanFebMarAprMayJunJulAugSepOctNovDec'
-
-pretty_time(){  # ${1}=month ${2}=day ${3}=year ${4}=hh:mm:ss. Sets PRETTY
-  local HOUR="$(( 10#${4%%:*} ))" HOUR12 HALF='AM'
-  HOUR12="$(( HOUR % 12 ))"
-  if [ "${HOUR12}" -eq 0 ]; then HOUR12=12; fi
-  if [ "${HOUR}" -ge 12 ]; then HALF='PM'; fi
-  printf -v PRETTY '%02d/%02d/%04d %02d:%s %s' "$(( 10#${1} ))" "$(( 10#${2} ))" "$(( 10#${3} ))" "${HOUR12}" "${4#*:}" "${HALF}"
+pretty_time(){  # ${1}=month ${2}=day ${3}=hh:mm:ss. Sets PRETTY to dd/mm hh:mm
+  printf -v PRETTY '%02d/%02d %s' "$(( 10#${2} ))" "$(( 10#${1} ))" "${3%:*}"
 }
 
 # The screens, in the order screen -ls lists them
@@ -51,16 +45,16 @@ LIST="$(screen -ls)"
 SCREENS=' '
 ORDER=()
 BEFORE=()
-AFTER=()
 declare -A NAMEOF WHENOF STATEOF PARENTOF SUBSCREENS
 while IFS=$'\t' read -r ID WHEN STATE; do
   if [[ ! "${ID}" =~ ^[0-9]+\. ]]; then  # The header and total lines carry no columns
-    if [ "${#ORDER[@]}" -eq 0 ]; then BEFORE+=("${ID}"); else AFTER+=("${ID}"); fi
+    if [ "${#ORDER[@]}" -eq 0 ]; then BEFORE+=("${ID}"); fi  # Only needed if there is nothing to list
     continue
   fi
   WHEN="${WHEN//[()]/}"
+  STATE="${STATE//[()]/}"
   if [[ "${WHEN}" =~ ^([0-9]{2})/([0-9]{2})/([0-9]{2})\ ([0-9:]{8})$ ]]; then
-    pretty_time "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "20${BASH_REMATCH[3]}" "${BASH_REMATCH[4]}"
+    pretty_time "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "${BASH_REMATCH[4]}"
     WHEN="${PRETTY}"
   fi
   ORDER+=("${ID%%.*}")
@@ -71,7 +65,7 @@ while IFS=$'\t' read -r ID WHEN STATE; do
 done <<<"${LIST}"
 
 # One process snapshot. Only a window of a screen, and a screen client, need more than a name
-declare -A COMM TTYOF TICKS FGROUP KIDS SCREENAT CLIENTS WINDOWAT PPIDOF ALLKIDS SIDOF
+declare -A COMM TTYOF TICKS FGROUP KIDS SCREENAT CLIENTS WINDOWAT PPIDOF ALLKIDS SIDOF SNAMEOF
 CLAUDES=()
 while read -r PROC PARENT TPGRP TTY CMD ARGS; do
   COMM["${PROC}"]="${CMD}"
@@ -95,7 +89,9 @@ done <<<"$(ps -eo pid=,ppid=,tpgid=,tty=,comm=,args=)"
 # The claude session in a screen or window, mapped to every process above it.
 # The statusline keeps /tmp/.claude_session_ids.<uid>/<claude pid> map files.
 # Without one yet, a child's environment or a --resume id fills the gap.
+# Its short name, the one the statusline shows, comes from ~/.claude/sessions/.
 SIDMAP="/tmp/.claude_session_ids.${UID}"
+SESSIONS="${HOME}/.claude/sessions"
 session_of(){  # ${1}=claude process. Sets SESSION to its session id, or to ?
   local KID ENTRY WORD PREV=
   SESSION=
@@ -114,11 +110,20 @@ session_of(){  # ${1}=claude process. Sets SESSION to its session id, or to ?
   done 2>/dev/null < "/proc/${1}/cmdline"
   SESSION='?'
 }
+name_of(){  # ${1}=claude process. Sets SNAME to its session name, empty when it has none
+  local JSON
+  SNAME=
+  if [ -s "${SESSIONS}/${1}.json" ] && [ "${SESSIONS}/${1}.json" -nt "/proc/${1}" ]; then
+    read -r JSON < "${SESSIONS}/${1}.json"
+    if [[ "${JSON}" =~ \"name\":\"([^\"]*)\" ]]; then SNAME="${BASH_REMATCH[1]}"; fi
+  fi
+}
 for CLAUDE in "${CLAUDES[@]}"; do
   session_of "${CLAUDE}"
+  name_of "${CLAUDE}"
   UP="${CLAUDE}"
   while [ ! -z "${UP}" ] && [ "${UP}" != '0' ] && [ "${UP}" != '1' ]; do
-    if [ -z "${SIDOF[${UP}]}" ]; then SIDOF["${UP}"]="${SESSION:0:8}"; fi
+    if [ -z "${SIDOF[${UP}]}" ]; then SIDOF["${UP}"]="${SESSION:0:8}"; SNAMEOF["${UP}"]="${SNAME}"; fi
     UP="${PPIDOF[${UP}]}"
   done
 done
@@ -159,7 +164,7 @@ for CLIENT in "${!CLIENTS[@]}"; do
   if [ -z "${TARGET}" ]; then  # A reconnect, so take the screen its command line names
     for WORD in ${CLIENTS[${CLIENT}]#* }; do
       for SCREEN in "${ORDER[@]}"; do
-        if [ "${STATEOF[${SCREEN}]}" = '(Attached)' ] && [[ "${SCREEN}.${NAMEOF[${SCREEN}]}" == *"${WORD}"* ]]; then TARGET="${SCREEN}"; fi
+        if [ "${STATEOF[${SCREEN}]}" = 'Attached' ] && [[ "${SCREEN}.${NAMEOF[${SCREEN}]}" == *"${WORD}"* ]]; then TARGET="${SCREEN}"; fi
       done
     done
   fi
@@ -170,21 +175,29 @@ for SCREEN in "${ORDER[@]}"; do
   if [ ! -z "${PARENTOF[${SCREEN}]}" ]; then SUBSCREENS["${PARENTOF[${SCREEN}]}"]="${SUBSCREENS[${PARENTOF[${SCREEN}]}]} ${SCREEN}"; fi
 done
 
-# Build the rows first, so the columns can be sized to the widest entry
+# Build the rows first, so the columns can be sized to the widest entry, up to
+# these caps. A value longer than its cap is cut, and the cut is marked with a +
+NAMEMAX=30
+SNAMEMAX=13
+TITLE=("SCREEN (${#ORDER[@]})" 'PID' 'CLAUDE SID' 'CLAUDE INT' 'STARTED' 'STATE')  # Also the minimum widths
 ROWS=()
-WIDTH=4
-PIDWIDTH=3
-SIDWIDTH=1
-WHENWIDTH=4
+WIDTH="${#TITLE[0]}"
+PIDWIDTH="${#TITLE[1]}"
+SIDWIDTH="${#TITLE[2]}"
+SNAMEWIDTH="${#TITLE[3]}"
+WHENWIDTH="${#TITLE[4]}"
 HERE="$(ps -o tty= -p $$)"  # The window this runs in, to mark it in the list
 HERE="${HERE// /}"
 
 add_row(){  # ${1}=depth ${2}=tree mark ${3}=name ${4}=pid ${5}=middle column ${6}=tail
-  local INDENT="$(( 2 * ${1} ))" SID="${SIDOF[${4}]:--}"
-  ROWS+=("${INDENT}"$'\t'"${2}"$'\t'"${3}"$'\t'"${4}"$'\t'"${SID}"$'\t'"${5}"$'\t'"${6}")
-  if [ "$(( ${#3} + INDENT ))" -gt "${WIDTH}" ]; then WIDTH="$(( ${#3} + INDENT ))"; fi
+  local INDENT="$(( 2 * ${1} ))" NAME="${3}" SID="${SIDOF[${4}]:--}" SNAME="${SNAMEOF[${4}]:--}"
+  if [ "$(( ${#NAME} + INDENT ))" -gt "${NAMEMAX}" ]; then NAME="${NAME:0:$(( NAMEMAX - INDENT - 1 ))}+"; fi
+  if [ "${#SNAME}" -gt "${SNAMEMAX}" ]; then SNAME="${SNAME:0:$(( SNAMEMAX - 1 ))}+"; fi
+  ROWS+=("${INDENT}"$'\t'"${2}"$'\t'"${NAME}"$'\t'"${4}"$'\t'"${SID}"$'\t'"${SNAME}"$'\t'"${5}"$'\t'"${6}")
+  if [ "$(( ${#NAME} + INDENT ))" -gt "${WIDTH}" ]; then WIDTH="$(( ${#NAME} + INDENT ))"; fi
   if [ "${#4}" -gt "${PIDWIDTH}" ]; then PIDWIDTH="${#4}"; fi
   if [ "${#SID}" -gt "${SIDWIDTH}" ]; then SIDWIDTH="${#SID}"; fi
+  if [ "${#SNAME}" -gt "${SNAMEWIDTH}" ]; then SNAMEWIDTH="${#SNAME}"; fi
   if [ "${#5}" -gt "${WHENWIDTH}" ]; then WHENWIDTH="${#5}"; fi
 }
 
@@ -222,14 +235,21 @@ for SCREEN in "${ORDER[@]}"; do
   if [ -z "${PARENTOF[${SCREEN}]}" ]; then add_screen "${SCREEN}" 0 'row'; fi
 done
 
-printf '%s\n' "${BEFORE[@]}"
+# One layout for the titles and every row. The first column is composed first,
+# as a tree mark is more than one byte and printf pads a field by its bytes
+LAYOUT='  %s   %-*s   %-*s   %-*s   %-*s   %s\n'
+if [ "${#ROWS[@]}" -eq 0 ]; then  # No screens, so the screen -ls message says so itself
+  printf '%s\n' "${BEFORE[@]}"
+else
+  printf -v COL1 '%-*s' "${WIDTH}" "${TITLE[0]}"
+  printf "${LAYOUT}" "${COL1}" "${PIDWIDTH}" "${TITLE[1]}" "${SIDWIDTH}" "${TITLE[2]}" "${SNAMEWIDTH}" "${TITLE[3]}" "${WHENWIDTH}" "${TITLE[4]}" "${TITLE[5]}"
+fi
 for ROW in "${ROWS[@]}"; do
-  IFS=$'\t' read -r INDENT MARK NAME PROC SID WHEN STATE <<<"${ROW}"
-  PAD="$(( WHENWIDTH - ${#WHEN} ))"
+  IFS=$'\t' read -r INDENT MARK NAME PROC SID SNAME WHEN STATE <<<"${ROW}"
   if [ "${MARK}" = 'row' ]; then
-    printf '    %-*s    %*s  %-*s  (%s)%*s  %s\n' "${WIDTH}" "${NAME}" "${PIDWIDTH}" "${PROC}" "${SIDWIDTH}" "${SID}" "${WHEN}" "${PAD}" '' "${STATE}"
-  else
-    printf '    %*s%s %-*s    %*s  %-*s  (%s)%*s  %s\n' "$(( INDENT - 2 ))" '' "${MARK}" "$(( WIDTH - INDENT ))" "${NAME}" "${PIDWIDTH}" "${PROC}" "${SIDWIDTH}" "${SID}" "${WHEN}" "${PAD}" '' "${STATE}"
+    printf -v COL1 '%-*s' "${WIDTH}" "${NAME}"
+  else  # A window or a sub-screen, so the tree mark leads the name
+    printf -v COL1 '%*s%s %-*s' "$(( INDENT - 2 ))" '' "${MARK}" "$(( WIDTH - INDENT ))" "${NAME}"
   fi
+  printf "${LAYOUT}" "${COL1}" "${PIDWIDTH}" "${PROC}" "${SIDWIDTH}" "${SID}" "${SNAMEWIDTH}" "${SNAME}" "${WHENWIDTH}" "${WHEN}" "${STATE}"
 done
-printf '%s\n' "${AFTER[@]}"

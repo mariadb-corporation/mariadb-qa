@@ -231,7 +231,6 @@ for SL in ${HOME}/*; do [ -L "$SL" ] && [ ! -e "$SL" ] && rm "$SL"; done
 # grep '^alias' ${HOME}/.bashrc |sed 's|alias ||;s|=.*||' | xargs -I{} ls /bin/{} 2>/dev/null  # Ignore start of output
 # grep '^alias' ${HOME}/.bashrc |sed 's|alias ||;s|=.*||' | xargs -I{} ls /usr/bin/{} 2>/dev/null
 # To find possible culprits. Also note things like 'fi' cannot be redefined
-echo "You can now add a list of helpful alias'es to the end of your ${HOME}/.bashrc script, by doing:"
 #alias u='${HOME}/u'        # Claude usage meter (5h + weekly sessions)  # Removed
 echo "
 alias a='./all'      # Start kill>wipe>start>cl in current BASEDIR
@@ -288,11 +287,12 @@ alias st='${HOME}/st'      # Prepare a BASEDIR with all runtime scripts for it (
 alias sts='${HOME}/sts'    # Classify a SAN bug from the error log (ref ${HOME}/mariadb-qa/san_text_string.sh)
 alias str='./start_replication' # Startup replication in a given BASEDIR (after st/startup.sh was ran at least once)
 alias stopr='./stop_replication' # Stop replication in a given BASEDIR (after st/startup.sh was ran at least once)
-alias d='cd /test;. ./d1'  # cd to the latest debug 11.2 in /test
-alias o='cd /test;. ./o1'  # cd to the latest optimized 11.2 in /test
-alias ds='cd /test;. ./u1'   # cd to the latest UBASAN debug 11.2 in /test
-alias os='cd /test;. ./uo1'  # cd to the latest UBASANoptimized 11.2 in /test
+alias d='cd /test;. ./d1'  # cd to the newest debug build in /test
+alias o='cd /test;. ./o1'  # cd to the newest optimized build in /test
+alias ds='cd /test;. ./u1'   # cd to the newest UBASAN debug build in /test
+alias os='cd /test;. ./uo1'  # cd to the newest UBASAN optimized build in /test
 alias i='${HOME}/i '       # Information about any trial in current workdir (pass trial number)
+alias ii='${HOME}/ii'      # Information about the current (pquery framework) workdir
 alias ib='${HOME}/i | grep -E \"BASEDIR|REPLICATION\" '  # Show the basedir used for the current workdir as well as replication 1/0
 alias bi='${HOME}/i | grep -E \"BASEDIR|REPLICATION\" '  # Idem
 alias in='vi in.sql' # Edit ./in.sql in a BASEDIR for example (usable with many other scripts in BASEDIR and home)
@@ -350,6 +350,32 @@ alias prg='${HOME}/pr | grep -i ' # Search ${HOME}/pr for a specific string or t
 alias j='. ${HOME}/j '     # Jump to a particular /data directory (pass, for example, workdir number)
 alias ml='./multirun_loop ' # Execute ./multirun_loop in a BASEDIR
 " > /tmp/.bashrc
-echo -e "cat /tmp/.bashrc >> ${HOME}/.bashrc\nRemember to cleanup old framework alias'es, though later ones replace earlier ones.\nDone!"
+
+echo "Linkit linking complete!"
+
+# Install them in ${HOME}/.bashrc as one block, replacing the block of the previous run.
+# Any older loose line for an alias the framework owns, or once owned, is removed too.
+RETIRED='fi fii fil gdb mv ss u ve'  # Alias names the framework no longer ships
+BLOCKTOP='# ================= MariaDB-QA Aliases ================='
+BLOCKBOT='# ================= /MariaDB-QA Aliases ================'
+touch "${HOME}/.bashrc"
+OWNED="$(grep -oE '^alias [A-Za-z0-9_]+=' /tmp/.bashrc | sed 's|^alias ||;s|=$||') ${RETIRED}"
+WAS="$(grep -cE '^alias ' "${HOME}/.bashrc")"
+NEWRC="$(mktemp)"
+awk -v TOP="${BLOCKTOP}" -v BOT="${BLOCKBOT}" -v OWNED="${OWNED}" '
+  BEGIN { N = split(OWNED, LIST, /[ \n]+/); for (I = 1; I <= N; I++) OWN[LIST[I]] = 1 }
+  $0 == TOP || $0 == BOT { next }
+  /^alias [A-Za-z0-9_]+=/ { NAME = $0; sub(/^alias /, "", NAME); sub(/=.*/, "", NAME); if (NAME in OWN) next }
+  { print }' "${HOME}/.bashrc" > "${NEWRC}"
+KEPT="$(grep -cE '^alias ' "${NEWRC}")"
+{ echo "${BLOCKTOP}"; sed "s|${HOME}|\${HOME}|g;/^$/d" /tmp/.bashrc; echo "${BLOCKBOT}"; } >> "${NEWRC}"
+if bash -n "${NEWRC}" 2>/dev/null; then
+  cp "${HOME}/.bashrc" "${HOME}/.bashrc.linkit.bak"
+  mv "${NEWRC}" "${HOME}/.bashrc"
+  echo "Installed $(grep -cE '^alias ' /tmp/.bashrc) alias'es in ${HOME}/.bashrc, removed $(( WAS - KEPT )) older lines. Backup: ${HOME}/.bashrc.linkit.bak"
+  echo "Type 'sb' followed by enter to load them."
+else
+  echo "Assert: the new ${HOME}/.bashrc does not pass a syntax check, so nothing was changed. The file it would have written is ${NEWRC}"
+fi
 
 exit 0

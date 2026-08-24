@@ -148,6 +148,22 @@ while :; do
       fi
     done
     DS_MTR_VAR=; DS_MTR_VAR_REF=
+    # Delete /dev/shm run dirs of corlogic runs that are finished, whether or not corlogic managed to clean up after itself. Each run dir names its owner in corlogic.pid: the run is over once that PID is gone, or once the PID belongs to something that is not corlogic, and the directory then holds nothing but dead server datadirs, often many GB. A live run is never touched, because its PID is still there.
+    # The servers of a dead run go first. They are re-parented to init and keep their datadir files open, so on tmpfs the delete alone frees nothing, and the general "deleted files open" block above cannot reach them: it filters on ${FILTER}, which every mariadbd command line matches through --pid-file, --core-file and performance_schema. A clean shutdown is pointless here, since the datadir is about to go
+    for DS_CL_PID_FILE in /dev/shm/[0-9]*/corlogic.pid; do
+      [ -r "${DS_CL_PID_FILE}" ] || continue
+      DS_CL_PID="$(grep -om1 '^[0-9]\+' "${DS_CL_PID_FILE}")"
+      [ -z "${DS_CL_PID}" ] && continue
+      if [ -r "/proc/${DS_CL_PID}/cmdline" ] && tr '\0' ' ' < "/proc/${DS_CL_PID}/cmdline" 2>/dev/null | grep -q 'corlogic'; then
+        continue
+      fi
+      DS_CL_DIR="$(dirname "${DS_CL_PID_FILE}")"
+      DS_CL_HOLDERS="$(echo "${DS_PS_SNAP}" | grep -F "${DS_CL_DIR}/" | awk '{print $2}' | sort -u)"
+      echo "[ds cleanup] corlogic run dir ${DS_CL_DIR} owner PID ${DS_CL_PID} is gone - deleting $(du -sh "${DS_CL_DIR}" 2>/dev/null | awk '{print $1}'), $(echo -n "${DS_CL_HOLDERS}" | grep -c '^') server(s) still on it"
+      [ -n "${DS_CL_HOLDERS}" ] && echo "${DS_CL_HOLDERS}" | xargs -r -I{} kill -9 {} 2>/dev/null
+      rm -Rf "${DS_CL_DIR}"
+    done
+    DS_CL_PID_FILE=; DS_CL_PID=; DS_CL_DIR=; DS_CL_HOLDERS=
     if [ -r /data/NEWBUGS/mv_index_corrupted ]; then  # Move similar index corruptions into their own subdirectory
       /data/NEWBUGS/mv_index_corrupted
     fi
