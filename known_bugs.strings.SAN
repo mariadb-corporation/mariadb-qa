@@ -22,6 +22,8 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|get_new_start_alter_info|Query_log_event::handle_split_alter_query_log_event                                               ## MDEV-37770 (needs testcase)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+MSAN|use-of-uninitialized-value|storage/innobase/data/data0data.cc|dtuple_validate|page_cur_search_with_match|btr_cur_t::search_leaf|btr_pcur_open_with_no_init                ## MDEV-40892
+MSAN|use-of-uninitialized-value|storage/innobase/rem/rem0cmp.cc|memcmp|cmp_data|cmp_dtuple_rec_with_match_low|page_cur_search_with_match                                       ## MDEV-40892
 ASAN|stack-buffer-overflow|asan_interceptors.cpp|strcpy|PlugSetPath|TDBDIR::Path|TDBDIR::OpenDB                                                                                ## MDEV-40859
 ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::append_select_sql_part|ha_spider::index_read_map_internal|handler::ha_index_read_map|mysql_ha_read             ## MDEV-40549
 ASAN|heap-use-after-free|storage/spider/ha_spider.cc|spider_send_query|ha_spider::index_read_map_internal|handler::ha_index_read_map|mysql_ha_read                             ## MDEV-40549
