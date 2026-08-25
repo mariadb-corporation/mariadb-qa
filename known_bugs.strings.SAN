@@ -24,6 +24,8 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 ##### CURRENT BUGS (Search key: Mac) #####
 UBSAN|load of null pointer of type 'const char **'|sql/mysqld.cc|my_malloc_size_cb_func|my_malloc|init_alloc_root|init_sql_alloc                                               ## MDEV-26330
 UBSAN|load of value X, which is not a valid value for type 'volatile killed_state'|sql/mysqld.cc|my_malloc_size_cb_func|my_malloc|init_alloc_root|init_sql_alloc               ## MDEV-26330
+MSAN|use-of-uninitialized-value|storage/innobase/data/data0data.cc|dtuple_validate|page_cur_search_with_match|btr_cur_t::search_leaf|btr_pcur_open_with_no_init                ## MDEV-40892
+MSAN|use-of-uninitialized-value|storage/innobase/rem/rem0cmp.cc|memcmp|cmp_data|cmp_dtuple_rec_with_match_low|page_cur_search_with_match                                       ## MDEV-40892
 ASAN|stack-buffer-overflow|asan_interceptors.cpp|strcpy|PlugSetPath|TDBDIR::Path|TDBDIR::OpenDB                                                                                ## MDEV-40859
 ASAN|heap-use-after-free|storage/spider/ha_spider.cc|ha_spider::append_select_sql_part|ha_spider::index_read_map_internal|handler::ha_index_read_map|mysql_ha_read             ## MDEV-40549
 ASAN|heap-use-after-free|storage/spider/ha_spider.cc|spider_send_query|ha_spider::index_read_map_internal|handler::ha_index_read_map|mysql_ha_read                             ## MDEV-40549
