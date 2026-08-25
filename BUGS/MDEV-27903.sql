@@ -9,6 +9,38 @@ DELETE FROM t ORDER BY a LIMIT 1;
 DELETE FROM t;
 INSERT INTO t (a) VALUES (3);
 HANDLER t READ next LIMIT 1;
+#ERR: [ERROR] mysql_ha_read: Got error 127 when reading table 't'
 
-# Then check the error log for
-# [ERROR] mysql_ha_read: Got error 127 when reading table 't'
+SET binlog_format=ROW;
+CREATE TEMPORARY TABLE t (a INT,c VARCHAR(1)) ENGINE=MyISAM;
+INSERT INTO t VALUES (1,'');
+HANDLER t OPEN;
+INSERT INTO t SET c=2;
+HANDLER t READ NEXT;
+DELETE FROM t ORDER BY a LIMIT 1;
+DELETE FROM t;
+INSERT INTO t (a) VALUES (3);
+HANDLER t READ NEXT;
+#ERR: [ERROR] mysql_ha_read: Got error 127 when reading table 't'
+
+SET binlog_format=ROW;
+CREATE TEMPORARY TABLE t (a INT,c VARCHAR(60)) ENGINE=MyISAM;
+INSERT INTO t VALUES (1,'a'),(2,'b'),(3,'c');
+HANDLER t OPEN;
+INSERT INTO t VALUES (4,'d');
+HANDLER t READ NEXT;
+DELETE FROM t WHERE a=2;
+UPDATE t SET c=REPEAT('x',60) WHERE a=1;
+HANDLER t READ NEXT;
+#ERR: [ERROR] mysql_ha_read: Got error 127 when reading table 't'
+
+SET binlog_format=STATEMENT;
+CREATE TEMPORARY TABLE t (a INT,c VARCHAR(60)) ENGINE=MyISAM;
+INSERT INTO t VALUES (1,'a'),(2,'b');
+HANDLER t OPEN;
+INSERT INTO t VALUES (3,'c');
+HANDLER t READ NEXT;
+DELETE FROM t;
+INSERT INTO t VALUES (4,REPEAT('x',60));
+HANDLER t READ NEXT;
+#ERR: [ERROR] mysql_ha_read: Got error 127 when reading table 't'

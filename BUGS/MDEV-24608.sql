@@ -1,14 +1,58 @@
-SET GLOBAL innodb_trx_rseg_n_slots_debug=1;
 CREATE TABLE t (b TEXT, FULLTEXT (b)) ENGINE=InnoDB;
 INSERT INTO t VALUES ('a');
+BEGIN;
 DELETE FROM t;
+SET DEBUG_DBUG='+d,ib_create_table_fail_too_many_trx';
+COMMIT;
 
 CREATE TABLE t (a INT KEY,message CHAR,FULLTEXT (message)) ENGINE=InnoDB COMMENT='';
 INSERT INTO t VALUES (11384,2),(11392,2);
 DELETE FROM t;
 SELECT SLEEP;
 
-SET GLOBAL innodb_trx_rseg_n_slots_debug=1;
 CREATE TABLE t (a TEXT,FULLTEXT (a));
 INSERT INTO t VALUES (0xA8ED);
+BEGIN;
 UPDATE t SET a=9;
+SET DEBUG_DBUG='+d,ib_create_table_fail_too_many_trx';
+COMMIT;
+
+CREATE TABLE t (b TEXT, FULLTEXT (b)) ENGINE=InnoDB;
+INSERT INTO t VALUES ('a');
+XA START 'x';
+DELETE FROM t;
+XA END 'x';
+SET DEBUG_DBUG='+d,ib_create_table_fail_too_many_trx';
+XA PREPARE 'x';
+XA COMMIT 'x';
+
+CREATE TABLE t (b TEXT, FULLTEXT (b)) ENGINE=InnoDB;
+INSERT INTO t VALUES ('a'),('bb'),('ccc');
+BEGIN;
+DELETE FROM t;
+SET DEBUG_DBUG='+d,ib_create_table_fail_too_many_trx';
+COMMIT;
+
+CREATE TABLE t (id INT PRIMARY KEY, b TEXT, FULLTEXT (b)) ENGINE=InnoDB;
+INSERT INTO t VALUES (1,'a');
+BEGIN;
+REPLACE INTO t VALUES (1,'zz');
+SET DEBUG_DBUG='+d,ib_create_table_fail_too_many_trx';
+COMMIT;
+
+CREATE TABLE t (FTS_DOC_ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, b TEXT, PRIMARY KEY(FTS_DOC_ID), UNIQUE KEY FTS_DOC_ID_INDEX(FTS_DOC_ID), FULLTEXT (b)) ENGINE=InnoDB;
+INSERT INTO t (b) VALUES ('a');
+BEGIN;
+DELETE FROM t;
+SET DEBUG_DBUG='+d,ib_create_table_fail_too_many_trx';
+COMMIT;
+
+CREATE TABLE t1 (b TEXT, FULLTEXT (b)) ENGINE=InnoDB;
+CREATE TABLE t2 (b TEXT, FULLTEXT (b)) ENGINE=InnoDB;
+INSERT INTO t1 VALUES ('a');
+INSERT INTO t2 VALUES ('b');
+BEGIN;
+DELETE FROM t1;
+DELETE FROM t2;
+SET DEBUG_DBUG='+d,ib_create_table_fail_too_many_trx';
+COMMIT;

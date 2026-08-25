@@ -69,8 +69,9 @@ if grep -qi --binary-files=text "^USE_NEW_TEXT_STRING=1" reducer*.sh 2>/dev/null
 fi
 # Terminal width, used to right-position the '(Seen ...)' column of the UniqueID list. Stays 0 when stdout is not a terminal (~/pg redirects to a log), which keeps the fixed-width layout so stored output is unaffected.
 # Colours follow the echoit() scale in pquery-run.sh and the dim note in ~/sr: DIM for an error-log entry and for the summary blocks, ORANGE for a framework problem. A crash signature, a sanitizer report and the MODE=4 line all rank the same, and read green once any of their trials has an _out file, so reduction is running or done, red when a trial was started but no _out came of it, and #E59E7A while nothing was started at all. An UNTYPED entry uses #D47147, because it asks for a uid_prefix() rule and is meant to catch the eye. All empty when stdout is not a terminal, so a redirected run stays plain text.
+# The colours are 256-colour indices. GNU screen 4 has no 24-bit colour: it reads a 38;2;R;G;B sequence as SGR 2 and paints the whole line faint grey
 SCREEN_WIDTH=0
-C_DIM=$'\e[2m' C_SIG_OR_SAN=$'\e[32m' C_STALLED=$'\e[31m' C_UNREDUCED=$'\e[38;2;229;158;122m' C_UNTYPED=$'\e[38;2;212;113;71m' C_ORANGE=$'\e[33m' C_OFF=$'\e[0m'
+C_DIM=$'\e[2m' C_SIG_OR_SAN=$'\e[32m' C_STALLED=$'\e[31m' C_UNREDUCED=$'\e[38;5;180m' C_UNTYPED=$'\e[38;5;173m' C_ORANGE=$'\e[33m' C_OFF=$'\e[0m'
 if [ -t 1 ]; then
   SCREEN_WIDTH="$(tput cols 2>/dev/null)"
 else

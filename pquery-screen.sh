@@ -185,8 +185,8 @@ done
 
 # Build the rows first, so the columns can be sized to the widest entry, up to
 # these caps. A value longer than its cap is cut, and the cut is marked with a +
-NAMEMAX=30
-SNAMEMAX=13
+NAMEMAX=23
+SNAMEMAX=17
 TITLE=("SCREEN (${#ORDER[@]})" 'PID' 'CLAUDE SID' 'CLAUDE INT' 'STARTED' 'STATE')  # Also the minimum widths
 ROWS=()
 WIDTH="${#TITLE[0]}"
@@ -196,8 +196,10 @@ SNAMEWIDTH="${#TITLE[3]}"
 WHENWIDTH="${#TITLE[4]}"
 HERE="$(ps -o tty= -p $$)"  # The window this runs in, to mark it in the list
 HERE="${HERE// /}"
-BOLD= GREY= OFF=
-if [ -t 1 ]; then BOLD=$'\033[1m'; GREY=$'\033[38;2;145;145;145m'; OFF=$'\033[0m'; fi
+BOLD= GREY= BLUE= GREEN= ORANGE= OFF=
+# The colours are 256-colour indices. GNU screen 4 has no 24-bit colour: it reads a
+# 38;2;R;G;B sequence as SGR 2 and paints the whole line faint grey
+if [ -t 1 ]; then BOLD=$'\033[1m'; GREY=$'\033[38;5;246m'; BLUE=$'\033[38;5;75m'; GREEN=$'\033[38;5;114m'; ORANGE=$'\033[38;5;173m'; OFF=$'\033[0m'; fi
 
 add_row(){  # ${1}=depth ${2}=tree mark ${3}=name ${4}=pid ${5}=middle column ${6}=tail ${7}=session that ended
   local INDENT="$(( 2 * ${1} ))" NAME="${3}" SID="${SIDOF[${4}]:--}" SNAME="${SNAMEOF[${4}]:--}"
@@ -250,7 +252,7 @@ done
 
 # One layout for the titles and every row. The first column is composed first,
 # as a tree mark is more than one byte and printf pads a field by its bytes
-LAYOUT='  %s   %-*s   %s   %-*s   %-*s   %s\n'
+LAYOUT='  %s  %-*s  %s  %-*s  %-*s  %s\n'
 if [ "${#ROWS[@]}" -eq 0 ]; then  # No screens, so the screen -ls message says so itself
   printf '%s\n' "${BEFORE[@]}"
 else
@@ -259,6 +261,15 @@ else
   printf -v HEAD "${LAYOUT}" "${COL1}" "${PIDWIDTH}" "${TITLE[1]}" "${SIDCOL}" "${SNAMEWIDTH}" "${TITLE[3]}" "${WHENWIDTH}" "${TITLE[4]}" "${TITLE[5]}"
   printf '%s%s%s\n' "${BOLD}" "${HEAD%$'\n'}" "${OFF}"
 fi
+row_colour(){  # ${1}=name ${2}=session id. Sets ROWCOL to the colour of the whole row
+  ROWCOL=
+  if [ "${2:0:1}" = '(' ]; then return; fi  # A session that ended leaves the row plain
+  if [ "${2}" != '-' ]; then ROWCOL="${BLUE}"; return; fi
+  if [[ "${1}" =~ ^s[0-9]+$ ]]; then ROWCOL="${ORANGE}"; return; fi  # A reducer
+  if [[ "${1}" == pts-* ]]; then ROWCOL="${GREY}"; return; fi  # A plain shell
+  if [ "${1}" = 'memory' ]; then ROWCOL="${BOLD}${GREEN}"; fi
+}
+
 for ROW in "${ROWS[@]}"; do
   IFS=$'\t' read -r INDENT MARK NAME PROC SID SNAME WHEN STATE <<<"${ROW}"
   if [ "${MARK}" = 'row' ]; then
@@ -266,7 +277,9 @@ for ROW in "${ROWS[@]}"; do
   else  # A window or a sub-screen, so the tree mark leads the name
     printf -v COL1 '%*s%s %-*s' "$(( INDENT - 2 ))" '' "${MARK}" "$(( WIDTH - INDENT ))" "${NAME}"
   fi
+  row_colour "${NAME}" "${SID}"
   printf -v SIDCOL '%-*s' "${SIDWIDTH}" "${SID}"
   if [ "${SID:0:1}" = '(' ]; then SIDCOL="${GREY}${SIDCOL}${OFF}"; fi
-  printf "${LAYOUT}" "${COL1}" "${PIDWIDTH}" "${PROC}" "${SIDCOL}" "${SNAMEWIDTH}" "${SNAME}" "${WHENWIDTH}" "${WHEN}" "${STATE}"
+  printf -v TEXT "${LAYOUT}" "${COL1}" "${PIDWIDTH}" "${PROC}" "${SIDCOL}" "${SNAMEWIDTH}" "${SNAME}" "${WHENWIDTH}" "${WHEN}" "${STATE}"
+  printf '%s%s%s\n' "${ROWCOL}" "${TEXT%$'\n'}" "${OFF}"
 done

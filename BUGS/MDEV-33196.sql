@@ -55,3 +55,14 @@ create TABLE t1 (a int,b int) engine=Spider;
 CREATE TABLE t2 (a INT) ENGINE = Spider SELECT 1;
 CREATE TABLE t1(a int NOT NULL,b blob NOT NULL,c text,PRIMARY KEY (b(10),a),INDEX (c(767)),INDEX(b(767))) ENGINE=Spider ROW_FORMAT=DYNAMIC;
 RENAME TABLE t1 to t2;
+
+INSTALL PLUGIN spider SONAME 'ha_spider.so';
+CREATE USER u1@localhost;
+GRANT ALL ON test.* TO u1@localhost;
+SET spider_same_server_link=1;
+SET spider_internal_sql_log_off=1;
+DROP TABLE mysql.spider_link_mon_servers;
+CREATE TABLE t1(c DATE) ENGINE=MyISAM;
+CREATE TABLE t2(c DATE) ENGINE=MyISAM;
+CREATE TABLE t(c DATE,PRIMARY KEY(c)) ENGINE=Spider COMMENT='socket "../socket.sock",user "u1",table "t1 t2"' CONNECTION='mkd "1"';
+SELECT * FROM t WHERE c=0;

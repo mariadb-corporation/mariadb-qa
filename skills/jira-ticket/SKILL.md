@@ -410,11 +410,15 @@ With the `MDEV-xxxxx` key, register so the framework recognises future occurrenc
    **Every clear CLI testcase already in the ticket goes in the file too.** Read the description AND every comment. Each testcase that is clear enough to run goes in, oldest first, then ONE blank line before ours - so `BUGS/<KEY>.sql` opens with the bug as originally reported and reads in the order the testcases were contributed. Put each one in our customary short format:
 
    - One statement per line, one unbroken line per statement. No wrapped lines, no blank lines inside a testcase, no indenting, no prose.
+   - Each testcase is self-contained: it carries its own setup, so it replays on its own in a fresh instance. Repeat the setup in every block, even when the block above already has it.
+   - No remark above a testcase to say what it shows. The SQL is the record.
    - Drop every MTR requirement, even one that is genuinely required for MTR: no `--source include/*.inc`, no `--error`, no `--let`/`--replace_*`, no cleanup `DROP`. The file is a CLI replay file, so an engine guard belongs in the `.test`, never here.
    - Two exceptions keep what they need: a **multi-threaded** testcase and a **complex replication** testcase stay as they are, because dropping their scaffolding breaks the replay.
    - A **simple replication** testcase needs one marker line at the top instead of the include - `# Requires m/s replication setup` or similar - then the plain SQL.
 
    For an **error-message** bug (not crash/assert/SAN), append after each testcase variant the observed result: `#CLI: <client-visible error or output>` and `#ERR: <error-log line, or "- (no error)">` (see `~/mariadb-qa/BUGS/MDEV-34936.sql`). Crash/assert/SAN bugs need no `#CLI`/`#ERR`.
+
+   A testcase that needs server options carries the `# mysqld options required for replay:` line directly above it. Automation reads that line, so copy the format exactly, the two spaces after the colon included: `# mysqld options required for replay:  --log_bin` (see `~/mariadb-qa/BUGS/MDEV-25045.sql`).
 2. **`kb`** - INSERT each non-SAN crash/error UniqueID into `~/mariadb-qa/known_bugs.strings` **at the correct section, NOT appended at EOF** (the file ENDS with the `###### FIXED BUGS ######` section; appending there hides the entry from the active filters - a recurring mistake). Placement by class:
    - **crash/assert** UniqueIDs (`SIGSEGV|...` / `<assert>|SIGABRT|...`, pipe-delimited) -> immediately AFTER the `##### CURRENT BUGS (Search key: Mac) #####` header (grep `'Mac'`); newest go right behind that line.
    - **typed error-string** entries -> their own top section, NOT the Mac section: `GOT_ERROR|...` in the GOT_ERROR block, `INNODB_ERROR|...` in the INNODB_ERROR block, `MARIADB_ERROR_CODE|...` in the MARIADB_ERROR_CODE block, `GOT_FATAL_ERROR|...` by the GOT_FATAL line.
