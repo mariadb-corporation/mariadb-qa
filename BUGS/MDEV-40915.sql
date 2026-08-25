@@ -1,0 +1,3 @@
+CREATE TABLE t1 (c1 INT,c2 TEXT,FULLTEXT(c2),FULLTEXT(c2))Engine=InnoDB PARTITION BY HASH(c1) PARTITIONS 1;
+INSERT INTO t1 (c2) VALUES ('performance tuning'),('fulltext search'),('a');
+ALTER TABLE t1 PAGE_COMPRESSED=1;
