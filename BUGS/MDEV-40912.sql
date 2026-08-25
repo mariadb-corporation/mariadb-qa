@@ -1,0 +1,4 @@
+INSTALL SONAME 'ha_mroonga';
+CREATE TABLE t1 (c1 INT) ENGINE=Mroonga;
+CREATE VIEW v1 AS SELECT MATCH(c1) AGAINST ('') FROM t1;
+SELECT * FROM information_schema.TABLES;

@@ -254,6 +254,17 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+*str != '\0'|SIGABRT|my_message_sql|my_message|ha_mroonga::storage_open_columns|ha_mroonga::storage_open                                                                       ## MDEV-40918
+SIGSEGV|innobase_fts_retrieve_ranking|Item_func_match::val_real|Type_handler_real_result::Item_val_bool|Item_cond_and::val_bool                                                ## MDEV-33221
+SIGABRT|__libc_message_impl|malloc_printerr|_int_free_merge_chunk|_int_free                                                                                                    ## MDEV-40915
+SIGSEGV|cmp_dfield_dfield|row_merge_tuple_cmp|row_merge_tuple_sort|row_merge_tuple_sort                                                                                        ## MDEV-40915
+SIGSEGV|mem_heap_free_heap_top|mem_heap_empty|row_merge_buf_empty|fts_parallel_tokenization                                                                                    ## MDEV-40915
+b == &block[0] + buf->total_size || blob_file|SIGSEGV|cmp_dfield_dfield|row_merge_tuple_cmp|row_merge_tuple_sort|row_merge_tuple_sort                                          ## MDEV-40915
+num_fts_index <= 1|SIGABRT|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table|ha_partition::prepare_inplace_alter_table|mysql_inplace_alter_table       ## MDEV-40915
+num_fts_index <= 1|SIGABRT|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table|handler::ha_prepare_inplace_alter_table|ha_partition::prepare_inplace_alter_table   ## MDEV-40915
+SIGSEGV|mrn_generic_ft_clear|ha_mroonga::generic_reset|ha_mroonga::storage_reset|ha_mroonga::reset                                                                             ## MDEV-40912
+SIGSEGV|innobase_fts_retrieve_ranking|Item_func_match::val_real|Type_handler_real_result::Item_val_bool|evaluate_join_record                                                   ## MDEV-33221
+SIGSEGV|innobase_fts_retrieve_ranking|partition_ft_get_relevance|Item_func_match::val_real|Type_handler_real_result::Item_val_bool                                             ## MDEV-33221
 SIGABRT|__cxa_throw|unsigned long duckdb::Value::GetValueInternal<unsigned long>|store_duckdb_field_in_mysql_format|ha_duckdb_select_handler::next_row                         ## MDEV-40905
 dict_tf2_is_valid(flags, flags2)|SIGABRT|ut_dbg_assertion_failed|dict_table_t::create|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table                ## MDEV-40880
 SIGSEGV|my_mb_wc_utf32_quick|my_utf32_uni|get_first_nonspace|json_scan_next                                                                                                    ## MDEV-40879

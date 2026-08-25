@@ -22,6 +22,9 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|get_new_start_alter_info|Query_log_event::handle_split_alter_query_log_event                                               ## MDEV-37770 (needs testcase)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|member access within null pointer of type 'ib_rbt_node_t'|storage/innobase/handler/ha_innodb.cc|innobase_fts_retrieve_ranking|Item_func_match::val_real|Type_handler_real_result::Item_val_bool|Item_cond_and::val_bool ## MDEV-33221
+ASAN|use-after-poison|storage/mroonga/ha_mroonga.cpp|ha_mroonga::generic_reset|ha_mroonga::storage_reset|ha_mroonga::reset|close_thread_table                                  ## MDEV-40912
+UBSAN|member access within null pointer of type 'ib_rbt_node_t'|storage/innobase/handler/ha_innodb.cc|innobase_fts_retrieve_ranking|Item_func_match::val_real|Type_handler_real_result::Item_val_bool|evaluate_join_record   ## MDEV-33221
 UBSAN|load of null pointer of type 'const char **'|sql/mysqld.cc|my_malloc_size_cb_func|my_malloc|init_alloc_root|init_sql_alloc                                               ## MDEV-26330
 UBSAN|load of value X, which is not a valid value for type 'volatile killed_state'|sql/mysqld.cc|my_malloc_size_cb_func|my_malloc|init_alloc_root|init_sql_alloc               ## MDEV-26330
 MSAN|use-of-uninitialized-value|storage/innobase/data/data0data.cc|dtuple_validate|page_cur_search_with_match|btr_cur_t::search_leaf|btr_pcur_open_with_no_init                ## MDEV-40892
