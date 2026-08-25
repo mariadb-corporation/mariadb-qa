@@ -602,9 +602,11 @@ fi
 if [ "${ALSO_CHECK_REGULAR_TESTCASES_AGAINST_SAN_BUILDS}" -eq 1 ]; then
   if [ "${1}" != "SAN" -a "${1}" != "GAL" ]; then  # Exclude UBASAN builds from self-running again (unnecessary duplication)
     # A 'bs' run sweeps these same two builds, so running the testcase in them now would collide with it.
-    # Skip and let the 'bs' report supply the UBASAN result. The lock file is written by ~/b.
-    B_SAN_PID="$(awk '{print $1}' /tmp/.bug_report.b.san.lock 2>/dev/null)"
-    if [ -n "${B_SAN_PID}" ] && kill -0 "${B_SAN_PID}" 2>/dev/null; then
+    # Skip and let the 'bs' report supply the UBASAN result. Same lock file and staleness rule as ~/b.
+    B_SAN_LOCK='/tmp/.bug_report.b.san.lock'
+    B_SAN_PID="$(awk '{print $1}' "${B_SAN_LOCK}" 2>/dev/null)"
+    B_SAN_AGE=$(( $(date +%s) - $(stat -c %Y "${B_SAN_LOCK}" 2>/dev/null || echo 0) ))
+    if [ -n "${B_SAN_PID}" ] && kill -0 "${B_SAN_PID}" 2>/dev/null && [ "${B_SAN_AGE}" -lt "${B_LOCK_MAX_AGE:-600}" ]; then
       echo "----- UBASAN Execution of the testcase ----- SKIPPED: a 'bs' report is using these builds. Take the UBASAN result from that report."
     else
       echo "----- UBASAN Execution of the testcase ----- (Builds used: ${SAN_OPT_BUILD_FOR_REGULAR_TC_CHECK} and _dbg)"

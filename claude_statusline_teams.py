@@ -27,6 +27,8 @@ POLL = 300      # seconds between Fable-number reads
 STALE = 900     # seconds before the Fable number is drawn dimmed
 BACKOFF = 1800  # seconds to wait after a read fails, so a rate limit is not hammered
 BAR = 13        # width of a usage band, the same for all of them
+CWD = 19        # width the current directory is cut back to
+NAME = 16       # width the session name is cut back to
 LIMITS = (('5h', 'five_hour'), ('wk', 'seven_day'))
 SHORT = {'fable': 'f5', 'opus': 'op', 'sonnet': 'so'}
 INP = ('input_tokens', 'cache_creation_input_tokens')
@@ -34,6 +36,7 @@ OUTP = ('output_tokens',)
 HEAT = (1000000, 3000000, 7000000)  # tokens down that turn yellow, red, bright red
 SCALE = 3        # tokens up are counted against those marks times this
 
+BOLD = '\033[1m'                     # the cut marker on a shortened field
 BLUE = '\033[38;2;110;160;230m'      # the token counter at rest
 LINE = '\033[38;2;145;145;145m'      # line text
 INBAR = '\033[38;2;120;120;120m'     # text inside a band
@@ -52,10 +55,10 @@ def tokens(n):
 
 
 def spent(n):
-  # the session token counter: 1000, then 10k, then 1.2M
+  # the session token counter: 999, then 1k, then 1.2M
   if n >= 1000000:
     return f'{n / 1000000:.1f}M'
-  if n >= 10000:
+  if n >= 1000:
     return f'{round(n / 1000)}k'
   return str(n)
 
@@ -283,6 +286,11 @@ try:
 except Exception:
   sys.exit(0)
 
+def clip(text, width):
+  # keep the head of an over-long field and mark the cut
+  return text if len(text) <= width else f'{text[:width]}{BOLD}>{RESET}'
+
+
 parts = []
 
 cwd = data.get('workspace', {}).get('current_dir') or data.get('cwd') or ''
@@ -292,7 +300,7 @@ if cwd == home:
 elif cwd.startswith(home + os.sep):
   cwd = '~' + cwd[len(home):]
 if cwd:
-  parts.append(f'{LINE}{cwd}{RESET}')
+  parts.append(f'{LINE}{clip(cwd, CWD)}{RESET}')
 
 session_id = data.get('session_id') or ''
 session = session_id[:8]
@@ -343,12 +351,14 @@ if bands:
 
 name = sname()
 if name:
-  parts.append(f'{LINE}{name}{RESET}')
+  parts.append(f'{LINE}{clip(name, NAME)}{RESET}')
 
-model = (data.get('model') or {}).get('display_name', '')
+model = (data.get('model') or {}).get('display_name', '').replace(' ', '')
 effort = (data.get('effort') or {}).get('level')
+if effort == 'xhigh':
+  effort = 'xhi'
 if model:
-  parts.append(f'{LINE}{model} {effort}{RESET}' if effort else f'{LINE}{model}{RESET}')
+  parts.append(f'{LINE}{model}-{effort}{RESET}' if effort else f'{LINE}{model}{RESET}')
 
 transcript = data.get('transcript_path') or ''
 if session_id and transcript:
@@ -356,6 +366,6 @@ if session_id and transcript:
   parts.append(f'{heat(inp, SCALE)}\u2191{spent(inp)}{RESET} '
                f'{heat(outp)}\u2193{spent(outp)}{RESET}')
 
-parts.append(f'{LINE}{datetime.now().strftime("%H:%M:%S")}{RESET}')
+parts.append(f'{LINE}{datetime.now().strftime("%H:%M")}{RESET}')
 
 print('  '.join(parts))

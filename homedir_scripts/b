@@ -4,6 +4,7 @@ set +H  # Disables history substitution and avoids  -bash: !: event not found  l
 set "${1^^}" "${@:2}"  # Make ${1} uppercase ('san' > 'SAN'); keep all further args (${3}+ feed MYEXTRA_OPT below)
 
 # User variables
+B_LOCK_MAX_AGE=600  # Seconds of silence after which a bug report lock is taken over. The owner refreshes its lock every 60 seconds while it runs, so this is idle time, not run time.
 ALSO_CHECK_SAN_BUILDS_FOR_CORES_SET=1  # Recommended to leave as default=1, search for 'ALSO_CHECK_SAN_BUILDS_FOR_CORES' to read more on this.
 
 # Likely mistaken use cases (reversed)
@@ -87,7 +88,7 @@ if [ ! -r ../gendirs.sh ]; then echo "Assert: ../gendirs.sh not available, are y
 #   msan  bm      MSAN_* basedirs,        test.results.msan
 #   val   bv      VAL_* basedirs,         test.results.val
 #   gal   b gal   GAL_* basedirs,         test.results.gal
-# A run in a different set starts freely. A stale lock with a dead PID is taken over.
+# A run in a different set starts freely. A lock with a dead PID, or silent for B_LOCK_MAX_AGE, is taken over.
 if [ "${1}" == "MSAN" ]; then B_GROUP='msan'
 elif [ "${1}" == "TSAN" ] || [[ "${PWD}" == *"TSAN"* ]]; then B_GROUP='tsan'
 elif [ "${1}" == "VAL" ] || [[ "${PWD}" == *"VAL_"* ]]; then B_GROUP='val'
@@ -99,15 +100,20 @@ B_LOCK="/tmp/.bug_report.b.${B_GROUP}.lock"
 if ! ( set -o noclobber; echo "$$ $(date '+%F %T') ${PWD}" > "${B_LOCK}" ) 2>/dev/null; then
   B_OLD="$(cat "${B_LOCK}" 2>/dev/null)"; B_OLDPID="$(echo "${B_OLD}" | awk '{print $1}')"
   B_AGE=$(( $(date +%s) - $(stat -c %Y "${B_LOCK}" 2>/dev/null || echo 0) ))
-  if [ -n "${B_OLDPID}" ] && kill -0 "${B_OLDPID}" 2>/dev/null && [ "${B_AGE}" -lt 7200 ]; then
+  if [ -n "${B_OLDPID}" ] && kill -0 "${B_OLDPID}" 2>/dev/null && [ "${B_AGE}" -lt "${B_LOCK_MAX_AGE}" ]; then
     echo "Assert: a '${B_GROUP}' bug report is already running: ${B_OLD}"
     echo "Refusing to start a second one: both use the same basedirs and the same test.results file. A bug report in another set can start now. If stale: rm -f ${B_LOCK}"
     exit 1
   fi
-  # stale (dead PID, or lock older than 2h - a real run never lasts that long): take it over
+  # stale (dead PID, or silent past B_LOCK_MAX_AGE): take it over
   echo "$$ $(date '+%F %T') ${PWD}" > "${B_LOCK}"
 fi
-trap 'rm -f "${B_LOCK}"' EXIT
+export B_LOCK_MAX_AGE  # bug_report.sh reads this to judge the same lock
+# Refresh the lock while this run works, so its age measures silence rather than run length. The
+# loop ends by itself once this script is gone, so a kill -9 cannot leave the lock alive forever.
+( while kill -0 $$ 2>/dev/null; do touch "${B_LOCK}" 2>/dev/null; sleep 60; done ) &
+B_HEARTBEAT_PID=$!
+trap 'rm -f "${B_LOCK}"; kill "${B_HEARTBEAT_PID}" 2>/dev/null' EXIT
 
 if [[ "${1}" == "--"* ]]; then
   echo "Assert: it looks like you are trying to specify a -- mysqld option to this script. This is incorrect."
