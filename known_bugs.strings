@@ -254,6 +254,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|innobase_fts_retrieve_ranking|Item_func_match::val_real|Type_handler_real_result::Item_val_bool|Item_cond_and::val_bool                                                ## MDEV-33221
 SIGABRT|__libc_message_impl|malloc_printerr|_int_free_merge_chunk|_int_free                                                                                                    ## MDEV-40915
 SIGSEGV|cmp_dfield_dfield|row_merge_tuple_cmp|row_merge_tuple_sort|row_merge_tuple_sort                                                                                        ## MDEV-40915
 SIGSEGV|mem_heap_free_heap_top|mem_heap_empty|row_merge_buf_empty|fts_parallel_tokenization                                                                                    ## MDEV-40915
