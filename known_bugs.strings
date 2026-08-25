@@ -565,6 +565,7 @@ SIGSEGV|my_decimal::my_decimal|Dec_ptr_and_buffer::Dec_ptr_and_buffer|VDec_op::V
 SIGSEGV|mysql_create_like_table|Sql_cmd_create_table_like::execute|mysql_execute_command|mysql_parse                                                                           ## MDEV-37719
 SIGFPE|Json_schema_multiple_of::validate|Item_func_json_schema_valid::val_bool|Item::save_bool_in_field|Item::save_in_field                                                    ## MDEV-37806
 SIGFPE|Json_schema_multiple_of::validate|Item_func_json_schema_valid::val_bool|Item::save_bool_in_field|Type_handler_bool::Item_save_in_field                                  ## MDEV-37806
+SIGSEGV|Type_handler_timestamp_common::Item_save_in_field|Item::save_in_field|save_window_function_values|compute_window_func                                                  ## MDEV-37806
 SIGSEGV|Field::set_notnull|Item::save_str_in_field|Item::save_in_field|save_window_function_values                                                                             ## MDEV-36356
 SIGSEGV|Field::set_notnull|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field|Item::save_in_field                                                          ## MDEV-36356
 SIGSEGV|Item_func_json_extract::read_json|Arg_comparator::compare_e_json_str_basic|Arg_comparator::compare_e_json_str|Arg_comparator::compare                                  ## MDEV-35352
@@ -686,6 +687,10 @@ SIGSEGV|Field::set_notnull|Item::save_decimal_in_field|Type_handler_decimal_resu
 SIGSEGV|Field::set_notnull|Item::save_decimal_in_field|Item::save_in_field|save_window_function_values                                                                         ## MDEV-36356
 SIGSEGV|set_field_to_null_with_conversions|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field|Item::save_in_field                                          ## MDEV-36356
 SIGSEGV|Field::set_notnull|Item::save_int_in_field|Item::save_in_field|save_window_function_values                                                                             ## MDEV-36356
+SIGSEGV|Exec_time_tracker::get_loops|Filesort_tracker::report_use|filesort|create_sort_index                                                                                   ## MDEV-36356 (same UID as the fixed MDEV-28619)
+SIGSEGV|Item_field::used_tables|Item_window_func::update_used_tables|st_select_lex::update_used_tables|JOIN::optimize_inner                                                    ## MDEV-36356
+SIGSEGV|sub_select|do_select|JOIN::exec_inner|JOIN::exec                                                                                                                       ## MDEV-36356 (generic stack; same UID as the fixed MDEV-28505)
+SIGSEGV|Item_field::Item_field|Window_funcs_sort::setup|Window_funcs_computation::setup|JOIN::make_aggr_tables_info                                                            ## MDEV-36356 (also MDEV-37565)
 SIGSEGV|my_strtod_int|my_strtod|charset_info_st::strntod|Value_source::Converter_strntod::Converter_strntod                                                                    ## MDEV-36355
 SIGSEGV|my_strtod_int|my_strtod|my_strntod_8bit|charset_info_st::strntod                                                                                                       ## MDEV-36355
 SIGSEGV|internal_str2dec|str2my_decimal|Value_source::Converter_str2my_decimal::Converter_str2my_decimal|Value_source::Converter_str2my_decimal_with_warn::Converter_str2my_decimal_with_warn ## MDEV-36354
@@ -1351,6 +1356,7 @@ map->bitmap|SIGABRT|bitmap_lock_clear_bit|free_tmp_table|close_thread_tables|mys
 prebuilt->magic_n == ROW_PREBUILT_ALLOCATED|SIGABRT|ut_dbg_assertion_failed|row_prebuilt_free|ha_innobase::close|closefrm                                                      ## MDEV-26334
 SIGSEGV|bitmap_clear_bit|temp_pool_clear_bit|free_tmp_table|close_thread_tables                                                                                                ## MDEV-26334
 bit < map->n_bits|SIGABRT|bitmap_clear_bit|temp_pool_clear_bit|free_tmp_table|close_thread_tables                                                                              ## MDEV-26334
+SIGSEGV|my_malloc_size_cb_func|my_malloc|root_alloc|init_alloc_root                                                                                                            ## MDEV-26330
 SIGSEGV|my_malloc_size_cb_func|my_malloc|init_alloc_root|init_sql_alloc                                                                                                        ## MDEV-26330
 state_ == s_idle && mode_ == m_local && transaction_.state() == wsrep::transaction::s_aborted|SIGABRT|wsrep::client_state::sync_rollback_complete|wsrep_rollback_local|wsrep_rollback_process|start_wsrep_THD ## MDEV-26304
 thd->wsrep_trx().is_streaming()|SIGABRT|Wsrep_replayer_service::apply_write_set|apply_write_set|wsrep::server_state::on_apply|wsrep::high_priority_service::apply              ## MDEV-26303

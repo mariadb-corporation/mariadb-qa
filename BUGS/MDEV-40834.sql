@@ -1,3 +1,17 @@
 INSTALL SONAME 'ha_duckdb';
 CREATE TABLE t (c INT KEY) ENGINE=DuckDB;
 SELECT 'a' IN (SELECT * FROM t);
+
+SET sql_mode='';
+INSTALL SONAME 'ha_duckdb';
+CREATE TABLE t1 (c1 NUMERIC(2),c2 DECIMAL(65,30),c3 DOUBLE(1,1) UNSIGNED) ENGINE=InnoDB COMMENT='test t' DEFAULT CHARSET=latin1;
+INSERT INTO t1 VALUES ('a','a',DAYOFWEEK(':47:04')) ON DUPLICATE KEY UPDATE c2='a';
+CREATE TABLE t2 (c1 DECIMAL KEY,c2 VARBINARY(1),c3 INT,INDEX idx1(c2)) ENGINE=DuckDB ROW_FORMAT=DYNAMIC;
+DELETE a3 FROM t1 AS a1 JOIN t2 AS a2 ON a1.c1=a2.c1 JOIN t1 AS a3 ON a2.c1=a3.c1;
+
+INSTALL SONAME 'ha_duckdb';
+CREATE TABLE t1 (c1 ENUM('a','b','c') KEY,c2 INT,c3 INT,FOREIGN KEY fk1 (c2) REFERENCES t5(c1)) ENGINE=DuckDB;
+REPLACE INTO t1 SELECT * FROM t1 WHERE c1='a';
+
+#CLI: ERROR 1031 (HY000): Storage engine DUCKDB of the table `test`.`t1` doesn't have this option
+#ERR: [ERROR] Got error 131 when reading table './test/t1'

@@ -120,8 +120,16 @@ while read LINE; do
     fi
   fi
   if [ "${UID_STR}" = 'No bug found' ]; then  # No core: a reverse-gated test carries its own verdict
-    MTR_FAIL="$(grep -m1 -oE 'mysqltest: At line [0-9]+: .*' "${MTR}/var/log/mysqltest.log" 2>/dev/null)"
-    [ -n "${MTR_FAIL}" ] && UID_STR="${MTR_FAIL#mysqltest: }"
+    MTR_LOG="${MTR}/var/log/mysqltest.log"   # only this run's log; a skipped build keeps an older one
+    MTR_FAIL=
+    if grep -qE "CURRENT_TEST: .*\.${TEST}\$" "${MTR_LOG}" 2>/dev/null; then
+      MTR_FAIL="$(grep -m1 -oE 'mysqltest: At line [0-9]+: .*' "${MTR_LOG}" 2>/dev/null | sed 's|^mysqltest: At line [0-9]*: ||')"
+    fi
+    if [ -n "${MTR_FAIL}" ]; then            # UniqueID shape, no line number: MTR|<what MTR reported>
+      MTR_ERRNO="$(echo "${MTR_FAIL}" | grep -oE 'failed: [0-9]+:' | head -n1 | grep -oE '[0-9]+')"
+      if [ -n "${MTR_ERRNO}" ]; then UID_STR="MTR|query failed|ERROR_${MTR_ERRNO}"
+      else UID_STR="MTR|${MTR_FAIL}"; fi
+    fi
   fi
   # Bug Detection Matrix row (mirrors ~/mariadb-qa .../line, but sourced from the m*test dir)
   ( cd "${MTR}" && source "${HOME}/mariadb-qa/version_chk_helper.source" 2>/dev/null &&

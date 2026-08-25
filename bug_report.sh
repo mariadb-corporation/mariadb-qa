@@ -538,7 +538,7 @@ else   # UBASAN/UBSAN/ASAN/TSAN/MSAN/VAL
   echo '{noformat}'
 fi
 echo ''
-# The test_all script auto-runs ./findbug_new which generates ../test.results[.san/.gal]. 
+# The test_all script auto-runs ./findbug_new which generates ../test.results[.san/.tsan/.msan/.val/.gal].
 # If it does not exist, something went wrong
 if [ "${1}" == "SAN" ]; then
   if [ -r ../test.results.san ]; then
@@ -548,17 +548,17 @@ if [ "${1}" == "SAN" ]; then
     exit 1
   fi
 elif [ "${1}" == "TSAN" ]; then
-  if [ -r ../test.results.san ]; then
-    cat ../test.results.san
+  if [ -r ../test.results.tsan ]; then
+    cat ../test.results.tsan
   else
-    echo "ERROR: expected ../test.results.san to exist, but it did not. Please re-run bug_report.sh and/or debug any issues"
+    echo "ERROR: expected ../test.results.tsan to exist, but it did not. Please re-run bug_report.sh and/or debug any issues"
     exit 1
   fi
 elif [ "${1}" == "MSAN" ]; then
-  if [ -r ../test.results.san ]; then
-    cat ../test.results.san
+  if [ -r ../test.results.msan ]; then
+    cat ../test.results.msan
   else
-    echo "ERROR: expected ../test.results.san to exist, but it did not. Please re-run bug_report.sh and/or debug any issues"
+    echo "ERROR: expected ../test.results.msan to exist, but it did not. Please re-run bug_report.sh and/or debug any issues"
     exit 1
   fi
 elif [ "${1}" == "VAL" ]; then
@@ -601,10 +601,17 @@ else
 fi
 if [ "${ALSO_CHECK_REGULAR_TESTCASES_AGAINST_SAN_BUILDS}" -eq 1 ]; then
   if [ "${1}" != "SAN" -a "${1}" != "GAL" ]; then  # Exclude UBASAN builds from self-running again (unnecessary duplication)
-    echo "----- UBASAN Execution of the testcase ----- (Builds used: ${SAN_OPT_BUILD_FOR_REGULAR_TC_CHECK} and _dbg)"
-    test_san_build "${SAN_OPT_BUILD_FOR_REGULAR_TC_CHECK}" opt
-    test_san_build "${SAN_DBG_BUILD_FOR_REGULAR_TC_CHECK}" dbg
-    echo '-----------------------------------------'
+    # A 'bs' run sweeps these same two builds, so running the testcase in them now would collide with it.
+    # Skip and let the 'bs' report supply the UBASAN result. The lock file is written by ~/b.
+    B_SAN_PID="$(awk '{print $1}' /tmp/.bug_report.b.san.lock 2>/dev/null)"
+    if [ -n "${B_SAN_PID}" ] && kill -0 "${B_SAN_PID}" 2>/dev/null; then
+      echo "----- UBASAN Execution of the testcase ----- SKIPPED: a 'bs' report is using these builds. Take the UBASAN result from that report."
+    else
+      echo "----- UBASAN Execution of the testcase ----- (Builds used: ${SAN_OPT_BUILD_FOR_REGULAR_TC_CHECK} and _dbg)"
+      test_san_build "${SAN_OPT_BUILD_FOR_REGULAR_TC_CHECK}" opt
+      test_san_build "${SAN_DBG_BUILD_FOR_REGULAR_TC_CHECK}" dbg
+      echo '-----------------------------------------'
+    fi
   fi
 fi
 if [ ${CORE_OR_TEXT_COUNT_ALL} -gt 0 -o ${SAN_MODE} -eq 1 -o ${TSAN_MODE} -eq 1 -o ${MSAN_MODE} -eq 1 -o ${VAL_MODE} -eq 1 ]; then

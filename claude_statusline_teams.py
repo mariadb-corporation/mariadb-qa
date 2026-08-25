@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Claude Code status line: cwd, session, context, usage bands, session name, model, clock
-# Example: ~/mariadb-qa  abc123de  235k/1M  5h: 25% 13:10  wk: 23% 07:00  f5: 3%   Fri  corlogic-cf  Opus 5 max  11:02:32
+# Example: ~/mariadb-qa  abc123de  235k/1M  5h: 25% 13:10  wk: 23% 07:00  f5: 3%   Fri  corlogic-cf  Opus 5 max  ↑1.2M ↓84k  11:02:32
 # The 5h and weekly numbers arrive with every render, in the JSON Claude Code feeds
 # this script, so they cost nothing and are always current. The Fable weekly number
 # is not in that JSON. It is read from GET /api/oauth/usage by a detached background
@@ -10,6 +10,7 @@
 #   "statusLine": { "type": "command", "refreshInterval": 30,
 #                   "command": "python3 ~/mariadb-qa/claude_statusline_teams.py" }
 
+import glob
 import json
 import os
 import subprocess
@@ -28,10 +29,16 @@ BACKOFF = 1800  # seconds to wait after a read fails, so a rate limit is not ham
 BAR = 13        # width of a usage band, the same for all of them
 LIMITS = (('5h', 'five_hour'), ('wk', 'seven_day'))
 SHORT = {'fable': 'f5', 'opus': 'op', 'sonnet': 'so'}
+INP = ('input_tokens', 'cache_creation_input_tokens')
+OUTP = ('output_tokens',)
+HEAT = (1000000, 3000000, 7000000)  # tokens down that turn yellow, red, bright red
+SCALE = 3        # tokens up are counted against those marks times this
 
+BLUE = '\033[38;2;110;160;230m'      # the token counter at rest
 LINE = '\033[38;2;145;145;145m'      # line text
 INBAR = '\033[38;2;120;120;120m'     # text inside a band
 FADED = '\033[38;2;80;80;80m'        # text inside a stale band
+DARK = '\033[38;2;22;22;22m'         # text on a filled cell that grey cannot be read on
 BARBG = '\033[48;2;28;28;28m'        # unfilled part of a band
 RESET = '\033[0m'
 
@@ -44,13 +51,93 @@ def tokens(n):
   return str(n)
 
 
+def spent(n):
+  # the session token counter: 1000, then 10k, then 1.2M
+  if n >= 1000000:
+    return f'{n / 1000000:.1f}M'
+  if n >= 10000:
+    return f'{round(n / 1000)}k'
+  return str(n)
+
+
+def heat(n, scale=1):
+  # grey up to the first mark, then yellow, red, and bright red
+  if n >= HEAT[2] * scale:
+    return '\033[1;31m'
+  if n >= HEAT[1] * scale:
+    return '\033[31m'
+  if n >= HEAT[0] * scale:
+    return '\033[33m'
+  return BLUE
+
+
+def counted(path, start):
+  # input and output tokens in the part of a transcript that has not been counted yet,
+  # and where to start next time. A half written last line is left for the next render
+  try:
+    with open(path, 'rb') as f:
+      f.seek(start)
+      raw = f.read()
+  except OSError:
+    return 0, 0, start
+  end = raw.rfind(b'\n') + 1
+  inp = outp = 0
+  for line in raw[:end].splitlines():
+    if b'"usage"' not in line:
+      continue
+    try:
+      use = (json.loads(line).get('message') or {}).get('usage') or {}
+    except ValueError:
+      continue
+    inp += sum(use.get(key) or 0 for key in INP)
+    outp += sum(use.get(key) or 0 for key in OUTP)
+  return inp, outp, start + end
+
+
+def consumed(transcript, session):
+  # every token this session and its subagents have used. Each transcript is read on
+  # from where the last render stopped, so the count stays cheap on a long session
+  store = f'/tmp/.claude_tokens_io.{os.getuid()}.{session[:8]}.json'
+  try:
+    with open(store) as f:
+      seen = json.load(f)
+  except (OSError, ValueError):
+    seen = {}
+  subs = f'{os.path.dirname(transcript)}/{session}/subagents/*.jsonl'
+  total = [0, 0]
+  for path in [transcript] + sorted(glob.glob(subs)):
+    start, inp, outp = seen.get(path, (0, 0, 0))
+    try:
+      size = os.path.getsize(path)
+    except OSError:
+      continue
+    if size < start:
+      start, inp, outp = 0, 0, 0
+    if size > start:
+      add_in, add_out, start = counted(path, start)
+      inp += add_in
+      outp += add_out
+    seen[path] = (start, inp, outp)
+    total[0] += inp
+    total[1] += outp
+  try:
+    tmp = store + '.tmp'
+    with open(tmp, 'w') as f:
+      json.dump(seen, f)
+    os.replace(tmp, store)
+  except OSError:
+    pass
+  return total
+
+
 def fill(pct):
+  # background of a filled cell, plus the text colour it needs, empty to keep the band's
   if pct > 90.0:
-    return '\033[48;2;55;0;0m'
+    return '\033[48;2;55;0;0m', ''
   if pct > 77.5:
-    return '\033[48;2;55;55;0m'
+    return '\033[48;2;55;55;0m', DARK
   v = round(34 + 28 * min(pct, 77.5) / 77.5)
-  return f'\033[48;2;{v};{v};{v}m'
+  return f'\033[48;2;{v};{v};{v}m', ''
 
 
 def clock(epoch):
@@ -64,7 +151,9 @@ def band(label, pct, hhmm, stale):
   head = f'{label}: {round(pct)}%'
   text = head + ' ' * (BAR - len(head) - len(hhmm)) + hhmm
   n = max(0, min(BAR, round(BAR * pct / 100)))
-  return f'{FADED if stale else INBAR}{fill(pct)}{text[:n]}{BARBG}{text[n:]}{RESET}'
+  ink = FADED if stale else INBAR
+  bg, lit = fill(pct)
+  return f'{lit or ink}{bg}{text[:n]}{ink}{BARBG}{text[n:]}{RESET}'
 
 
 def claude_pid():
@@ -97,18 +186,37 @@ def sname():
     return ''
 
 
+def tty_of(p):
+  # the terminal a process runs on, as pts-<n>, empty when it has none
+  try:
+    with open(f'/proc/{p}/stat') as f:
+      nr = int(f.read().rsplit(') ', 1)[1].split()[4])
+  except (OSError, ValueError, IndexError):
+    return ''
+  if (nr >> 8) & 0xfff != 136:
+    return ''
+  return f'pts-{(nr & 0xff) | ((nr >> 12) & 0xfff00)}'
+
+
 def record(session):
-  # pid -> session id map file for the screen lister, keyed by the claude process
+  # pid -> session id map file for the screen lister, keyed by the claude process.
+  # The same id is kept under tty/, so the lister can still name the session that
+  # ran in a screen window once it has ended
   p = claude_pid()
   if p is None:
     return
   d = f'/tmp/.claude_session_ids.{os.getuid()}'
+  t = tty_of(p)
   try:
-    os.makedirs(d, exist_ok=True)
+    os.makedirs(f'{d}/tty' if t else d, exist_ok=True)
     tmp = f'{d}/.{p}.tmp'
     with open(tmp, 'w') as f:
       f.write(session)
     os.replace(tmp, f'{d}/{p}')
+    if t:
+      with open(tmp, 'w') as f:
+        f.write(session)
+      os.replace(tmp, f'{d}/tty/{t}')
   except OSError:
     return
 
@@ -241,6 +349,12 @@ model = (data.get('model') or {}).get('display_name', '')
 effort = (data.get('effort') or {}).get('level')
 if model:
   parts.append(f'{LINE}{model} {effort}{RESET}' if effort else f'{LINE}{model}{RESET}')
+
+transcript = data.get('transcript_path') or ''
+if session_id and transcript:
+  inp, outp = consumed(transcript, session_id)
+  parts.append(f'{heat(inp, SCALE)}\u2191{spent(inp)}{RESET} '
+               f'{heat(outp)}\u2193{spent(outp)}{RESET}')
 
 parts.append(f'{LINE}{datetime.now().strftime("%H:%M:%S")}{RESET}')
 

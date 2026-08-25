@@ -6,6 +6,7 @@
 # it. A screen that was started inside another screen, or that is attached from
 # inside one now, is listed below that screen as well. A screen or window that
 # holds a claude session shows that session's short id and name after the pid.
+# A session that has ended is shown in brackets while its window is still there.
 
 screen_of(){  # ${1}=process. Sets INSIDE to the screen it was started under
   local ENTRY
@@ -91,6 +92,7 @@ done <<<"$(ps -eo pid=,ppid=,tpgid=,tty=,comm=,args=)"
 # Without one yet, a child's environment or a --resume id fills the gap.
 # Its short name, the one the statusline shows, comes from ~/.claude/sessions/.
 SIDMAP="/tmp/.claude_session_ids.${UID}"
+TTYMAP="${SIDMAP}/tty"
 SESSIONS="${HOME}/.claude/sessions"
 session_of(){  # ${1}=claude process. Sets SESSION to its session id, or to ?
   local KID ENTRY WORD PREV=
@@ -127,6 +129,12 @@ for CLAUDE in "${CLAUDES[@]}"; do
     UP="${PPIDOF[${UP}]}"
   done
 done
+
+last_in(){  # ${1}=window ${2}=its tty. Sets LAST to the session last seen there, empty when there is none
+  local FILE="${TTYMAP}/${2//\//-}"
+  LAST=
+  if [ -s "${FILE}" ] && [ "${FILE}" -nt "/proc/${1}" ]; then read -r LAST < "${FILE}"; fi
+}
 
 windows_of(){  # ${1}=screen. Sets ORDERED to its windows, oldest first
   local WINDOW SLOT
@@ -188,9 +196,12 @@ SNAMEWIDTH="${#TITLE[3]}"
 WHENWIDTH="${#TITLE[4]}"
 HERE="$(ps -o tty= -p $$)"  # The window this runs in, to mark it in the list
 HERE="${HERE// /}"
+BOLD= GREY= OFF=
+if [ -t 1 ]; then BOLD=$'\033[1m'; GREY=$'\033[38;2;145;145;145m'; OFF=$'\033[0m'; fi
 
-add_row(){  # ${1}=depth ${2}=tree mark ${3}=name ${4}=pid ${5}=middle column ${6}=tail
+add_row(){  # ${1}=depth ${2}=tree mark ${3}=name ${4}=pid ${5}=middle column ${6}=tail ${7}=session that ended
   local INDENT="$(( 2 * ${1} ))" NAME="${3}" SID="${SIDOF[${4}]:--}" SNAME="${SNAMEOF[${4}]:--}"
+  if [ "${SID}" = '-' ] && [ ! -z "${7}" ]; then SID="(${7:0:8})"; fi
   if [ "$(( ${#NAME} + INDENT ))" -gt "${NAMEMAX}" ]; then NAME="${NAME:0:$(( NAMEMAX - INDENT - 1 ))}+"; fi
   if [ "${#SNAME}" -gt "${SNAMEMAX}" ]; then SNAME="${SNAME:0:$(( SNAMEMAX - 1 ))}+"; fi
   ROWS+=("${INDENT}"$'\t'"${2}"$'\t'"${NAME}"$'\t'"${4}"$'\t'"${SID}"$'\t'"${SNAME}"$'\t'"${5}"$'\t'"${6}")
@@ -202,16 +213,17 @@ add_row(){  # ${1}=depth ${2}=tree mark ${3}=name ${4}=pid ${5}=middle column ${
 }
 
 add_screen(){  # ${1}=screen ${2}=depth ${3}=tree mark
-  local SUBS=(${SUBSCREENS[${1}]}) WINS LEFT WINDOW INDEX MARK YOU=
+  local SUBS=(${SUBSCREENS[${1}]}) WINS LEFT WINDOW INDEX MARK YOU= LAST=
   windows_of "${1}"
   WINS=("${ORDERED[@]}")
   if [ "${#WINS[@]}" -lt 2 ]; then  # A lone window is the screen itself, so it adds no depth
     for WINDOW in "${WINS[@]}"; do
       if [ "${TTYOF[${WINDOW}]}" = "${HERE}" ]; then YOU='  <- you are here'; fi
+      last_in "${WINDOW}" "${TTYOF[${WINDOW}]}"
     done
     WINS=()
   fi
-  add_row "${2}" "${3}" "${NAMEOF[${1}]}" "${1}" "${WHENOF[${1}]}" "${STATEOF[${1}]}${YOU}"
+  add_row "${2}" "${3}" "${NAMEOF[${1}]}" "${1}" "${WHENOF[${1}]}" "${STATEOF[${1}]}${YOU}" "${LAST}"
   LEFT="$(( ${#WINS[@]} + ${#SUBS[@]} ))"
   for WINDOW in "${WINS[@]}"; do
     LEFT="$(( LEFT - 1 ))"
@@ -221,7 +233,8 @@ add_screen(){  # ${1}=screen ${2}=depth ${3}=tree mark
     running_in "${WINDOW}"
     YOU=
     if [ "${TTYOF[${WINDOW}]}" = "${HERE}" ]; then YOU='  <- you are here'; fi
-    add_row "$(( ${2} + 1 ))" "${MARK}" "window ${NUMBER}" "${WINDOW}" "${TTYOF[${WINDOW}]}" "${RUNNING}${YOU}"
+    last_in "${WINDOW}" "${TTYOF[${WINDOW}]}"
+    add_row "$(( ${2} + 1 ))" "${MARK}" "window ${NUMBER}" "${WINDOW}" "${TTYOF[${WINDOW}]}" "${RUNNING}${YOU}" "${LAST}"
   done
   for INDEX in "${!SUBS[@]}"; do
     LEFT="$(( LEFT - 1 ))"
@@ -237,12 +250,14 @@ done
 
 # One layout for the titles and every row. The first column is composed first,
 # as a tree mark is more than one byte and printf pads a field by its bytes
-LAYOUT='  %s   %-*s   %-*s   %-*s   %-*s   %s\n'
+LAYOUT='  %s   %-*s   %s   %-*s   %-*s   %s\n'
 if [ "${#ROWS[@]}" -eq 0 ]; then  # No screens, so the screen -ls message says so itself
   printf '%s\n' "${BEFORE[@]}"
 else
   printf -v COL1 '%-*s' "${WIDTH}" "${TITLE[0]}"
-  printf "${LAYOUT}" "${COL1}" "${PIDWIDTH}" "${TITLE[1]}" "${SIDWIDTH}" "${TITLE[2]}" "${SNAMEWIDTH}" "${TITLE[3]}" "${WHENWIDTH}" "${TITLE[4]}" "${TITLE[5]}"
+  printf -v SIDCOL '%-*s' "${SIDWIDTH}" "${TITLE[2]}"
+  printf -v HEAD "${LAYOUT}" "${COL1}" "${PIDWIDTH}" "${TITLE[1]}" "${SIDCOL}" "${SNAMEWIDTH}" "${TITLE[3]}" "${WHENWIDTH}" "${TITLE[4]}" "${TITLE[5]}"
+  printf '%s%s%s\n' "${BOLD}" "${HEAD%$'\n'}" "${OFF}"
 fi
 for ROW in "${ROWS[@]}"; do
   IFS=$'\t' read -r INDENT MARK NAME PROC SID SNAME WHEN STATE <<<"${ROW}"
@@ -251,5 +266,7 @@ for ROW in "${ROWS[@]}"; do
   else  # A window or a sub-screen, so the tree mark leads the name
     printf -v COL1 '%*s%s %-*s' "$(( INDENT - 2 ))" '' "${MARK}" "$(( WIDTH - INDENT ))" "${NAME}"
   fi
-  printf "${LAYOUT}" "${COL1}" "${PIDWIDTH}" "${PROC}" "${SIDWIDTH}" "${SID}" "${SNAMEWIDTH}" "${SNAME}" "${WHENWIDTH}" "${WHEN}" "${STATE}"
+  printf -v SIDCOL '%-*s' "${SIDWIDTH}" "${SID}"
+  if [ "${SID:0:1}" = '(' ]; then SIDCOL="${GREY}${SIDCOL}${OFF}"; fi
+  printf "${LAYOUT}" "${COL1}" "${PIDWIDTH}" "${PROC}" "${SIDCOL}" "${SNAMEWIDTH}" "${SNAME}" "${WHENWIDTH}" "${WHEN}" "${STATE}"
 done
