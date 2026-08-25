@@ -254,6 +254,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|mrn_generic_ft_clear|ha_mroonga::generic_reset|ha_mroonga::storage_reset|ha_mroonga::reset                                                                             ## MDEV-40912
 SIGSEGV|innobase_fts_retrieve_ranking|Item_func_match::val_real|Type_handler_real_result::Item_val_bool|evaluate_join_record                                                   ## MDEV-33221
 SIGSEGV|innobase_fts_retrieve_ranking|partition_ft_get_relevance|Item_func_match::val_real|Type_handler_real_result::Item_val_bool                                             ## MDEV-33221
 SIGABRT|__cxa_throw|unsigned long duckdb::Value::GetValueInternal<unsigned long>|store_duckdb_field_in_mysql_format|ha_duckdb_select_handler::next_row                         ## MDEV-40905
