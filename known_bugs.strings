@@ -255,6 +255,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+select_lex->hidden_bit_fields == 0|SIGABRT|JOIN::prepare|Sql_cmd_update::prepare_inner|Sql_cmd_dml::prepare|Sql_cmd_dml::execute                                               ## MDEV-40937
 SIGSEGV|fts_parallel_merge|tpool::task::execute|tpool::thread_pool_generic::worker_main|start_thread                                                                           ## MDEV-40915
 m_user_thd == ha_thd()|SIGABRT|ha_innobase::change_active_index|ha_innobase::index_init|handler::ha_index_init|ha_partition::index_init                                        ## MDEV-40927
 SIGSEGV|ha_mroonga::generic_ft_init_ext_select|ha_mroonga::generic_ft_init_ext|ha_mroonga::ft_init_ext|Item_func_match::init_search                                            ## MDEV-11007

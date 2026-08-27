@@ -1,0 +1,2 @@
+CREATE TABLE t (b BIT);
+UPDATE t SET b = 1 RETURNING *;
