@@ -247,6 +247,7 @@ char(200) not null
 CHAR(205)
 char(215) NOT NULL DEFAULT ''
 char(22)
+CHAR(240)
 char(25)
 CHAR(25) NOT NULL
 char(255)
@@ -573,7 +574,7 @@ enum('a') DEFAULT NULL
 ENUM('a', '', 'b')
 enum('a', 'A') BINARY
 ENUM('a','abcdefghijabcdefghijabcdefghijabcdefghijabcdefghij') NULL
-ENUM('a','b')
+enum('a','b')
 ENUM('a','b') NOT NULL DEFAULT 'b'
 ENUM('a','b','ac')
 ENUM('a','b','c')
@@ -717,7 +718,7 @@ int default 5
 INT DEFAULT NULL
 int not null
 int NOT NULL default '0'
-INT NOT NULL DEFAULT 0
+int NOT NULL DEFAULT 0
 int not null default 1
 int NOT NULL default 42
 int not null default 5
@@ -806,7 +807,7 @@ integer(2)
 INTEGER(4) NULL
 INTEGER(5) NOT NULL DEFAULT 1
 INTEGER(5) NULL DEFAULT 1
-JSON
+json
 json default '{a:1}'
 json not null
 linestring
@@ -1314,6 +1315,16 @@ YEAR DEFAULT 2008
 year not null
 YEAR NULL
 YEAR NULL COMMENT 'This is a YEAR column'
+year(0)
+YEAR(1)
+YEAR(100)
+YEAR(2)
+YEAR(2) NOT NULL
+YEAR(2) NULL
+YEAR(3)
 year(4)
 YEAR(4) NOT NULL
 YEAR(4) NULL
+year(4294967295)
+year(4294967296)
+YEAR(5)

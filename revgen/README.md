@@ -53,7 +53,8 @@ Flags:
 - `--yacc PATH`     grammar file. Default `$HOME/mariadb-qa/yacc/13.1_sql_yacc.yy`
                     (shipped with mariadb-qa). Errors out if the file is missing.
 - `--lex PATH`      `lex.h` keyword table. Default: version-matched sibling of
-                    `--yacc` (`13.1_sql_yacc.yy` -> `13.1_lex.h`).
+                    `--yacc` (`13.1_sql_yacc.yy` -> `13.1_lex.h`). Errors out
+                    when the file holds no `SYM()` entries. See Grammar files.
 - `--queries N`     statements to emit. Default 100000.
 - `--depth N`       derivation depth budget. Default 9 (clamped to 2000).
 - `--depth-max N`   derive one statement in four at a random depth between
@@ -119,6 +120,48 @@ Diagnostics (print and exit, except `--coverage`):
                     found, not only a rule that is exactly `'(' X ')'`.
 - `--coverage [N]`  after generating, report which grammar alternatives the run
                     reached. N caps the untried-alternatives list (0 = no cap).
+
+## Grammar files
+
+revgen reads three files per server version, all in `mariadb-qa/yacc/`:
+
+| File | Copied from | Holds |
+|---|---|---|
+| `<version>_sql_yacc.yy` | `sql/sql_yacc.yy` | the grammar revgen walks |
+| `<version>_lex.h` | `sql/lex.h` | the text of each keyword |
+| `<version>_coldefs.txt` | written by `yacc/harvest_coldefs.sh` | the column types the tables are built from |
+
+`--yacc` names the grammar and the other two default to its version-matched
+siblings, so `13.1_sql_yacc.yy` takes `13.1_lex.h` and `13.1_coldefs.txt`. The
+grammar and the keyword table have to come from the same source tree.
+
+`sql/lex.h` and `sql/sql_lex.h` sit next to each other in the server tree and
+have near-identical names. `sql/sql_lex.h` holds no `SYM()` entries. With that
+file in place revgen finds no text for any keyword, every keyword drops out of
+the derivation, and the output is unparsable fragments that no server can
+execute. Nothing about the run looks wrong: the hardcoded setup block still
+reads as valid SQL. revgen therefore stops with an error when the keyword table
+holds no `SYM()` entries, and `pquery-run.sh` makes the same check before a run
+starts.
+
+Install a matched pair with the refresh script. It copies both files and checks
+each one before it installs anything:
+
+```
+./refresh_grammar.sh /test/git-bisect/13.1     # version taken from the directory name
+./refresh_grammar.sh /test/10.11 10.11
+./refresh_grammar.sh all                       # every tree under /test/git-bisect
+```
+
+The column definitions come from the test suite of that version rather than
+from its source, so they are harvested separately:
+
+```
+../yacc/harvest_coldefs.sh /test/git-bisect/13.1/mysql-test 13.1 [socket]
+```
+
+With a running server of that version given as the third argument, only the
+definitions that server accepts are kept.
 
 ## How it works
 

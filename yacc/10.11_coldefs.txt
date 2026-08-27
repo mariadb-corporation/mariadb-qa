@@ -37,7 +37,6 @@ BIGINT(5) NULL DEFAULT 1
 BINARY
 binary (1)
 BINARY (10)
-binary not null
 BINARY(0)
 BINARY(1)
 BINARY(1) NOT NULL
@@ -158,7 +157,6 @@ blob
 blob DEFAULT "" NOT NULL
 blob default "hello"
 blob default ''
-BLOB DEFAULT '1'
 blob default 'x'
 BLOB NOT NULL
 blob null
@@ -213,6 +211,7 @@ CHAR(10) NULL COMMENT 'This is a CHAR column'
 CHAR(10) NULL DEFAULT 'x'
 char(100)
 CHAR(100) DEFAULT 'initial value'
+CHAR(100) DEFAULT 'test'
 CHAR(100) NOT NULL
 char(100) not null default ""
 char(100) not null default ''
@@ -221,11 +220,11 @@ CHAR(11)
 char(12)
 char(12) not null
 CHAR(120)
+char(127)
 char(128)
 char(128) not null
 CHAR(13)
 char(15)
-char(15) default 'пусто'
 CHAR(15) NOT NULL
 CHAR(15) NULL
 CHAR(16)
@@ -238,6 +237,7 @@ char(19) NOT NULL
 CHAR(2)
 char(2) not null
 char(20)
+char(20) binary not null
 char(20) default "default_value"
 char(20) not null
 CHAR(20) NULL
@@ -247,6 +247,7 @@ char(200) not null
 CHAR(205)
 char(215) NOT NULL DEFAULT ''
 char(22)
+CHAR(240)
 char(25)
 CHAR(25) NOT NULL
 char(255)
@@ -254,7 +255,9 @@ char(255) NOT NULL
 CHAR(255) NULL
 CHAR(255) unicode
 CHAR(3)
+char(3) binary
 char(3) default '0'
+char(3) DEFAULT NULL
 CHAR(3) NOT NULL
 CHAR(3) NULL
 char(30)
@@ -262,7 +265,6 @@ char(30) not null
 char(32)
 CHAR(32) NOT NULL DEFAULT '<UNKNOWN>'
 CHAR(4)
-char(4) DEFAULT NULL
 char(4) not null
 char(40)
 CHAR(48)
@@ -285,7 +287,7 @@ CHAR(8) BINARY
 char(8) not null
 CHAR(80)
 char(80) not null
-char(9)
+CHAR(9)
 char(9) NOT NULL
 date
 date default '1962-03-03 23:33:34'
@@ -437,7 +439,6 @@ DECIMAL(4,0)
 decimal(4,2)
 decimal(4,2) not null
 decimal(4,2) unsigned
-decimal(4,2) zerofill
 DECIMAL(4,4) UNSIGNED
 DECIMAL(41,1)
 DECIMAL(43,0) UNSIGNED
@@ -448,7 +449,6 @@ DECIMAL(5,0) NOT NULL DEFAULT 2
 DECIMAL(5,0) NULL DEFAULT 2
 decimal(5,1)
 decimal(5,2)
-decimal(5,3)
 decimal(5,4)
 DECIMAL(5,4) NOT NULL
 DECIMAL(5,4) NOT NULL DEFAULT 3.1234
@@ -532,14 +532,10 @@ DOUBLE(23,0) UNSIGNED NOT NULL
 DOUBLE(255,3)
 DOUBLE(255,4)
 double(3,3)
-double(4,2)
-double(4,2) unsigned
-double(4,2) zerofill
 double(4,3)
 double(40,30)
 double(5,0)
 DOUBLE(5,2)
-double(5,3)
 double(5,4)
 DOUBLE(5,4) NOT NULL
 DOUBLE(5,4) NULL
@@ -551,6 +547,9 @@ double(9,2)
 DOUBLE(9,6)
 enum (' ','a','b ') not null default 'b '
 enum (' ','a','b') not null
+ENUM ('')
+ENUM ('') DEFAULT ''
+ENUM ('',0x0000)
 enum ('0','1')
 ENUM ('a','b')
 enum ('aac','aab','aaa') not null
@@ -564,6 +563,7 @@ ENUM('1','2')
 enum('1','2','3')
 ENUM('200','100')
 ENUM('2001','2002')
+ENUM('2001-01-01','2001-01-01x')
 ENUM('2001-01-01','2001/01/01')
 ENUM('5','6')
 ENUM('999999999999999999999999999999999999999999999999999999999999')
@@ -573,14 +573,16 @@ enum('a') DEFAULT NULL
 ENUM('a', '', 'b')
 enum('a', 'A') BINARY
 ENUM('a','abcdefghijabcdefghijabcdefghijabcdefghijabcdefghij') NULL
-ENUM('a','b')
+enum('a','b')
 ENUM('a','b') NOT NULL DEFAULT 'b'
+ENUM('a','b','100')
 ENUM('a','b','ac')
 ENUM('a','b','c')
 ENUM('a','b','c') NOT NULL
 ENUM('a','b','c') NULL
 ENUM('a','b','c','1')
 enum('a','b','c','d')
+ENUM('a',0x0061)
 ENUM('a1','a2')
 ENUM('aaa', 'bbb') NOT NULL
 enum('aaa','a','b','c')
@@ -591,9 +593,10 @@ ENUM('aaaaaaaaaa')
 enum('abc','def','ghi')
 enum('ae','oe','ue','ss')
 ENUM('b')
+ENUM('b',0x0061)
 ENUM('b0','b1','b12','b3')
 enum('basic','sliding','signup')
-enum('e1', 'e2', 'e3')
+enum('E','F','E,F','F,E') NOT NULL
 ENUM('foo','bar')
 enum('N','Y') not null
 ENUM('rainbow')
@@ -610,6 +613,7 @@ ENUM(0x0061)
 ENUM(0x6100)
 ENUM(0x6100,0x6200,0x6300)
 ENUM(0x610062)
+enum(0xE4, '1', '2') not null
 fixed
 fixed not null
 FIXED NULL
@@ -659,7 +663,6 @@ FLOAT(10,5) SIGNED NULL
 FLOAT(10,5) UNSIGNED NOT NULL
 FLOAT(16,6)
 float(2,0)
-FLOAT(2,2) ZEROFILL
 FLOAT(20,3)
 FLOAT(20,4)
 FLOAT(23,0) SIGNED NULL
@@ -672,11 +675,7 @@ float(3,2)
 float(3,3)
 float(30, 0)
 FLOAT(30,18)
-float(4,2)
-float(4,2) unsigned
-float(4,2) zerofill
 float(4,3)
-float(5,3)
 float(5,4)
 FLOAT(5,4) NOT NULL
 FLOAT(5,4) NULL
@@ -708,16 +707,15 @@ INT default 1
 INT DEFAULT 1 NOT NULL
 INT DEFAULT 10
 int default 100
-INT DEFAULT 1000
 int default 2
 int default 3
 int default 4
 int default 41
 int default 5
-INT DEFAULT NULL
+int DEFAULT NULL
 int not null
 int NOT NULL default '0'
-INT NOT NULL DEFAULT 0
+int NOT NULL DEFAULT 0
 int not null default 1
 int NOT NULL default 42
 int not null default 5
@@ -754,12 +752,12 @@ int(10) unsigned default '0'
 int(10) unsigned not null
 int(10) unsigned NOT NULL default '0'
 INT(100) NOT NULL
-int(11)
+INT(11)
 int(11) default '0'
 int(11) DEFAULT '0' NOT NULL
 int(11) DEFAULT '1000'
 int(11) default NULL
-INT(11) NOT NULL
+int(11) not null
 int(11) NOT NULL default '0'
 int(11) unsigned
 int(12)
@@ -806,7 +804,7 @@ integer(2)
 INTEGER(4) NULL
 INTEGER(5) NOT NULL DEFAULT 1
 INTEGER(5) NULL DEFAULT 1
-JSON
+json
 json default '{a:1}'
 json not null
 linestring
@@ -906,9 +904,6 @@ nvarchar(10)
 nvarchar(20)
 point
 POINT NOT NULL
-POINT REF_SYSTEM_ID=0
-POINT REF_SYSTEM_ID=101
-POINT REF_SYSTEM_ID=102
 POINT(8,2)
 POLYGON
 REAL
@@ -928,8 +923,6 @@ REAL(5,4) NULL
 set (' ','a','b ') not null default 'b '
 set (' ','a','b') not null
 SET ('jkl','mno','pqr')
-set ('x','y','z','ä','ö','ü')
-SET('')
 SET('1','2')
 SET('1','2','3')
 set('1','2','3','4','5','6','7')
@@ -951,7 +944,6 @@ SET('aaa', 'bbb') NOT NULL
 set('ae','oe','ue','ss')
 set('b')
 SET('b0','b1','b12','b3')
-set('e1', 'e2', 'e3')
 SET('master','slave')
 set('mt')
 set('sms') not null
@@ -986,12 +978,10 @@ smallint(5) NOT NULL default '0'
 SMALLINT(5) NOT NULL DEFAULT 1
 SMALLINT(5) NULL DEFAULT 1
 smallint(5) unsigned not null
-smallint(6) NOT NULL
 smallint(6) NOT NULL default 0
 smallint(6) unsigned NOT NULL default '0'
 text
 text default ''
-TEXT DEFAULT '111111111'
 text default 5
 text not null
 text not null default ''
@@ -1017,7 +1007,6 @@ TIME NULL
 TIME NULL COMMENT 'This is a TIME column'
 TIME(0)
 TIME(1)
-time(2)
 TIME(3)
 TIME(4)
 time(4) not null
@@ -1052,12 +1041,10 @@ timestamp null default '2003-01-01 00:00:00'
 TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
 timestamp null default current_timestamp on update current_timestamp
 timestamp null default null
-timestamp null on update current_timestamp(6)
 timestamp on update now()
 TIMESTAMP(0)
 TIMESTAMP(1)
 TIMESTAMP(1) NOT NULL
-timestamp(2)
 TIMESTAMP(3)
 TIMESTAMP(3) DEFAULT 0
 TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP
@@ -1134,10 +1121,8 @@ VARBINARY(10) NULL
 VARBINARY(10) NULL COMMENT 'This is a VARBINARY column'
 VARBINARY(10) NULL DEFAULT 'x'
 VARBINARY(100)
-varbinary(100) not null
+VARBINARY(100) NOT NULL
 VARBINARY(100) NULL
-VARBINARY(1000)
-VARBINARY(1024)
 VARBINARY(15) NOT NULL
 VARBINARY(15) NULL
 VARBINARY(16)
@@ -1162,7 +1147,7 @@ VARBINARY(5)
 VARBINARY(5) NOT NULL
 VARBINARY(50) NOT NULL
 VARBINARY(50) NULL
-VARBINARY(64)
+varbinary(64)
 VARBINARY(8)
 VARCHAR (1)
 varchar (80)
@@ -1171,7 +1156,9 @@ VARCHAR(0)
 VARCHAR(0) NOT NULL
 VARCHAR(0) NULL
 varchar(1)
+varchar(1) DEFAULT NULL
 VARCHAR(1) NOT NULL
+varchar(1) NOT NULL DEFAULT ' '
 VARCHAR(1) NULL
 VARCHAR(10)
 VARCHAR(10) BINARY
@@ -1184,7 +1171,8 @@ VARCHAR(10) NOT NULL DEFAULT 'x'
 VARCHAR(10) NULL
 VARCHAR(10) NULL COMMENT 'This is a VARCHAR column'
 VARCHAR(10) NULL DEFAULT 'x'
-varchar(100)
+VARCHAR(100)
+VARCHAR(100) DEFAULT 'test'
 varchar(100) NOT NULL
 varchar(100) null
 VARCHAR(1000)
@@ -1207,6 +1195,9 @@ varchar(150) NOT NULL
 VARCHAR(16)
 varchar(16) NOT NULL
 varchar(16) NOT NULL default ''
+VARCHAR(16383)
+VARCHAR(16384)
+VARCHAR(17000)
 varchar(18)
 VARCHAR(2)
 VARCHAR(2) NOT NULL
@@ -1219,9 +1210,13 @@ varchar(20) null
 VARCHAR(200)
 varchar(200) not null
 varchar(2000)
+varchar(20000)
 varchar(2048)
 VARCHAR(2048) DEFAULT ''
 varchar(21) not null
+VARCHAR(21844)
+VARCHAR(21845)
+VARCHAR(21846)
 varchar(22) not null
 varchar(23)
 varchar(24)
@@ -1255,6 +1250,9 @@ varchar(31)
 VARCHAR(3176)
 VARCHAR(32)
 varchar(32) not null
+VARCHAR(32766)
+VARCHAR(32767)
+VARCHAR(32768)
 VARCHAR(33)
 varchar(333)
 varchar(34)
@@ -1286,6 +1284,8 @@ varchar(60) default 'x'
 VARCHAR(64)
 VARCHAR(64) DEFAULT NULL
 VARCHAR(64) NOT NULL
+varchar(64) NOT NULL default ''
+varchar(65500)
 VARCHAR(7)
 varchar(765)
 varchar(8)
@@ -1294,26 +1294,22 @@ VARCHAR(8) NOT NULL DEFAULT ''
 VARCHAR(8) NULL
 varchar(80)
 varchar(9)
-vector (1) not null
-VECTOR (4) NOT NULL
-VECTOR(1)
-vector(1) not null
-vector(10)
-vector(10) not null
-vector(1536) not null
-vector(2)
-vector(2) not null
-VECTOR(4)
-vector(5) not null
-vector(64) not null
-vector(8)
-vector(800)
 year
 YEAR DEFAULT 0
 YEAR DEFAULT 2008
 year not null
 YEAR NULL
 YEAR NULL COMMENT 'This is a YEAR column'
+year(0)
+YEAR(1)
+YEAR(100)
+YEAR(2)
+YEAR(2) NOT NULL
+YEAR(2) NULL
+YEAR(3)
 year(4)
 YEAR(4) NOT NULL
 YEAR(4) NULL
+year(4294967295)
+year(4294967296)
+YEAR(5)

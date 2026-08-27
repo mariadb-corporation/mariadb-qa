@@ -3,9 +3,14 @@
 # Usage:
 #   clr               — show picker of 20 most recent sessions
 #   clr <id-prefix>   — resume directly by (unique) session-id prefix, no picker
+#   clr <name>        — the same, by the session's internal name, the one the
+#                       CLAUDE INT column of 's' shows; whole name or a prefix
 # Self-heals when a session's working dir was renamed/moved: resolves the
 # renamed sibling dir, migrates the session-store folder to match, then resumes
 # (Claude keys sessions by the physical cwd, so a symlink cannot stand in).
+# The list is coloured like 's': blue means that session runs right now, orange
+# that its working dir is gone, grey that nothing was ever asked in it. Green is
+# the session you are in. A value that did not fit its column ends in a '>'.
 # Set CLR_DRYRUN=1 to resolve and heal but print the resume command instead of
 # launching it.
 # Created by Roel Van de Paar, MariaDB (with Claude Code assistance)
@@ -113,17 +118,100 @@ def resolve_target(cwds, first_cwd):
                 return cands[0]
     return ""
 
+# The colours are 256-colour indices. GNU screen 4 has no 24-bit colour: it reads a
+# 38;2;R;G;B sequence as SGR 2 and paints the whole line faint grey
+BOLD = GREY = BLUE = GREEN = ORANGE = OFF = ""
+if sys.stderr.isatty():
+    BOLD, OFF = "\033[1m", "\033[0m"
+    GREY, BLUE, GREEN, ORANGE = "\033[38;5;246m", "\033[38;5;75m", "\033[38;5;114m", "\033[38;5;173m"
+
+def running(pid, procstart):
+    """True when that pid is still the claude process the store recorded."""
+    if not pid:
+        return False
+    try:
+        with open(f"/proc/{pid}/stat", "r") as fh:
+            fields = fh.read().rpartition(") ")[2].split()
+        return fields[19] == str(procstart)  # start time, so a reused pid cannot pass
+    except (OSError, IndexError):
+        return False
+
+def load_names():
+    """(mtime, name, session-id) per named session, newest first, and the ids running now."""
+    out, live = [], set()
+    store = os.path.join(os.path.expanduser("~"), ".claude", "sessions")
+    try:
+        entries = os.listdir(store)
+    except OSError:
+        return out, live
+    for e in entries:
+        if not e.endswith(".json"):
+            continue
+        full = os.path.join(store, e)
+        try:
+            with open(full, "r", encoding="utf-8", errors="replace") as fh:
+                obj = json.load(fh)
+            mtime = os.path.getmtime(full)
+        except Exception:
+            continue
+        name, sid = obj.get("name") or "", obj.get("sessionId") or ""
+        if name and sid:
+            out.append((mtime, name, sid))
+        if sid and running(obj.get("pid"), obj.get("procStart")):
+            live.add(sid)
+    out.sort(reverse=True)
+    return out, live
+
+NAMES, LIVE = load_names()
+HERE = os.environ.get("CLAUDE_CODE_SESSION_ID", "")  # the session this runs in
+NAMEBYSID = {}
+for _, _n, _s in NAMES:
+    NAMEBYSID.setdefault(_s, _n)
+
+def by_name(text):
+    """Sessions whose internal name is text, else those it is a prefix of."""
+    low = text.lower()
+    exact = [s for (_, n, s) in NAMES if n.lower() == low]
+    if exact:
+        keep = {exact[0]}  # a reused name resolves to its newest session
+    else:
+        keep = {s for (_, n, s) in NAMES if n.lower().startswith(low)}
+    return [(m, s, p) for (m, s, p) in sessions if s in keep]
+
+def fit(text, width):
+    """text in width columns, keeping its lead, a cut marked with a >."""
+    if width <= 0:
+        return ""
+    return text if len(text) <= width else text[:width - 1] + ">"
+
+def row_colour(sid, cwd, prompt):
+    """The colour of a whole row."""
+    if sid == HERE:
+        return BOLD + GREEN
+    if cwd and not os.path.isdir(cwd):
+        return ORANGE
+    if sid in LIVE:
+        return BLUE
+    if not prompt:
+        return GREY
+    return ""
+
 # Direct-by-prefix mode: resolve against ALL sessions, not just the top 20.
 if arg:
     matches = [(m, s, p) for (m, s, p) in sessions if s.startswith(arg.lower())]
     if not matches:
-        print(f"No session id starts with '{arg}'.", file=sys.stderr)
+        matches = by_name(arg)
+    if not matches:
+        if [n for (_, n, _s) in NAMES if n.lower() == arg.lower()]:
+            print(f"Session '{arg}' has no transcript left to resume.", file=sys.stderr)
+        else:
+            print(f"No session id or name matches '{arg}'.", file=sys.stderr)
         sys.exit(5)
     if len(matches) > 1:
-        print(f"Prefix '{arg}' is ambiguous ({len(matches)} matches):", file=sys.stderr)
+        print(f"'{arg}' is ambiguous ({len(matches)} matches):", file=sys.stderr)
         for _, s, p in matches[:10]:
             fc, _, _ = scan(p)
-            print(f"  {s[:8]}  {fc}", file=sys.stderr)
+            print(f"  {s[:8]}  {NAMEBYSID.get(s, ''):<17}  {fc}", file=sys.stderr)
         sys.exit(6)
     _, sid, path = matches[0]
     fc, _, cwds = scan(path)
@@ -136,33 +224,66 @@ sessions = sessions[:limit]
 rows = []
 for mtime, sid, path in sessions:
     fc, prompt, _ = scan(path)
-    ts = time.strftime("%m-%d %H:%M", time.localtime(mtime))
+    ts = time.strftime("%d/%m %H:%M", time.localtime(mtime))
     cwd_short = fc.replace(os.path.expanduser("~"), "~") if fc else "?"
-    prompt_line = " ".join(prompt.split())[:90] if prompt else "(no user prompt)"
-    rows.append((sid, path, ts, cwd_short, prompt_line))
+    prompt_line = " ".join(prompt.split())[:200] if prompt else "(no user prompt)"
+    rows.append((sid, path, ts, cwd_short, NAMEBYSID.get(sid, ""), prompt_line,
+                 row_colour(sid, fc, prompt)))
 
 if not rows:
     print("NONE", file=sys.stderr)
     sys.exit(2)
 
-cwd_w = min(40, max((len(r[3]) for r in rows), default=10))
-for sid, _, ts, cwd_short, prompt_line in rows:
-    print(f"{sid[:8]}  {ts}  {cwd_short:<{cwd_w}.{cwd_w}}  {prompt_line}", file=sys.stderr)
+# Titles are also the minimum widths, and a value longer than its cap is cut
+CWDMAX = 22  # a path is cut at its tail, so its lead shows
+LINEMAX = 125  # the whole line, so the first prompt takes the room that is left
+NAMEMAX = 17  # the CLAUDE INT cap 's' uses
+TITLE = ("CL. SID", "CLAUDE INT", "LAST USED", "CWD", "FIRST PROMPT")
+sid_w = max(len(TITLE[0]), 8)  # ids are shown at 8
+name_w = max(len(TITLE[1]), min(NAMEMAX, max(len(r[4]) for r in rows)))
+when_w = max(len(TITLE[2]), max(len(r[2]) for r in rows))
+cwd_w = max(len(TITLE[3]), min(CWDMAX, max(len(r[3]) for r in rows)))
+
+width = LINEMAX
+if sys.stderr.isatty():
+    try:
+        width = min(width, os.get_terminal_size(sys.stderr.fileno()).columns)
+    except OSError:
+        pass
+prompt_w = max(0, width - (sid_w + 2 + name_w + 2 + when_w + 2 + cwd_w + 2))
+
+head = f"{TITLE[0]:<{sid_w}}  {TITLE[1]:<{name_w}}  {TITLE[2]:<{when_w}}  {TITLE[3]:<{cwd_w}}  {fit(TITLE[4], prompt_w)}"
+print(f"{BOLD}{head.rstrip()}{OFF}", file=sys.stderr)
+for sid, _, ts, cwd_short, name, prompt_line, colour in rows:
+    line = (f"{sid[:8]:<{sid_w}}  {fit(name, name_w):<{name_w}}  {ts:<{when_w}}  "
+            f"{fit(cwd_short, cwd_w):<{cwd_w}}  {fit(prompt_line, prompt_w)}")
+    print(f"{colour}{line.rstrip()}{OFF}", file=sys.stderr)
 
 print("", file=sys.stderr)
+# The picker cannot use input(): this script arrives on stdin, so stdin is spent,
+# and stdout is captured by the caller. Prompt on stderr, read the answer from the
+# terminal itself.
 try:
-    choice = input("Session id prefix (empty to cancel): ").strip().lower()
-except EOFError:
+    with open("/dev/tty", "r") as tty:
+        print("Session id prefix or name (empty to cancel): ", end="", file=sys.stderr)
+        sys.stderr.flush()
+        choice = (tty.readline() or "").strip()
+except (OSError, EOFError):
     choice = ""
 if not choice:
     sys.exit(3)
 
-matches = [r for r in rows if r[0].startswith(choice)]
+low = choice.lower()
+matches = [r for r in rows if r[0].startswith(low)]
 if not matches:
-    print(f"No listed session starts with '{choice}'.", file=sys.stderr)
+    matches = [r for r in rows if r[4].lower() == low]
+if not matches:
+    matches = [r for r in rows if r[4] and r[4].lower().startswith(low)]
+if not matches:
+    print(f"No listed session matches '{choice}'.", file=sys.stderr)
     sys.exit(4)
 if len(matches) > 1:
-    print(f"Prefix '{choice}' matches {len(matches)} sessions — be more specific.", file=sys.stderr)
+    print(f"'{choice}' matches {len(matches)} sessions — be more specific.", file=sys.stderr)
     sys.exit(4)
 
 sid, path, *_ = matches[0]

@@ -63,6 +63,11 @@ check "queries zero"     2 --queries 0 --output -
 check "queries negative" 2 --queries -5 --output -
 check "yacc missing"     2 --yacc /nonexistent/sql_yacc.yy --output -
 check "lex missing"      2 --lex /nonexistent/lex.h --queries 1 --output -
+# A keyword table with no SYM( entries leaves every keyword terminal empty and the
+# SQL comes out as unparsable fragments. sql/sql_lex.h is the neighbouring file that
+# gets copied in by mistake, and holds none, so this must abort rather than generate.
+printf '/* no SYM entries here */\nstruct LEX { int x; };\n' > "$W/nosym.h"
+check "lex without SYM(" 2 --lex "$W/nosym.h" --queries 1 --output -
 check "bad start symbol" 2 --start no_such_rule --queries 1 --output -
 "$BIN" --help >"$W/usage" 2>&1
 has "usage lists coverage" "$W/usage" "--coverage"
@@ -72,7 +77,7 @@ has "usage lists depth-max" "$W/usage" "--depth-max"
 "$BIN" --info >/dev/null 2>"$W/info"
 has "info rules"     "$W/info" "rules: +[0-9]+ nonterminals"
 has "info terminals" "$W/info" "terminals: +[0-9]+ referenced"
-has "info keywords"  "$W/info" "keywords: +[0-9]+ from lex.h"
+has "info keywords"  "$W/info" "keywords: +[1-9][0-9]* from lex.h"
 has "info dropped"   "$W/info" "dropped: +[0-9]+ productions"
 has "info start height" "$W/info" "start: +verb_clause \(min height [0-9]+\)"
 # Pruning the last production of a rule silently removes whatever only reaches
@@ -476,6 +481,8 @@ hasnt "default keeps locking out"          "$W/g.sql" "^(XA |LOCK TABLE|BACKUP S
 gen "$W/lex.sql" --queries 200 --depth 6 --seed 19 \
   --lex "$HOME/mariadb-qa/yacc/13.1_lex.h"
 [ "$(grep -c . "$W/lex.sql")" -ge 200 ] && ok || bad "--lex explicit path"
+# Line count alone passes on keywordless fragments, so check the keywords arrived
+has "--lex explicit path yields keywords" "$W/lex.sql" "\\bSELECT\\b"
 
 # ---- PREPARE validation ------------------------------------------------
 # REVGEN_TEST_NO_CLIENT skips everything that enters libmysqlclient. Under MSAN

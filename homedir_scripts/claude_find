@@ -8,9 +8,13 @@
 #   clf 'claude.*git'       — example: lines containing 'claude' followed by 'git'
 # The pattern is a Python regex (re.search, case-insensitive) and is matched
 # against the raw JSONL lines as well as the extracted message text content.
-# Output: one row per matching session, sorted by hit count descending:
-#   <sid8>  <screen>  MM-DD HH:MM  <N hits>  <cwd>  <first user prompt>
-# The time column is the time of the session's last message.
+# Output: one row per matching session, sorted by hit count descending, under a
+# bold header. The columns are the session id, its internal name (the CLAUDE INT
+# column of 's'), its screen, the time of its last message, the hit count, the
+# working dir and the first prompt.
+# Rows are coloured like 's': blue means that session runs right now, orange that
+# its working dir is gone, grey that nothing was ever asked in it. Green is the
+# session you are in. A value that did not fit its column ends in a '>'.
 # The prompt column holds the first prompt the user typed. A Stop hook wrapper is
 # reduced to its condition text, and /compact, status? and continue lines are
 # passed over.
@@ -59,6 +63,74 @@ except OSError:
     pass
 START_CACHE = {}
 
+# The colours are 256-colour indices. GNU screen 4 has no 24-bit colour: it reads a
+# 38;2;R;G;B sequence as SGR 2 and paints the whole line faint grey
+BOLD = GREY = BLUE = GREEN = ORANGE = OFF = ""
+if sys.stdout.isatty():
+    BOLD, OFF = "\033[1m", "\033[0m"
+    GREY, BLUE, GREEN, ORANGE = "\033[38;5;246m", "\033[38;5;75m", "\033[38;5;114m", "\033[38;5;173m"
+
+HERE = os.environ.get("CLAUDE_CODE_SESSION_ID", "")  # the session this runs in
+
+def running(pid, procstart):
+    """True when that pid is still the claude process the store recorded."""
+    if not pid:
+        return False
+    try:
+        with open(f"/proc/{pid}/stat", "r") as fh:
+            fields = fh.read().rpartition(") ")[2].split()
+        return fields[19] == str(procstart)  # start time, so a reused pid cannot pass
+    except (OSError, IndexError):
+        return False
+
+def load_names():
+    """session id -> internal name, and the ids running right now."""
+    names, live, seen = {}, set(), {}
+    store = os.path.join(os.path.expanduser("~"), ".claude", "sessions")
+    try:
+        entries = os.listdir(store)
+    except OSError:
+        return names, live
+    for e in entries:
+        if not e.endswith(".json"):
+            continue
+        full = os.path.join(store, e)
+        try:
+            with open(full, "r", encoding="utf-8", errors="replace") as fh:
+                obj = json.load(fh)
+            mtime = os.path.getmtime(full)
+        except Exception:
+            continue
+        sid, name = obj.get("sessionId") or "", obj.get("name") or ""
+        if not sid:
+            continue
+        if name and mtime >= seen.get(sid, 0):  # a reused name belongs to the newest
+            seen[sid] = mtime
+            names[sid] = name
+        if running(obj.get("pid"), obj.get("procStart")):
+            live.add(sid)
+    return names, live
+
+NAMES, LIVE = load_names()
+
+def row_colour(sid, cwd, prompt):
+    """The colour of a whole row."""
+    if sid == HERE:
+        return BOLD + GREEN
+    if cwd and not os.path.isdir(cwd):
+        return ORANGE
+    if sid in LIVE:
+        return BLUE
+    if not prompt:
+        return GREY
+    return ""
+
+def fit(text, width):
+    """text in width columns, keeping its lead, a cut marked with a >."""
+    if width <= 0:
+        return ""
+    return text if len(text) <= width else text[:width - 1] + ">"
+
 try:
     pattern = re.compile(pattern_str, re.IGNORECASE)
 except re.error as e:
@@ -97,10 +169,6 @@ def extract_text(obj):
                     parts.append(t)
         return "\n".join(parts)
     return ""
-
-def hit_field(hits):
-    """Fixed-width hit count, sized for up to 999."""
-    return f"{hits:>3} hit{'s' if hits != 1 else ''}"
 
 def proc_stat(pid):
     """(comm, ppid, start_time_epoch) for a pid, or None."""
@@ -292,24 +360,44 @@ for mtime, sid, path in sessions:
     if hits == 0:
         continue
     cwd, prompt = first_user_prompt(path)
-    ts = time.strftime("%m-%d %H:%M", time.localtime(session_end(path) or mtime))
+    ts = time.strftime("%d/%m %H:%M", time.localtime(session_end(path) or mtime))
     cwd_short = cwd.replace(os.path.expanduser("~"), "~") if cwd else "?"
-    prompt_line = " ".join(prompt.split())[:80] if prompt else "(no user prompt)"
-    rows.append((sid, screens.get(sid, "-"), ts, cwd_short, prompt_line, hits))
+    prompt_line = " ".join(prompt.split())[:200] if prompt else "(no user prompt)"
+    rows.append((sid, NAMES.get(sid, ""), screens.get(sid, "-"), ts, hits,
+                 cwd_short, prompt_line, row_colour(sid, cwd, prompt)))
 
 if not rows:
     print(f"No sessions matched /{pattern_str}/i.", file=sys.stderr)
     sys.exit(4)
 
-rows.sort(key=lambda r: r[5], reverse=True)
+rows.sort(key=lambda r: r[4], reverse=True)
 shown = rows if show_all else rows[:TOP_N]
 
-cwd_w = min(40, max((len(r[3]) for r in shown), default=10))
-scr_w = max((len(r[1]) for r in shown), default=1)
-hit_w = max([8] + [len(hit_field(r[5])) for r in shown])
-for sid, scr, ts, cwd_short, prompt_line, hits in shown:
-    print(f"{sid[:8]}  {scr:<{scr_w}}  {ts}  {hit_field(hits):<{hit_w}}  "
-          f"{cwd_short:<{cwd_w}.{cwd_w}}  {prompt_line}")
+NAMEMAX = 17  # the CLAUDE INT cap 's' uses
+CWDMAX = 22  # a path is cut at its tail, so its lead shows
+LINEMAX = 125  # the whole line, so the first prompt takes the room that is left
+TITLE = ("CL. SID", "CLAUDE INT", "SCREEN", "LAST USED", "HITS", "CWD", "FIRST PROMPT")
+sid_w = max(len(TITLE[0]), 8)  # ids are shown at 8
+name_w = max(len(TITLE[1]), min(NAMEMAX, max(len(r[1]) for r in shown)))
+scr_w = max(len(TITLE[2]), max(len(r[2]) for r in shown))
+when_w = max(len(TITLE[3]), max(len(r[3]) for r in shown))
+hit_w = max(len(TITLE[4]), max(len(str(r[4])) for r in shown))
+cwd_w = max(len(TITLE[5]), min(CWDMAX, max(len(r[5]) for r in shown)))
+width = LINEMAX
+if sys.stdout.isatty():
+    try:
+        width = min(width, os.get_terminal_size(sys.stdout.fileno()).columns)
+    except OSError:
+        pass
+prompt_w = max(0, width - (sid_w + 2 + name_w + 2 + scr_w + 2 + when_w + 2 + hit_w + 2 + cwd_w + 2))
+
+head = (f"{TITLE[0]:<{sid_w}}  {TITLE[1]:<{name_w}}  {TITLE[2]:<{scr_w}}  {TITLE[3]:<{when_w}}  "
+        f"{TITLE[4]:>{hit_w}}  {TITLE[5]:<{cwd_w}}  {fit(TITLE[6], prompt_w)}")
+print(f"{BOLD}{head.rstrip()}{OFF}")
+for sid, name, scr, ts, hits, cwd_short, prompt_line, colour in shown:
+    line = (f"{sid[:8]:<{sid_w}}  {fit(name, name_w):<{name_w}}  {scr:<{scr_w}}  {ts:<{when_w}}  "
+            f"{hits:>{hit_w}}  {fit(cwd_short, cwd_w):<{cwd_w}}  {fit(prompt_line, prompt_w)}")
+    print(f"{colour}{line.rstrip()}{OFF}")
 
 print("", file=sys.stderr)
 print(f"{len(rows)} session(s) matched /{pattern_str}/i.", file=sys.stderr)

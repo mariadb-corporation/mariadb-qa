@@ -94,10 +94,22 @@ done <<<"$(ps -eo pid=,ppid=,tpgid=,tty=,comm=,args=)"
 SIDMAP="/tmp/.claude_session_ids.${UID}"
 TTYMAP="${SIDMAP}/tty"
 SESSIONS="${HOME}/.claude/sessions"
+read -r _ BTIME < <(/bin/grep -m1 '^btime' /proc/stat)
+CLK_TCK="$(getconf CLK_TCK)"
+declare -A MTIME
+while read -r WHEN FILE; do MTIME["${FILE}"]="${WHEN}"; done < <(stat -c '%Y %n' "${SIDMAP}"/* "${TTYMAP}"/* "${SESSIONS}"/*.json 2>/dev/null)
+written_since(){  # ${1}=file ${2}=process. True when the file was written after the process started.
+  # The mtime of /proc/<pid> is when its entry was last created, not the process start
+  local STAT FIELDS
+  [ ! -z "${MTIME[${1}]}" ] || return 1
+  read -r STAT < "/proc/${2}/stat" 2>/dev/null || return 1
+  read -ra FIELDS <<<"${STAT#*) }"
+  [ "${MTIME[${1}]}" -ge "$(( BTIME + FIELDS[19] / CLK_TCK ))" ]
+}
 session_of(){  # ${1}=claude process. Sets SESSION to its session id, or to ?
   local KID ENTRY WORD PREV=
   SESSION=
-  if [ -s "${SIDMAP}/${1}" ] && [ "${SIDMAP}/${1}" -nt "/proc/${1}" ]; then
+  if [ -s "${SIDMAP}/${1}" ] && written_since "${SIDMAP}/${1}" "${1}"; then
     read -r SESSION < "${SIDMAP}/${1}"
     if [ ! -z "${SESSION}" ]; then return; fi
   fi
@@ -115,7 +127,7 @@ session_of(){  # ${1}=claude process. Sets SESSION to its session id, or to ?
 name_of(){  # ${1}=claude process. Sets SNAME to its session name, empty when it has none
   local JSON
   SNAME=
-  if [ -s "${SESSIONS}/${1}.json" ] && [ "${SESSIONS}/${1}.json" -nt "/proc/${1}" ]; then
+  if [ -s "${SESSIONS}/${1}.json" ] && written_since "${SESSIONS}/${1}.json" "${1}"; then
     read -r JSON < "${SESSIONS}/${1}.json"
     if [[ "${JSON}" =~ \"name\":\"([^\"]*)\" ]]; then SNAME="${BASH_REMATCH[1]}"; fi
   fi
@@ -133,7 +145,7 @@ done
 last_in(){  # ${1}=window ${2}=its tty. Sets LAST to the session last seen there, empty when there is none
   local FILE="${TTYMAP}/${2//\//-}"
   LAST=
-  if [ -s "${FILE}" ] && [ "${FILE}" -nt "/proc/${1}" ]; then read -r LAST < "${FILE}"; fi
+  if [ -s "${FILE}" ] && written_since "${FILE}" "${1}"; then read -r LAST < "${FILE}"; fi
 }
 
 windows_of(){  # ${1}=screen. Sets ORDERED to its windows, oldest first

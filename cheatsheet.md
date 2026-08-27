@@ -134,9 +134,13 @@ generator, 25% revgen and 50% `INFILE`, set `QUERIES_PER_INFILE` to the sum of t
 `PQUERY_MAX_SQL_LINES` (5141189, the pquery maximum) caps the per-trial SQL. Lines are cut from
 the end, and the sources are joined in the order generator, revgen, `INFILE`, all-disk, so the
 last source in use loses lines first. The file lands in `TRIAL_SQL_DIR`.
-`REVGEN_YACC` picks the grammar revgen walks, so it tracks the version under test. Beside it sits
-`<version>_coldefs.txt`, the column definitions revgen builds its tables from; `yacc/harvest_coldefs.sh`
-writes one per version from that version's own test suite.
+`REVGEN_YACC` picks the grammar revgen walks, so it tracks the version under test. Beside it sit two
+more files it reads: `<version>_lex.h`, the keyword table copied from the server's `sql/lex.h`, and
+`<version>_coldefs.txt`, the column definitions revgen builds its tables from. Install a matched
+grammar and keyword table with `revgen/refresh_grammar.sh <source tree>`, which checks both files
+before it copies them; `yacc/harvest_coldefs.sh` writes the column definitions per version from that
+version's own test suite. `sql/sql_lex.h` is a different file from `sql/lex.h` and holds no keywords,
+so revgen and `pquery-run.sh` both refuse to run when the keyword table has none.
 
 | Applied to the per-trial SQL | What it does |
 |---|---|

@@ -186,6 +186,18 @@ INTERLEAVE_SQL=${INTERLEAVE_SQL:-""}
 INTERLEAVE_LINES=${INTERLEAVE_LINES:-100}
 REVGEN_OPTIONS=${REVGEN_OPTIONS:-"--depth 10"}  # Measured best balance of parse-valid SQL against grammar reach; see pquery-run-MD-revgen.conf
 REVGEN_YACC=${REVGEN_YACC:-${SCRIPT_PWD}/yacc/13.1_sql_yacc.yy}
+# The keyword table revgen pairs with the grammar. It is the version-matched sibling of REVGEN_YACC,
+# derived the way revgen derives it: 13.1_sql_yacc.yy takes 13.1_lex.h, and a grammar named anything
+# else takes a plain lex.h from the same directory. Both files come from one server source tree;
+# install a pair with revgen/refresh_grammar.sh. Set REVGEN_LEX in the .conf to override.
+if [ -z "${REVGEN_LEX:-}" ]; then
+  REVGEN_LEX_BASE="$(basename "${REVGEN_YACC}")"
+  case "${REVGEN_LEX_BASE}" in
+    *sql_yacc.yy) REVGEN_LEX_BASE="${REVGEN_LEX_BASE%sql_yacc.yy}lex.h" ;;
+    *)            REVGEN_LEX_BASE="lex.h" ;;
+  esac
+  REVGEN_LEX="$(dirname "${REVGEN_YACC}")/${REVGEN_LEX_BASE}"
+fi
 REVGEN_VALIDATE_SOCKET=${REVGEN_VALIDATE_SOCKET:-}  # Optional: socket of a separate server revgen PREPARE-tests its output against, dropping unparseable statements. Ignored when unset or absent
 QUERIES_PER_REVGEN_RUN=${QUERIES_PER_REVGEN_RUN:-25000}
 QUERIES_PER_GENERATOR_RUN=${QUERIES_PER_GENERATOR_RUN:-25000}
@@ -358,14 +370,28 @@ if [ ! -z "${INTERLEAVE_LINES}" ] && { ! [[ "${INTERLEAVE_LINES}" =~ ^[0-9]{1,10
   exit 1
 fi
 
-# When revgen is in use, its yacc grammar (REVGEN_YACC) must exist before we start: revgen walks it to
-# derive SQL, and without it every per-trial revgen invocation would fail. Fail fast here instead.
+# When revgen is in use, both files it reads must be in place before we start. revgen walks the grammar
+# (REVGEN_YACC) to derive SQL and takes the text of each keyword from the table beside it (REVGEN_LEX).
+# A missing grammar fails every per-trial revgen call. A table without SYM( entries fails nothing: every
+# keyword then comes out empty and the SQL degrades to unparsable fragments, with no error anywhere.
+# sql/sql_lex.h is a different file with no SYM( entries and is easily copied in place of sql/lex.h.
+# Fail fast on both here instead.
 if [ "${USE_REVGEN}" -eq 1 ]; then
   if [ ! -r "${REVGEN_YACC}" ]; then
     echoit "Assert: USE_REVGEN=1 but the yacc grammar REVGEN_YACC='${REVGEN_YACC}' is not readable. Point REVGEN_YACC at a valid sql_yacc.yy (the shipped grammar is ${SCRIPT_PWD}/yacc/13.1_sql_yacc.yy) or disable USE_REVGEN. Terminating."
     exit 1
   fi
+  if [ ! -r "${REVGEN_LEX}" ]; then
+    echoit "Assert: USE_REVGEN=1 but the keyword table REVGEN_LEX='${REVGEN_LEX}' is not readable. Install the grammar and the table together with ${SCRIPT_PWD}/revgen/refresh_grammar.sh <source tree>, or disable USE_REVGEN. Terminating."
+    exit 1
+  fi
+  REVGEN_SYMS=$(grep -c 'SYM(' "${REVGEN_LEX}")
+  if [ "${REVGEN_SYMS}" -lt 100 ]; then
+    echoit "Assert: the keyword table REVGEN_LEX='${REVGEN_LEX}' holds ${REVGEN_SYMS} SYM( entries, so it is not the server's sql/lex.h (sql/sql_lex.h is a different file, and has none). Every keyword would drop out of the generated SQL. Reinstall the pair with ${SCRIPT_PWD}/revgen/refresh_grammar.sh <source tree>. Terminating."
+    exit 1
+  fi
   echoit "revgen grammar (REVGEN_YACC): ${REVGEN_YACC}"
+  echoit "revgen keyword table (REVGEN_LEX): ${REVGEN_LEX} (${REVGEN_SYMS} SYM( entries)"
 fi
 
 # Input file (INFILE) tarball preflight, for USE_INFILE=1: extract it here if it is a .tar.* archive
@@ -1904,7 +1930,7 @@ pquery_test(){
       REV_VALIDATE="--validate-sql --socket ${REVGEN_VALIDATE_SOCKET}"
     fi
     for REV_RUN_TRY in 1 2 3 4 5; do
-      ./revgen --threads ${GENERATION_THREADS} --yacc "${REVGEN_YACC}" ${REVGEN_OPTIONS:-} ${REV_VALIDATE} --output outrev${RANDOMD}.sql --queries ${QUERIES_PER_REVGEN_RUN} > /dev/null
+      ./revgen --threads ${GENERATION_THREADS} --yacc "${REVGEN_YACC}" --lex "${REVGEN_LEX}" ${REVGEN_OPTIONS:-} ${REV_VALIDATE} --output outrev${RANDOMD}.sql --queries ${QUERIES_PER_REVGEN_RUN} > /dev/null
       if [ -r outrev${RANDOMD}.sql ] && [ $(wc -l < outrev${RANDOMD}.sql) -ge 10 ]; then break; fi
       echoit "Note: outrev${RANDOMD}.sql not present in ${PWD}, or it has fewer than 10 lines, after revgen execution (attempt ${REV_RUN_TRY}/5); pausing 10s and retrying..."
       sleep 10

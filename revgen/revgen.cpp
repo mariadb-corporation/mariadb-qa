@@ -2419,7 +2419,8 @@ int main(int argc, char **argv) {
     // in the database slot (t1.t1) or none at all (.t1); neither resolves.
     for (const char *r :
          {"table_ident", "table_ident_opt_wild", "simple_ident", "call",
-          "drop_routine", "field_ident", "function_call_generic", "grant_ident",
+          "drop_routine", "field_ident", "field_type_all_with_typedefs",
+          "function_call_generic", "grant_ident",
           "limit_option", "opt_object_member_access",
           "option_value_following_option_type", "option_value_no_option_type",
           "optionally_qualified_column_ident", "set_stmt_option",
@@ -2466,6 +2467,13 @@ int main(int argc, char **argv) {
     return 2;
   }
   auto kw = load_keywords(read_file(lex));
+  if (kw.empty()) {
+    std::cerr << "revgen: no SYM( keyword entries found in " << lex
+              << "\n  Every keyword terminal would then emit nothing and the generated"
+                 " SQL would be unparsable fragments.\n  This file must be the server's"
+                 " sql/lex.h, not sql/sql_lex.h.\n";
+    return 2;
+  }
 
   // Drop what no derivation can complete, repeatedly: removing an alternative can
   // leave its rule empty, and removing a rule can strand the alternatives that

@@ -21,6 +21,8 @@ task matches its description.
   file after approval.
 - `loop-screens-cleanup` - sweep the reducer screens and end the finished ones, reaping
   each ended trial's processes and its `/dev/shm` workdir; leave screens still reducing.
+- `mtr_matrix_claude` - run one `.test` against every build `gendirs.sh` lists (plain, `SAN`,
+  `MSAN`, `TSAN`, `VAL`, `GAL`, `MDEV`, `ALL`) in parallel and write a Bug Detection Matrix.
 - `mtr_testcase` - craft and verify a `.test` from a CLI/pquery repro of any bug class: engine
   guards, `--error` coverage, reverse-gating with `--die`, and run-in-place verification.
 - `qa-build` - build durable MariaDB basedirs in `/test` from a source tree (`ba`/`bas`/`bam`/`bat`

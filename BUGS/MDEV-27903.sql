@@ -44,3 +44,41 @@ DELETE FROM t;
 INSERT INTO t VALUES (4,REPEAT('x',60));
 HANDLER t READ NEXT;
 #ERR: [ERROR] mysql_ha_read: Got error 127 when reading table 't'
+
+SET binlog_format=ROW;
+CREATE TABLE t (a INT,c VARCHAR(1)) ENGINE=MyISAM;
+INSERT INTO t VALUES (1,'');
+HANDLER t OPEN;
+INSERT INTO t SET c=2;
+HANDLER t READ NEXT;
+DELETE FROM t ORDER BY a LIMIT 1;
+DELETE FROM t;
+INSERT INTO t (a) VALUES (3);
+HANDLER t READ NEXT;
+#ERR: [ERROR] mysql_ha_read: Got error 127 when reading table 't'
+
+SET binlog_format=ROW;
+CREATE TABLE t (a INT,c VARCHAR(1)) ENGINE=MyISAM;
+INSERT INTO t VALUES (1,'');
+HANDLER t OPEN AS h1;
+HANDLER t OPEN AS h2;
+INSERT INTO t SET c=2;
+HANDLER h1 READ NEXT;
+HANDLER h2 READ NEXT;
+DELETE FROM t ORDER BY a LIMIT 1;
+DELETE FROM t;
+INSERT INTO t (a) VALUES (3);
+HANDLER h1 READ NEXT;
+HANDLER h2 READ NEXT;
+#ERR: [ERROR] mysql_ha_read: Got error 127 when reading table 'h1'
+#ERR: [ERROR] mysql_ha_read: Got error 127 when reading table 'h2'
+
+CREATE TABLE t (a INT,c BLOB) ENGINE=MyISAM;
+INSERT INTO t VALUES (1,REPEAT('a',5000)),(2,REPEAT('b',5000)),(3,REPEAT('c',20));
+HANDLER t OPEN;
+HANDLER t READ NEXT;
+DELETE FROM t WHERE a=2;
+DELETE FROM t WHERE a=1;
+INSERT INTO t VALUES (9,REPEAT('z',9000));
+HANDLER t READ NEXT;
+#ERR: [ERROR] mysql_ha_read: Got error 127 when reading table 't'

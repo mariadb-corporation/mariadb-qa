@@ -68,7 +68,7 @@ if (!$mysql_errno)
 }
 ```
 
-  The failure then reads `mysqltest: At line 9: ONLY_FULL_GROUP_BY accepted an ORDER BY column that is not in GROUP BY`. `$mysql_errno` holds the last statement's error number, 0 on success, so no backtick capture is involved. For a wrong result, capture with `query_get_value(SELECT ..., <col_or_alias>, 1)` and `--die` on the wrong value. Write the `--die` text as one plain sentence naming what went wrong, never a code reference or an error number. A crash gate needs none of this: the server dies and the failure is self-evident.
+  The failure then reads `mysqltest: At line 9: ONLY_FULL_GROUP_BY accepted an ORDER BY column that is not in GROUP BY`. `$mysql_errno` holds the last statement's error number, 0 on success, so no backtick capture is involved. For a wrong result, capture with `query_get_value(SELECT ..., <col_or_alias>, 1)` and `--die` on the wrong value. Write the `--die` text as one plain sentence naming what went wrong, never a code reference or an error number. Start it with plain words, never with an SQL keyword: `CREATE TABLE AS SELECT on a partitioned table was not replicated` reads as an SQL statement rather than as the verdict, while `The new partitioned table exists on node 1 but not on node 2. It was not replicated to the cluster.` reads as the finding. A crash gate needs none of this: the server dies and the failure is self-evident.
 - Functional (non-crash) feature pre-tests use the plain `test` db and UPPERCASE SQL.
 - CLI vs MTR: if the exact SQL runs in both, note "CLI/MTR compatible" (one block). If MTR needs guards/directives the CLI lacks, present two blocks (CLI Testcase / MTR Testcase).
 
