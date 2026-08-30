@@ -255,6 +255,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|compare_window_funcs_by_window_specs|bubble_sort<Item_window_func>|order_window_funcs_by_window_specs|Window_funcs_computation::setup                                  ## MDEv-40956
 !thd->lex->last_table() || !thd->lex->last_table()->vers_conditions.delete_history|SIGABRT|TABLE::vers_switch_partition|open_table|open_and_process_table|open_tables          ## MDEV-40938
 SIGSEGV|Field_iterator_table::set|Field_iterator_table_ref::set_field_iterator|Field_iterator_table_ref::set|insert_fields                                                     ## MDEV-32310
 SIGSEGV|Field_iterator_table::set|insert_fields|setup_wild|JOIN::prepare                                                                                                       ## MDEV-32310
