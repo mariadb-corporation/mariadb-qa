@@ -22,6 +22,7 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|get_new_start_alter_info|Query_log_event::handle_split_alter_query_log_event                                               ## MDEV-37770 (needs testcase)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|use-after-poison|include/dict0mem.h|dict_col_t::is_virtual|dict_col_t::name|dict_table_get_col_name|row_merge_create_index                                                ## MDEV-19173
 UBSAN|load of null pointer of type 'grn_obj *' (aka 'struct _grn_obj *')|storage/mroonga/ha_mroonga.cpp|ha_mroonga::storage_index_first|handler::ha_index_first|collect_statistics_for_index|collect_statistics_for_table  ## MDEV-40962
 UBSAN|member access within null pointer of type 'Window_spec'|sql/sql_window.cc|compare_window_funcs_by_window_specs|void|order_window_funcs_by_window_specs|Window_funcs_computation::setup  ## MDEV-40956
 UBSAN|member access within null pointer of type 'ib_rbt_node_t'|storage/innobase/handler/ha_innodb.cc|innobase_fts_retrieve_ranking|Item_func_match::val_real|Type_handler_real_result::Item_val_bool|Item_cond_and::val_bool ## MDEV-33221
