@@ -255,6 +255,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|ha_mroonga::storage_index_first|ha_mroonga::index_first|handler::ha_index_first|collect_statistics_for_index                                                           ## MDEV-40962
+SIGSEGV|ha_mroonga::storage_index_first|handler::ha_index_first|collect_statistics_for_index|collect_statistics_for_table                                                      ## MDEV-40962
 strcmp(arr[i].get_username(), arr[i + 1].get_username()) <= 0|SIGABRT|find_first_user<ACL_USER>|acl_find_user_by_name|find_user_exact|replace_user_table                       ## MDEV-40960
 SIGSEGV|compare_window_funcs_by_window_specs|bubble_sort<Item_window_func>|order_window_funcs_by_window_specs|Window_funcs_computation::setup                                  ## MDEV-40956
 !thd->lex->last_table() || !thd->lex->last_table()->vers_conditions.delete_history|SIGABRT|TABLE::vers_switch_partition|open_table|open_and_process_table|open_tables          ## MDEV-40938
