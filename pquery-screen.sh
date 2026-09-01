@@ -277,7 +277,7 @@ row_colour(){  # ${1}=name ${2}=session id. Sets ROWCOL to the colour of the who
   ROWCOL=
   if [ "${2:0:1}" = '(' ]; then return; fi  # A session that ended leaves the row plain
   if [ "${2}" != '-' ]; then ROWCOL="${BLUE}"; return; fi
-  if [[ "${1}" =~ ^s[0-9]+$ ]]; then ROWCOL="${ORANGE}"; return; fi  # A reducer
+  if [[ "${1}" =~ ^(s|ge|pr)[0-9]+$ ]]; then ROWCOL="${ORANGE}"; return; fi  # A reducer, a run, a reducer handler
   if [[ "${1}" == pts-* ]]; then ROWCOL="${GREY}"; return; fi  # A plain shell
   if [ "${1}" = 'memory' ]; then ROWCOL="${BOLD}${GREEN}"; fi
 }

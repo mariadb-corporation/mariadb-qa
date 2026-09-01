@@ -22,6 +22,7 @@ from datetime import datetime
 CACHE = f'/tmp/.claude_usage_teams.{os.getuid()}.json'
 MARK = CACHE + '.pending'
 CREDS = os.path.expanduser('~/.claude/.credentials.json')
+CHECK = os.path.expanduser('~/.claude/sanity_check.py')
 USAGE_URL = 'https://api.anthropic.com/api/oauth/usage'
 POLL = 300      # seconds between Fable-number reads
 STALE = 900     # seconds before the Fable number is drawn dimmed
@@ -321,6 +322,15 @@ if used is not None and size:
   else:
     color = LINE
   parts.append(f'{color}{tokens(used)}/{tokens(size)}{RESET}')
+
+if os.path.exists(CHECK):
+  try:
+    said = subprocess.run([sys.executable, CHECK, '--segment'], input=json.dumps(data),
+                          capture_output=True, text=True, timeout=3).stdout.strip()
+  except Exception:
+    said = ''
+  if said:
+    parts.append(f'{LINE}{said}{RESET}')
 
 bands = []
 days = []

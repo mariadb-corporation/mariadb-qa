@@ -77,7 +77,7 @@ Flags:
 - `--coldefs PATH`  column definitions the `t1`-`t4` shapes are built from, one
                     per line. Default: sibling of `--yacc`, so
                     `13.1_sql_yacc.yy` pairs with `13.1_coldefs.txt`. Written by
-                    `yacc/harvest_coldefs.sh`. Missing: the plain shapes carry
+                    `harvest_coldefs.sh`. Missing: the plain shapes carry
                     the run.
 - `--wild-cols N`   percent of columns whose type is derived from the grammar
                     rather than taken from `--coldefs`. Default 12, 0 disables.
@@ -129,11 +129,11 @@ revgen reads three files per server version, all in `mariadb-qa/yacc/`:
 |---|---|---|
 | `<version>_sql_yacc.yy` | `sql/sql_yacc.yy` | the grammar revgen walks |
 | `<version>_lex.h` | `sql/lex.h` | the text of each keyword |
-| `<version>_coldefs.txt` | written by `yacc/harvest_coldefs.sh` | the column types the tables are built from |
+| `<version>_coldefs.txt` | written by `harvest_coldefs.sh` | the column types the tables are built from |
 
 `--yacc` names the grammar and the other two default to its version-matched
 siblings, so `13.1_sql_yacc.yy` takes `13.1_lex.h` and `13.1_coldefs.txt`. The
-grammar and the keyword table have to come from the same source tree.
+grammar and the keyword table have to come from the same version.
 
 `sql/lex.h` and `sql/sql_lex.h` sit next to each other in the server tree and
 have near-identical names. `sql/sql_lex.h` holds no `SYM()` entries. With that
@@ -144,24 +144,42 @@ reads as valid SQL. revgen therefore stops with an error when the keyword table
 holds no `SYM()` entries, and `pquery-run.sh` makes the same check before a run
 starts.
 
-Install a matched pair with the refresh script. It copies both files and checks
-each one before it installs anything:
+Install a matched pair with the refresh script. It pulls both files from the
+MariaDB server repository on GitHub and checks each one before it installs
+anything, so no local source tree is needed:
 
 ```
-./refresh_grammar.sh /test/git-bisect/13.1     # version taken from the directory name
-./refresh_grammar.sh /test/10.11 10.11
-./refresh_grammar.sh all                       # every tree under /test/git-bisect
+./refresh_grammars.sh              # every version /test/gendirs.sh reports
+./refresh_grammars.sh main 12.3    # only these branches
+./refresh_grammars.sh --no-coldefs # grammar and keyword table only
 ```
 
-The column definitions come from the test suite of that version rather than
-from its source, so they are harvested separately:
+With no arguments the version list comes from `/test/gendirs.sh ALLALL`, so the
+grammar set follows the builds this box tests, and a version this box does not
+build is not fetched. MySQL builds are skipped.
+
+Each version names itself from the `VERSION` file of its branch. The newest
+version has no branch of its own and lives on `main`, which the script looks up
+rather than assumes, so nothing here needs editing when `main` moves on. The
+default `--yacc`, and the `REVGEN_YACC` default in `pquery-run.sh`, name one
+version, so both move to the new name at that point.
+
+The column definitions come from a running server rather than from GitHub, so
+where `<version>_coldefs.txt` is missing the refresh script brings up a copy of
+that version's own build and calls `harvest_coldefs.sh` against it. Delete a
+coldefs file to have it built again, or pass `--no-coldefs` to skip the step.
+
+`harvest_coldefs.sh` also runs on its own:
 
 ```
-../yacc/harvest_coldefs.sh /test/git-bisect/13.1/mysql-test 13.1 [socket]
+./harvest_coldefs.sh /test/git-bisect/13.1/mysql-test 13.1 [socket]
+./harvest_coldefs.sh <basedir>/mariadb-test 13.0 <basedir>/socket.sock
 ```
 
-With a running server of that version given as the third argument, only the
-definitions that server accepts are kept.
+Any directory of `.test` and `.inc` files will do, so a built server works as
+well as a source tree. Older builds name that directory `mysql-test`. With a
+running server of that version given as the third argument, only the definitions
+that server accepts are kept. Either way the file lands in `yacc/`.
 
 ## How it works
 
@@ -256,7 +274,7 @@ reach a plain column list.
 
 `t1`-`t4` are built once per run rather than written out here. `c1` is always the
 integer primary key the generated DML leans on; `c2` to `c4` take a real column
-definition from `--coldefs`, which `yacc/harvest_coldefs.sh` takes from the test
+definition from `--coldefs`, which `harvest_coldefs.sh` takes from the test
 suite of the version under test and checks against a server of that version. A
 type the version added is therefore covered without a list here to maintain. One
 column in eight has its type derived from the grammar instead (`--wild-cols`),

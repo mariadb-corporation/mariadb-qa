@@ -188,8 +188,8 @@ REVGEN_OPTIONS=${REVGEN_OPTIONS:-"--depth 10"}  # Measured best balance of parse
 REVGEN_YACC=${REVGEN_YACC:-${SCRIPT_PWD}/yacc/13.1_sql_yacc.yy}
 # The keyword table revgen pairs with the grammar. It is the version-matched sibling of REVGEN_YACC,
 # derived the way revgen derives it: 13.1_sql_yacc.yy takes 13.1_lex.h, and a grammar named anything
-# else takes a plain lex.h from the same directory. Both files come from one server source tree;
-# install a pair with revgen/refresh_grammar.sh. Set REVGEN_LEX in the .conf to override.
+# else takes a plain lex.h from the same directory. Both files come from one server version;
+# install a pair with revgen/refresh_grammars.sh. Set REVGEN_LEX in the .conf to override.
 if [ -z "${REVGEN_LEX:-}" ]; then
   REVGEN_LEX_BASE="$(basename "${REVGEN_YACC}")"
   case "${REVGEN_LEX_BASE}" in
@@ -382,12 +382,12 @@ if [ "${USE_REVGEN}" -eq 1 ]; then
     exit 1
   fi
   if [ ! -r "${REVGEN_LEX}" ]; then
-    echoit "Assert: USE_REVGEN=1 but the keyword table REVGEN_LEX='${REVGEN_LEX}' is not readable. Install the grammar and the table together with ${SCRIPT_PWD}/revgen/refresh_grammar.sh <source tree>, or disable USE_REVGEN. Terminating."
+    echoit "Assert: USE_REVGEN=1 but the keyword table REVGEN_LEX='${REVGEN_LEX}' is not readable. Install the grammar and the table together with ${SCRIPT_PWD}/revgen/refresh_grammars.sh, or disable USE_REVGEN. Terminating."
     exit 1
   fi
   REVGEN_SYMS=$(grep -c 'SYM(' "${REVGEN_LEX}")
   if [ "${REVGEN_SYMS}" -lt 100 ]; then
-    echoit "Assert: the keyword table REVGEN_LEX='${REVGEN_LEX}' holds ${REVGEN_SYMS} SYM( entries, so it is not the server's sql/lex.h (sql/sql_lex.h is a different file, and has none). Every keyword would drop out of the generated SQL. Reinstall the pair with ${SCRIPT_PWD}/revgen/refresh_grammar.sh <source tree>. Terminating."
+    echoit "Assert: the keyword table REVGEN_LEX='${REVGEN_LEX}' holds ${REVGEN_SYMS} SYM( entries, so it is not the server's sql/lex.h (sql/sql_lex.h is a different file, and has none). Every keyword would drop out of the generated SQL. Reinstall the pair with ${SCRIPT_PWD}/revgen/refresh_grammars.sh. Terminating."
     exit 1
   fi
   echoit "revgen grammar (REVGEN_YACC): ${REVGEN_YACC}"

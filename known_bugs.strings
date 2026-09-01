@@ -3807,7 +3807,7 @@ i < get_width()|SIGABRT|Histogram_binary::get_value|Histogram_binary::find_bucke
 # (have_max && !have_min) || (have_max && have_min && (max_res == 0))|SIGABRT|QUICK_GROUP_MIN_MAX_SELECT::get_next|rr_quick|READ_RECORD::read_record|sub_select       ## Fixed ## MDEV-25964
 # !commit_lsn|SIGABRT|trx_t::free|innobase_fts_load_stopword|create_table_info_t::create_table_update_dict|ha_innobase::create                                        ## Fixed ## MDEV-28730
 # !eliminated|SIGABRT|Item_subselect::exec|Item_singlerow_subselect::val_int|Arg_comparator::compare_int_signed|Arg_comparator::compare                               ## Fixed ## MDEV-36610
-# SIGSEGV|Sql_path::from_text|Sys_var_path::from_item|Sys_var_path::do_check|sys_var::check                                                                           ## Fixed ## MDEV-40009
+SIGSEGV|Sql_path::from_text|Sys_var_path::from_item|Sys_var_path::do_check|sys_var::check                                                                           ## Fixed ## MDEV-40009  (temp re-enabled; issue still present in ES 12.3 and CS 13.1 ftm)
 # len_arg <= (65535-2-1)|SIGABRT|Field_varstring::Field_varstring|Field_vector::Field_vector|Type_handler_vector::make_table_field|Type_handler::make_and_init_table_field       ## Fixed ## MDEV-40486
 # SIGSEGV|my_mb_wc_utf16_quick|my_utf16_uni|get_first_nonspace|json_scan_next                                                                                         ## Fixed ## MDEV-40572
 # SIGSEGV|my_mb_wc_ucs2_quick|my_ucs2_uni|get_first_nonspace|json_scan_next                                                                                           ## Fixed ## MDEV-40572

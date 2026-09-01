@@ -1,0 +1,1 @@
+../revgen/refresh_grammars.sh

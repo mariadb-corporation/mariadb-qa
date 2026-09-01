@@ -43,7 +43,6 @@
 #include "lex_symbol.h"
 #include "item_create.h"
 #include "sp_head.h"
-#include "sp_instr.h"                          // classes sp_instr,...
 #include "sp_rcontext.h"
 #include "sp.h"
 #include "sql_show.h"
@@ -57,7 +56,6 @@
 #include "sql_cte.h"
 #include "sql_window.h"
 #include "item_windowfunc.h"
-#include "item_timefunc.h"
 #include "event_parse_data.h"
 #include "create_options.h"
 #include <myisam.h>
@@ -71,8 +69,6 @@
 #include "my_base.h"
 #include "sql_type_json.h"
 #include "json_table.h"
-#include "sql_update.h"
-#include "sql_delete.h"
 
 /* this is to get the bison compilation windows warnings out */
 #ifdef _MSC_VER
@@ -82,7 +78,6 @@
 #endif
 #if defined (__GNUC__) || defined (__clang__)
 #pragma GCC diagnostic ignored "-Wunused-label" /* yyexhaustedlab: */
-#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 #endif
 
 /* Stack size 28200 with clang for MYSQLparse() and ORAparse() */
@@ -133,6 +128,7 @@ static Item* escape(THD *thd)
   const char *esc= thd->variables.sql_mode & MODE_NO_BACKSLASH_ESCAPES ? "" : "\\";
   return new (thd->mem_root) Item_string_ascii(thd, esc, MY_TEST(esc[0]));
 }
+
 
 /**
   @brief Bison callback to report a syntax/OOM error
@@ -192,14 +188,15 @@ void _CONCAT_UNDERSCORED(turn_parser_debug_on,yyparse)()
 #endif
 
 
+#define bincmp_collation(X,Y)           \
+  do                                    \
+  {                                     \
+     if (unlikely(Lex->set_bincmp(X,Y))) \
+       MYSQL_YYABORT;                   \
+  } while(0)
+
+
 %}
-
-%code requires
-{
-// Master_info_file, enum_master_use_gtid, std::optional
-#include "rpl_master_info_file.h"
-}
-
 %union {
   int  num;
   ulong ulong_num;
@@ -208,20 +205,7 @@ void _CONCAT_UNDERSCORED(turn_parser_debug_on,yyparse)()
   uint sp_instr_addr;
 
   /* structs */
-  /**
-    This is a stand-in for @ref std::optional,
-    which is not trivially `union`-safe.
-  */
-  struct
-  {
-    bool has_value; uint64_t value;
-#if __cplusplus >= 201703L || _MSVC_LANG >= 201703L
-    template<typename I> operator std::optional<I>()
-    { return has_value ? std::optional(static_cast<I>(value)) : std::nullopt; }
-#endif
-  } optional_uint;
   LEX_CSTRING lex_str;
-  Lex_comment_st lex_comment;
   Lex_ident_cli_st kwd;
   Lex_ident_cli_st ident_cli;
   Lex_ident_sys_st ident_sys;
@@ -232,9 +216,6 @@ void _CONCAT_UNDERSCORED(turn_parser_debug_on,yyparse)()
   Lex_length_and_dec_st Lex_length_and_dec;
   Lex_cast_type_st Lex_cast_type;
   Lex_field_type_st Lex_field_type;
-  Lex_exact_charset_extended_collation_attrs_st
-                    Lex_exact_charset_extended_collation_attrs;
-  Lex_extended_collation_st Lex_extended_collation;
   Lex_dyncol_type_st Lex_dyncol_type;
   Lex_for_loop_st for_loop;
   Lex_for_loop_bounds_st for_loop_bounds;
@@ -256,15 +237,6 @@ void _CONCAT_UNDERSCORED(turn_parser_debug_on,yyparse)()
   Lex_select_lock select_lock;
   Lex_select_limit select_limit;
   Lex_order_limit_lock *order_limit_lock;
-  struct {
-    bool with_unique_keys;
-    ulong type_constraint;
-  } json_predicate;
-  struct
-  {
-    longlong num;
-    bool is_unsigned;
-  } longlong_hybrid_number;
 
   /* pointers */
   Lex_ident_sys *ident_sys_ptr;
@@ -283,7 +255,6 @@ void _CONCAT_UNDERSCORED(turn_parser_debug_on,yyparse)()
   Item_basic_constant *item_basic_constant;
   Key_part_spec *key_part;
   LEX *lex;
-  sp_instr_fetch_cursor *instr_fetch_cursor;
   sp_expr_lex *expr_lex;
   sp_assignment_lex *assignment_lex;
   class sp_lex_cursor *sp_cursor_stmt;
@@ -293,18 +264,15 @@ void _CONCAT_UNDERSCORED(turn_parser_debug_on,yyparse)()
   List<Condition_information_item> *cond_info_list;
   List<DYNCALL_CREATE_DEF> *dyncol_def_list;
   List<Item> *item_list;
-  List_sp_assignment_lex *sp_assignment_lex_list;
+  List<sp_assignment_lex> *sp_assignment_lex_list;
   List<Statement_information_item> *stmt_info_list;
   List<String> *string_list;
   List<Lex_ident_sys> *ident_sys_list;
-  List<sp_fetch_target> *fetch_target_list;
   Statement_information_item *stmt_info_item;
   String *string;
   TABLE_LIST *table_list;
   Table_ident *table;
   Qualified_column_ident *qualified_column_ident;
-  Optimizer_hint_parser_output *opt_hints;
-  Qualified_ident *qualified_ident;
   char *simple_string;
   const char *const_simple_string;
   chooser_compare_func_creator boolfunc2creator;
@@ -315,11 +283,9 @@ void _CONCAT_UNDERSCORED(turn_parser_debug_on,yyparse)()
   class sp_head *sphead;
   class sp_name *spname;
   class sp_variable *spvar;
-  class sp_type_def_record *sprec;
   class With_element_head *with_element_head;
   class With_clause *with_clause;
   class Virtual_column_info *virtual_column;
-  engine_option_value *engine_option_value_ptr;
 
   handlerton *db_type;
   st_select_lex *select_lex;
@@ -331,7 +297,6 @@ void _CONCAT_UNDERSCORED(turn_parser_debug_on,yyparse)()
   st_trg_execution_order trg_execution_order;
 
   /* enums */
-  trilean tril;
   enum enum_sp_suid_behaviour sp_suid;
   enum enum_sp_aggregate_type sp_aggregate_type;
   enum enum_view_suid view_suid;
@@ -363,14 +328,7 @@ void _CONCAT_UNDERSCORED(turn_parser_debug_on,yyparse)()
   enum vers_kind_t vers_range_unit;
   enum Column_definition::enum_column_versioning vers_column_versioning;
   enum plsql_cursor_attr_t plsql_cursor_attr;
-  enum Alter_info::enum_alter_table_algorithm alter_table_algo_val;
-  enum_master_use_gtid master_use_gtid;
   privilege_t privilege;
-  struct
-  {
-    Item *expr;
-    LEX_CSTRING expr_str;
-  } expr_and_query_str;
 }
 
 %{
@@ -387,9 +345,9 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 */
 
 %ifdef MARIADB
-%expect 70
+%expect 64
 %else
-%expect 71
+%expect 65
 %endif
 
 /*
@@ -413,8 +371,6 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 
 
 %token <lex_str> '@'
-
-%token HINT_COMMENT
 
 /*
   Special purpose tokens
@@ -474,12 +430,12 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  <NONE> SET_VAR                /* OPERATOR */
 %token  <NONE> SHIFT_LEFT             /* OPERATOR */
 %token  <NONE> SHIFT_RIGHT            /* OPERATOR */
-%token  <NONE> ARROW_SYM              /* OPERATOR */
 
 
 /*
   Reserved keywords
 */
+%token  <kwd> ACCESSIBLE_SYM
 %token  <kwd> ADD                           /* SQL-2003-R */
 %token  <kwd> ALL                           /* SQL-2003-R */
 %token  <kwd> ALTER                         /* SQL-2003-R */
@@ -518,7 +474,6 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  <kwd> CROSS                         /* SQL-2003-R */
 %token  <kwd> CUME_DIST_SYM
 %token  <kwd> CURDATE                       /* MYSQL-FUNC */
-%token  <kwd> CURRENT_PATH                  /* SQL-2003-R */
 %token  <kwd> CURRENT_ROLE                  /* SQL-2003-R */
 %token  <kwd> CURRENT_USER                  /* SQL-2003-R */
 %token  <kwd> CURSOR_SYM                    /* SQL-2003-R */
@@ -607,7 +562,6 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  <kwd> LINEAR_SYM
 %token  <kwd> LINES
 %token  <kwd> LOAD
-%token  <kwd> LOCALTIMESTAMP                /* SQL-2003-R */
 %token  <kwd> LOCATOR_SYM                   /* SQL-2003-N */
 %token  <kwd> LOCK_SYM
 %token  <kwd> LONGBLOB
@@ -693,6 +647,7 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  <kwd> SELECT_SYM                    /* SQL-2003-R */
 %token  <kwd> SENSITIVE_SYM                 /* FUTURE-USE */
 %token  <kwd> SEPARATOR_SYM
+%token  <kwd> SERVER_OPTIONS
 %token  <kwd> SET                           /* SQL-2003-R */
 %token  <kwd> SHOW
 %token  <kwd> SIGNAL_SYM                    /* SQL-2003-R */
@@ -715,6 +670,7 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  <kwd> STRAIGHT_JOIN
 %token  <kwd> SUM_SYM                       /* SQL-2003-N */
 %token  <kwd> SYSDATE
+%token  <kwd> TABLE_REF_PRIORITY
 %token  <kwd> TABLE_SYM                     /* SQL-2003-R */
 %token  <kwd> TERMINATED
 %token  <kwd> THEN_SYM                      /* SQL-2003-R */
@@ -745,7 +701,6 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  <kwd> VARIANCE_SYM
 %token  <kwd> VAR_SAMP_SYM
 %token  <kwd> VARYING                       /* SQL-2003-R */
-%token  <kwd> VECTOR_SYM
 %token  <kwd> WHEN_SYM                      /* SQL-2003-R */
 %token  <kwd> WHERE                         /* SQL-2003-R */
 %token  <kwd> WHILE_SYM
@@ -763,11 +718,9 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  <kwd>  ELSIF_MARIADB_SYM             // PLSQL-R
 %token  <kwd>  EXCEPTION_ORACLE_SYM          // SQL-2003-N, PLSQL-R
 %token  <kwd>  GOTO_MARIADB_SYM              // Oracle-R
-%token  <kwd>  NOCOPY_SYM                    // PLSQL-N
 %token  <kwd>  OTHERS_MARIADB_SYM            // SQL-2011-N, PLSQL-R
 %token  <kwd>  PACKAGE_MARIADB_SYM           // Oracle-R
 %token  <kwd>  RAISE_MARIADB_SYM             // PLSQL-R
-%token  <kwd>  RECORD_SYM
 %token  <kwd>  ROWTYPE_MARIADB_SYM           // PLSQL-R
 %token  <kwd>  ROWNUM_SYM                    /* Oracle-R */
 
@@ -793,14 +746,12 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  <kwd>  ALGORITHM_SYM
 %token  <kwd>  ALWAYS_SYM
 %token  <kwd>  ANY_SYM                       /* SQL-2003-R */
-%token  <kwd>  ARRAY_SYM
 %token  <kwd>  ASCII_SYM                     /* MYSQL-FUNC */
 %token  <kwd>  AT_SYM                        /* SQL-2003-R */
 %token  <kwd>  ATOMIC_SYM                    /* SQL-2003-R */
 %token  <kwd>  AUTHORS_SYM
-%token  <kwd>  AUTHORIZATION_SYM             /* SQL-2003-R */
+%token  <kwd>  AUTOEXTEND_SIZE_SYM
 %token  <kwd>  AUTO_INC
-%token  <kwd>  AUTO_SYM
 %token  <kwd>  AVG_ROW_LENGTH
 %token  <kwd>  AVG_SYM                       /* SQL-2003-N */
 %token  <kwd>  BACKUP_SYM
@@ -818,7 +769,6 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  <kwd>  CATALOG_NAME_SYM              /* SQL-2003-N */
 %token  <kwd>  CHAIN_SYM                     /* SQL-2003-N */
 %token  <kwd>  CHANGED
-%token  <kwd>  CHANNEL_SYM
 %token  <kwd>  CHARSET
 %token  <kwd>  CHECKPOINT_SYM
 %token  <kwd>  CHECKSUM_SYM
@@ -854,13 +804,13 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  <kwd>  CONTAINS_SYM                  /* SQL-2003-N */
 %token  <kwd>  CONTEXT_SYM
 %token  <kwd>  CONTRIBUTORS_SYM
-%token  <kwd>  CONVERSION_SYM
 %token  <kwd>  CPU_SYM
 %token  <kwd>  CUBE_SYM                      /* SQL-2003-R */
 %token  <kwd>  CURRENT_SYM                   /* SQL-2003-R */
 %token  <kwd>  CURRENT_POS_SYM
 %token  <kwd>  CURSOR_NAME_SYM               /* SQL-2003-N */
 %token  <kwd>  CYCLE_SYM
+%token  <kwd>  DATAFILE_SYM
 %token  <kwd>  DATA_SYM                      /* SQL-2003-N */
 %token  <kwd>  DATETIME
 %token  <kwd>  DATE_SYM                      /* SQL-2003-R, Oracle-R, PLSQL-R */
@@ -929,6 +879,7 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  <kwd>  HELP_SYM
 %token  <kwd>  HIGH_PRIORITY
 %token  <kwd>  HISTORY_SYM                   /* MYSQL */
+%token  <kwd>  HOST_SYM
 %token  <kwd>  HOSTS_SYM
 %token  <kwd>  HOUR_SYM                      /* SQL-2003-R */
 %token  <kwd>  ID_SYM                        /* MYSQL */
@@ -938,6 +889,7 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  <kwd>  IMPORT
 %token  <kwd>  INCREMENT_SYM
 %token  <kwd>  INDEXES
+%token  <kwd>  INITIAL_SIZE_SYM
 %token  <kwd>  INSERT_METHOD
 %token  <kwd>  INSTALL_SYM
 %token  <kwd>  INVOKER_SYM
@@ -960,8 +912,8 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  <kwd>  LOCAL_SYM                     /* SQL-2003-R */
 %token  <kwd>  LOCKED_SYM
 %token  <kwd>  LOCKS_SYM
+%token  <kwd>  LOGFILE_SYM
 %token  <kwd>  LOGS_SYM
-%token  <kwd>  LOG_SYM
 %token  <kwd>  MASTER_CONNECT_RETRY_SYM
 %token  <kwd>  MASTER_DELAY_SYM
 %token  <kwd>  MASTER_GTID_POS_SYM
@@ -970,7 +922,6 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  <kwd>  MASTER_LOG_POS_SYM
 %token  <kwd>  MASTER_PASSWORD_SYM
 %token  <kwd>  MASTER_PORT_SYM
-%token  <kwd>  MASTER_RETRY_COUNT_SYM
 %token  <kwd>  MASTER_SERVER_ID_SYM
 %token  <kwd>  MASTER_SSL_CAPATH_SYM
 %token  <kwd>  MASTER_SSL_CA_SYM
@@ -984,10 +935,10 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  <kwd>  MASTER_USER_SYM
 %token  <kwd>  MASTER_USE_GTID_SYM
 %token  <kwd>  MASTER_HEARTBEAT_PERIOD_SYM
-%token  <kwd>  MASTER_DEMOTE_TO_SLAVE_SYM
 %token  <kwd>  MAX_CONNECTIONS_PER_HOUR
 %token  <kwd>  MAX_QUERIES_PER_HOUR
 %token  <kwd>  MAX_ROWS
+%token  <kwd>  MAX_SIZE_SYM
 %token  <kwd>  MAX_UPDATES_PER_HOUR
 %token  <kwd>  MAX_STATEMENT_TIME_SYM
 %token  <kwd>  MAX_USER_CONNECTIONS_SYM
@@ -1022,11 +973,11 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  <kwd>  NO_SYM                        /* SQL-2003-R */
 %token  <kwd>  NOMAXVALUE_SYM
 %token  <kwd>  NOMINVALUE_SYM
+%token  <kwd>  NO_WAIT_SYM
 %token  <kwd>  NOWAIT_SYM
 %token  <kwd>  NUMBER_MARIADB_SYM            /* SQL-2003-N  */
 %token  <kwd>  NUMBER_ORACLE_SYM             /* Oracle-R, PLSQL-R */
 %token  <kwd>  NVARCHAR_SYM
-%token  <kwd>  OBJECT_SYM
 %token  <kwd>  OF_SYM                        /* SQL-1992-R, Oracle-R */
 %token  <kwd>  OFFSET_SYM
 %token  <kwd>  OLD_PASSWORD_SYM
@@ -1037,6 +988,7 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  <kwd>  OPTIONS_SYM
 %token  <kwd>  OPTION                        /* SQL-2003-N */
 %token  <kwd>  OVERLAPS_SYM
+%token  <kwd>  OWNER_SYM
 %token  <kwd>  PACK_KEYS_SYM
 %token  <kwd>  PAGE_SYM
 %token  <kwd>  PARSER_SYM
@@ -1070,6 +1022,8 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  <kwd>  READ_ONLY_SYM
 %token  <kwd>  REBUILD_SYM
 %token  <kwd>  RECOVER_SYM
+%token  <kwd>  REDOFILE_SYM
+%token  <kwd>  REDO_BUFFER_SIZE_SYM
 %token  <kwd>  REDUNDANT_SYM
 %token  <kwd>  RELAY
 %token  <kwd>  RELAYLOG_SYM
@@ -1086,6 +1040,7 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  <kwd>  RESET_SYM
 %token  <kwd>  RESTART_SYM
 %token  <kwd>  RESOURCES
+%token  <kwd>  RESTORE_SYM
 %token  <kwd>  RESUME_SYM
 %token  <kwd>  RETURNED_SQLSTATE_SYM         /* SQL-2003-N */
 %token  <kwd>  RETURNS_SYM                   /* SQL-2003-R */
@@ -1101,7 +1056,6 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  <kwd>  ROW_FORMAT_SYM
 %token  <kwd>  RTREE_SYM
 %token  <kwd>  SAVEPOINT_SYM                 /* SQL-2003-R */
-%token  <kwd>  SCALAR_SYM
 %token  <kwd>  SCHEDULE_SYM
 %token  <kwd>  SCHEMA_NAME_SYM               /* SQL-2003-N */
 %token  <kwd>  SECOND_SYM                    /* SQL-2003-R */
@@ -1110,7 +1064,6 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  <kwd>  SERIALIZABLE_SYM              /* SQL-2003-N */
 %token  <kwd>  SERIAL_SYM
 %token  <kwd>  SESSION_SYM                   /* SQL-2003-N */
-%token  <kwd>  SESSION_USER_SYM              /* SQL-2003-R */
 %token  <kwd>  SERVER_SYM
 %token  <kwd>  SETVAL_SYM                    /* PostgreSQL sequence function */
 %token  <kwd>  SHARE_SYM
@@ -1123,12 +1076,11 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  <kwd>  SLAVE_POS_SYM
 %token  <kwd>  SLOW
 %token  <kwd>  SNAPSHOT_SYM
+%token  <kwd>  SOCKET_SYM
 %token  <kwd>  SOFT_SYM
 %token  <kwd>  SONAME_SYM
 %token  <kwd>  SOUNDS_SYM
 %token  <kwd>  SOURCE_SYM
-%token  <kwd>  SQL_AFTER_GTIDS_SYM
-%token  <kwd>  SQL_BEFORE_GTIDS_SYM
 %token  <kwd>  SQL_BUFFER_RESULT
 %token  <kwd>  SQL_CACHE_SYM
 %token  <kwd>  SQL_CALC_FOUND_ROWS
@@ -1170,14 +1122,16 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  <kwd>  TRANSACTION_SYM
 %token  <kwd>  TRANSACTIONAL_SYM
 %token  <kwd>  THREADS_SYM
-%token  <kwd>  TO_DATE                       /* PLSQL function */
 %token  <kwd>  TRIGGERS_SYM
 %token  <kwd>  TRIM_ORACLE
 %token  <kwd>  TRUNCATE_SYM
 %token  <kwd>  TYPE_SYM                      /* SQL-2003-N */
+%token  <kwd>  UDF_RETURNS_SYM
 %token  <kwd>  UNBOUNDED_SYM                 /* SQL-2011-N */
 %token  <kwd>  UNCOMMITTED_SYM               /* SQL-2003-N */
 %token  <kwd>  UNDEFINED_SYM
+%token  <kwd>  UNDOFILE_SYM
+%token  <kwd>  UNDO_BUFFER_SIZE_SYM
 %token  <kwd>  UNICODE_SYM
 %token  <kwd>  UNINSTALL_SYM
 %token  <kwd>  UNKNOWN_SYM                   /* SQL-2003-R */
@@ -1185,7 +1139,6 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  <kwd>  UPGRADE_SYM
 %token  <kwd>  USER_SYM                      /* SQL-2003-R */
 %token  <kwd>  USE_FRM
-%token  <kwd>  VALIDATION_SYM                /* MYSQL */
 %token  <kwd>  VALUE_SYM                     /* SQL-2003-R */
 %token  <kwd>  VARCHAR2_MARIADB_SYM
 %token  <kwd>  VARCHAR2_ORACLE_SYM           /* Oracle-R, PLSQL-R */
@@ -1209,7 +1162,7 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  <kwd>  XA_SYM
 %token  <kwd>  XML_SYM
 %token  <kwd>  YEAR_SYM                      /* SQL-2003-R */
-%token  <kwd>   ST_COLLECT_SYM
+
 /* A dummy token to force the priority of table_ref production in a join. */
 %left   CONDITIONLESS_JOIN
 %left   JOIN_SYM INNER_SYM STRAIGHT_JOIN CROSS LEFT RIGHT ON_SYM USING
@@ -1221,7 +1174,7 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 
 %left   PREC_BELOW_NOT
 
-/* The precedence of boolean NOT is in fact here. See the comment below. */
+/* The precendence of boolean NOT is in fact here. See the comment below. */
 
 %left   '=' EQUAL_SYM GE '>' LE '<' NE
 %nonassoc IS
@@ -1275,7 +1228,7 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 
   - SYSTEM: identifier, system versioning:
       SELECT system FROM t1;
-      ALTER TABLE DROP SYSTEM VERSIONING;
+      ALTER TABLE DROP SYSTEM VERSIONIONG;
 
   - USER: identifier, user:
       SELECT user FROM t1;
@@ -1321,9 +1274,6 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %left   PREC_BELOW_IDENTIFIER_OPT_SPECIAL_CASE
 %left   TRANSACTION_SYM TIMESTAMP PERIOD_SYM SYSTEM USER COMMENT_SYM
 
-%left   PREC_BELOW_SP_OBJECT_TYPE
-%left   PACKAGE_MARIADB_SYM FUNCTION_SYM
-
 
 /*
   Tokens that can appear in a token contraction on the second place
@@ -1346,18 +1296,11 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
   - VERSIONING: changes SYSTEM from identifier to SYSTEM VERSIONING
       SELECT system FROM t1;
       ALTER TABLE t1 ADD SYSTEM VERSIONING;
-  - OF: changes TYPE from a pluggable data type name to TYPE OF anchor
-      CREATE FUNCTION f1() RETURNS TYPE RETURN 1; -- pluggable data type 'TYPE'
-      CREATE FUNCTION f1() RETURNS TYPE OF t1.col; -- the data type of t1.col1
-
 */
 %left   PREC_BELOW_CONTRACTION_TOKEN2
-%left   TEXT_STRING '(' ')' VALUE_SYM VERSIONING_SYM BODY_MARIADB_SYM OF_SYM
+%left   TEXT_STRING '(' ')' VALUE_SYM VERSIONING_SYM
 %left EMPTY_FROM_CLAUSE
 %right INTO
-
-%type <lex_comment>
-        HINT_COMMENT opt_hint_comment
 
 %type <lex_str>
         DECIMAL_NUM FLOAT_NUM NUM LONG_NUM
@@ -1367,25 +1310,19 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
         key_cache_name
         sp_opt_label BIN_NUM TEXT_STRING_filesystem
         opt_constraint constraint opt_ident
-        sp_block_label sp_control_label opt_place opt_db opt_nls_param
+        sp_block_label sp_control_label opt_place opt_db
         udt_name
-
-%ifdef ORACLE
-%type <lex_str>
-        assoc_name
-%endif
 
 %type <ident_sys>
         IDENT_sys
+        ident_func
         ident
         label_ident
         sp_decl_ident
-        ident_options
         ident_or_empty
         ident_table_alias
         ident_sysvar_name
         ident_for_loop_index
-        select_or_ps_name
 
 %type <lex_string_with_metadata>
         TEXT_STRING
@@ -1412,7 +1349,6 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
         keyword_cast_type
         keyword_ident
         keyword_label
-        keyword_options
         keyword_set_special_case
         keyword_set_usual_case
         keyword_sp_block_section
@@ -1438,24 +1374,14 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %type <qualified_column_ident>
         optionally_qualified_column_ident
 
-%ifdef ORACLE
-%type <qualified_ident>
-        optionally_qualified_directly_assignable
-        direct_call_or_lvalue_assign
-%endif
-
 %type <simple_string>
         remember_name remember_end
         remember_tok_start
-        remember_cpp_ptr
         wild_and_where
-        remember_start_opt
-        remember_end_opt
 
 %type <const_simple_string>
-        field_length_str
+        field_length opt_field_length
         opt_compression_method
-        path_or_default
 
 %type <string>
         text_string hex_or_bin_String opt_gconcat_separator
@@ -1463,17 +1389,10 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %type <type_handler> int_type real_type
 
 %type <sp_handler> sp_handler
-                   sp_handler_package_spec
-                   sp_handler_package_body
 
 %type <json_on_response> json_on_response
 
-%type <ulong_num> json_type_constraint
-%type <num> json_key_unique_constraint
-%type <json_predicate> json_predicate
-
-%type <Lex_field_type> field_type field_type_all field_type_all_builtin
-        field_type_all_with_typedefs
+%type <Lex_field_type> field_type field_type_all
         qualified_field_type
         field_type_numeric
         field_type_string
@@ -1481,26 +1400,6 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
         field_type_temporal
         field_type_misc
         json_table_field_type
-
-%ifdef ORACLE
-%type <spvar_definition> assoc_array_table_types
-%endif
-
-%type <ident_cli>
-        opt_object_member_access
-
-%type <Lex_exact_charset_extended_collation_attrs>
-        binary
-        opt_binary
-        opt_binary_and_compression
-        attribute
-        attribute_list
-        field_def
-
-%type <Lex_extended_collation>
-        collation_name
-        collation_name_or_default
-
 
 %type <Lex_dyncol_type> opt_dyncol_type dyncol_type
         numeric_dyncol_type temporal_dyncol_type string_dyncol_type
@@ -1570,13 +1469,10 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
         field_options last_field_options
 
 %type <ulonglong_number>
-        ulonglong_num real_ulonglong_num
+        ulonglong_num real_ulonglong_num size_number
 
 %type <longlong_number>
-        sequence_value_num
-
-%type <longlong_hybrid_number>
-        sequence_value_hybrid_num sequence_truncated_value_hybrid_num
+        longlong_num
 
 %type <choice> choice
 
@@ -1594,8 +1490,9 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
         table_wild simple_expr column_default_non_parenthesized_expr udf_expr
         primary_expr string_factor_expr mysql_concatenation_expr
         select_sublist_qualified_asterisk
-        expr_or_ignore expr_or_ignore_or_default
+        expr_or_ignore expr_or_ignore_or_default set_expr_or_default
         signed_literal expr_or_literal
+        sp_opt_default
         simple_ident_nospvar
         field_or_var limit_option
         part_func_expr
@@ -1616,57 +1513,26 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
         condition_number
         opt_versioning_interval_start
         json_default_literal
-        set_expr_misc
-        select_or_expr
-
-%type <num> opt_vers_auto_part
 
 %type <item_param> param_marker
 
 %type <item_num>
         NUM_literal
-        num_or_default
 
 %type <item_basic_constant> text_literal
 
 %type <item_list>
         expr_list opt_udf_expr_list udf_expr_list when_list when_list_opt_else
         ident_list ident_list_arg opt_expr_list
-        opt_udf_expr_list_or_join_operator
-        opt_expr_list_or_join_operator
         execute_using
         execute_params
-        opt_sp_cparam_list
-        opt_sp_cparams
-        sp_cparams
-
-%ifdef ORACLE
-%type <item_list>
-        parenthesized_opt_sp_cparams
-        opt_parenthesized_opt_sp_cparams
-%endif
-
-%ifdef ORACLE
-%type <item> named_expr
-%type <item_list> named_expr_list
-%endif
 
 %type <sp_cursor_stmt>
         sp_cursor_stmt_lex
         sp_cursor_stmt
-        sp_cursor_stmt_for_open
-
-%type <instr_fetch_cursor>
-        sp_proc_stmt_fetch_head
-
-%type <fetch_target_list>
-        sp_fetch_list
 
 %type <expr_lex>
         expr_lex
-
-%type <opt_hints>
-        opt_optimizer_hint
 
 %destructor
 {
@@ -1681,7 +1547,6 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
     delete $$;
 } <expr_lex>
 
-%type <expr_and_query_str> sp_opt_default set_expr_or_default
 
 /*
 
@@ -1730,7 +1595,16 @@ rule:
 
 %destructor
 {
-  List_sp_assignment_lex::free_elements_not_in_use($$);
+  if ($$)
+  {
+    sp_assignment_lex *elem;
+    List_iterator<sp_assignment_lex> li(*$$);
+    while ((elem= li++))
+    {
+      if (!elem->sp_lex_in_use)
+        delete elem;
+    }
+  }
 } <sp_assignment_lex_list>
 
 
@@ -1738,7 +1612,7 @@ rule:
         option_type opt_var_type opt_var_ident_type
 
 %type <key_type>
-        constraint_key_type fulltext spatial_or_vector
+        constraint_key_type fulltext spatial
 
 %type <key_alg>
         btree_or_rtree opt_key_algorithm_clause opt_USING_key_algorithm
@@ -1747,7 +1621,7 @@ rule:
         using_list opt_use_partition use_partition
 
 %type <key_part>
-        key_part key_part_simple
+        key_part
 
 %type <table_list>
         join_table_list  join_table
@@ -1773,22 +1647,23 @@ rule:
 %type <Lex_cast_type> cast_type cast_type_numeric cast_type_temporal
 
 %type <Lex_length_and_dec> precision opt_precision float_options
-                           field_length opt_field_length
-                           field_scale opt_field_scale
 
 %type <lex_user> user grant_user grant_role user_or_role current_role
-                 admin_option_for_role user_maybe_role role_name
-                 user_name
+                 admin_option_for_role user_maybe_role
 
 %type <user_auth> opt_auth_str auth_expression auth_token
                   text_or_password
 
 %type <charset>
+        opt_collate
+        collate
         charset_name
         charset_or_alias
         charset_name_or_default
         old_or_new_charset_name
         old_or_new_charset_name_or_default
+        collation_name
+        collation_name_or_default
         opt_load_data_charset
         UNDERSCORE_CHARSET
 
@@ -1835,7 +1710,6 @@ rule:
         query_expression_tail
         opt_query_expression_tail
         order_or_limit
-        opt_order_or_limit
         order_limit_lock
         opt_order_limit_lock
 
@@ -1845,18 +1719,16 @@ rule:
         directly_executable_statement
         analyze_stmt_command backup backup_statements
         query verb_clause create create_routine change select select_into
-        select_no_with_clause_no_parens select_no_with_clause_parens
-        select_with_with_clause select_for_open_cursor
         do drop drop_routine insert replace insert_start stmt_end
         insert_values update delete truncate rename compound_statement
         show describe load alter optimize keycache preload flush
         reset purge begin_stmt_mariadb commit rollback savepoint release
-        slave master_def master_defs master_file_def slave_until_opts 
-        slave_until_file_def repair analyze opt_with_admin opt_with_admin_option
+        slave master_def master_defs master_file_def slave_until_opts
+        repair analyze opt_with_admin opt_with_admin_option
         analyze_table_list analyze_table_elem_spec
         opt_persistent_stat_clause persistent_stat_spec
-        persistent_index_stat_spec
-        table_index_list table_index_name
+        persistent_column_stat_spec persistent_index_stat_spec
+        table_column_list table_index_list table_index_name
         check start checksum opt_returning
         field_list field_list_item kill key_def constraint_def
         keycache_list keycache_list_or_parts assign_to_keycache
@@ -1866,13 +1738,16 @@ rule:
         delete_limit_clause fields opt_values values
         no_braces_with_names opt_values_with_names values_with_names
         procedure_list procedure_list2 procedure_item
-        handler opt_generated_always
+        field_def handler opt_generated_always
         opt_ignore opt_column opt_restrict
         grant revoke set lock unlock string_list
-        table_lock_list table_lock
+        opt_binary table_lock_list table_lock
         ref_list opt_match_clause opt_on_update_delete use
         opt_delete_options opt_delete_option varchar nchar nvarchar
         opt_outer table_list table_name table_alias_ref_list table_alias_ref
+        attribute attribute_list
+        compressed_deprecated_data_type_attribute
+        compressed_deprecated_column_attribute
         grant_list
         user_list user_and_role_list
         rename_list table_or_tables
@@ -1882,7 +1757,7 @@ rule:
         opt_mi_check_type opt_to mi_check_types 
         table_to_table_list table_to_table opt_table_list opt_as
         handler_rkey_function handler_read_or_scan
-        single_multi opt_wild
+        single_multi table_wild_list table_wild_one opt_wild
         opt_and
         select_var_list select_var_list_init help
         opt_extended_describe shutdown
@@ -1897,7 +1772,6 @@ rule:
         normal_key_options normal_key_opts all_key_opt 
         spatial_key_options fulltext_key_options normal_key_opt 
         fulltext_key_opt spatial_key_opt fulltext_key_opts spatial_key_opts
-        explain_for_connection
 	keep_gcc_happy
         key_using_alg
         part_column_list
@@ -1947,10 +1821,8 @@ rule:
 %type <num> sp_handler_type sp_hcond_list
 %type <spcondvalue> sp_cond sp_hcond sqlstate signal_value opt_signal_value
 %type <spname> sp_name
-%type <spvar> sp_param_name sp_param_name_and_mode sp_param
-%type <spvar> sp_param_init_vars sp_param_default
-%type <spvar> sp_param_name_and_mode_init_vars
-%type <spvar> sp_param_anchored
+%type <spvar> sp_param_name sp_param_name_and_type
+%type <spvar> sp_param_name_and_type_anchored
 %type <for_loop> sp_for_loop_index_and_bounds
 %type <for_loop_bounds> sp_for_loop_bounds
 
@@ -1987,11 +1859,6 @@ rule:
 
 %type <spvar_definition> row_field_name row_field_definition
 %type <spvar_definition_list> row_field_definition_list row_type_body
-%ifdef ORACLE
-%type <spvar_definition> rec_field_definition
-%type <spvar_definition> rec_field_definition_anchored
-%type <spvar_definition_list> rec_field_definition_list rec_type_body
-%endif
 
 %type <NONE> opt_window_clause window_def_list window_def window_spec
 %type <lex_str_ptr> window_name
@@ -2005,49 +1872,19 @@ rule:
         '-' '+' '*' '/' '%' '(' ')'
         ',' '!' '{' '}' '&' '|'
 
-%type <with_clause> with_clause opt_with_clause
+%type <with_clause> with_clause
 
 %type <with_element_head> with_element_head
 
 %type <ident_sys_list>
         comma_separated_ident_list
+        opt_with_column_list
         with_column_list
-        derived_column_list
-        opt_column_name_list
-        persistent_column_stat_spec
         opt_cycle
 
 %type <vers_range_unit> opt_history_unit
 %type <vers_history_point> history_point
 %type <vers_column_versioning> with_or_without_system
-%type <engine_option_value_ptr> engine_defined_option;
-
-%type <lex>
-        remember_lex
-        package_specification_function
-        package_specification_procedure
-%type <spname> opt_trailing_sp_name
-%type <lex_str> opt_package_routine_end_name
-
-%type <spblock>
-        package_implementation_declare_section
-        package_implementation_declare_section_list
-        package_implementation_routine_definition
-        package_implementation_item_declaration
-        package_implementation_declare_section_list1
-        package_implementation_declare_section_list2
-
-%type <spblock_handlers> package_implementation_executable_section
-
-%type <NONE>
-        sp_package_function_body
-        sp_package_procedure_body
-
-%type <optional_uint> uint32_or_default
-%type <optional_uint> uint64_or_default
-%type <tril> bool_or_default
-%type <master_use_gtid> master_use_gtid_enum
-
 
 %ifdef MARIADB
 %type <NONE> sp_tail_standalone
@@ -2063,29 +1900,39 @@ rule:
 %type <kwd> reserved_keyword_udt_param_type
 %else
 %type <NONE> set_assign
-%type <NONE> set_assign_lvalue_function
 %type <spvar_mode> sp_opt_inout
 %type <NONE> sp_tail_standalone
 %type <NONE> sp_labelable_stmt
+%type <simple_string> remember_end_opt
+%type <lex_str> opt_package_routine_end_name
 %type <lex_str> label_declaration_oracle
 %type <lex_str> labels_declaration_oracle
 %type <kwd> keyword_directly_assignable
 %type <ident_sys> ident_directly_assignable
 %type <ident_cli> ident_cli_directly_assignable
+%type <spname> opt_sp_name
 %type <spblock> sp_decl_body_list
 %type <spblock> opt_sp_decl_body_list
 %type <spblock> sp_decl_variable_list
 %type <spblock> sp_decl_variable_list_anchored
-%type <spblock> sp_decl_type
 %type <spblock> sp_decl_non_handler
 %type <spblock> sp_decl_non_handler_list
 %type <spblock> sp_decl_handler
 %type <spblock> sp_decl_handler_list
 %type <spblock> opt_sp_decl_handler_list
+%type <spblock> package_implementation_routine_definition
+%type <spblock> package_implementation_item_declaration
+%type <spblock> package_implementation_declare_section
+%type <spblock> package_implementation_declare_section_list1
+%type <spblock> package_implementation_declare_section_list2
 %type <spblock_handlers> sp_block_statements_and_exceptions
+%type <spblock_handlers> package_implementation_executable_section
 %type <sp_instr_addr> sp_instr_addr
 %type <num> opt_exception_clause exception_handlers
-%type <ident_sys> typed_ident
+%type <lex> remember_lex
+%type <lex> package_routine_lex
+%type <lex> package_specification_function
+%type <lex> package_specification_procedure
 %endif ORACLE
 
 %%
@@ -2184,7 +2031,6 @@ verb_clause:
         | do
         | drop
         | execute
-        | explain_for_connection
         | flush
         | get_diagnostics
         | grant
@@ -2326,7 +2172,6 @@ change:
             Lex->sql_command = SQLCOM_CHANGE_MASTER;
           }
           master_defs
-          optional_for_channel
           {}
         ;
 
@@ -2352,17 +2197,9 @@ master_def:
           {
             Lex->mi.port = $3;
           }
-        | MASTER_CONNECT_RETRY_SYM '=' uint32_or_default
+        | MASTER_CONNECT_RETRY_SYM '=' ulong_num
           {
-            Lex->mi.connect_retry= [optional=
-              static_cast<std::optional<uint32_t>>($3)](Master_info_file *mi)
-            { mi->master_connect_retry= std::move(optional); };
-          }
-        | MASTER_RETRY_COUNT_SYM '=' uint64_or_default
-          {
-            Lex->mi.retry_count= [optional=
-              static_cast<std::optional<uint64_t>>($3)](Master_info_file *mi)
-            { mi->master_retry_count= std::move(optional); };
+            Lex->mi.connect_retry = $3;
           }
         | MASTER_DELAY_SYM '=' ulong_num
           {
@@ -2374,80 +2211,72 @@ master_def:
             else
               Lex->mi.sql_delay = $3;
           }
-        | MASTER_SSL_SYM '=' bool_or_default
+        | MASTER_SSL_SYM '=' ulong_num
           {
-            Lex->mi.ssl= [trilean= $3](Master_info_file *mi)
-            { mi->master_ssl= trilean; };
+            Lex->mi.ssl= $3 ? 
+              LEX_MASTER_INFO::LEX_MI_ENABLE : LEX_MASTER_INFO::LEX_MI_DISABLE;
           }
-        | MASTER_SSL_CA_SYM '=' path_or_default
+        | MASTER_SSL_CA_SYM '=' TEXT_STRING_sys
           {
-            Lex->mi.ssl_ca= [path= $3](Master_info_file *mi)
-            { mi->master_ssl_ca= path; };
+            Lex->mi.ssl_ca= $3.str;
           }
-        | MASTER_SSL_CAPATH_SYM '=' path_or_default
+        | MASTER_SSL_CAPATH_SYM '=' TEXT_STRING_sys
           {
-            Lex->mi.ssl_capath= [path= $3](Master_info_file *mi)
-            { mi->master_ssl_capath= path; };
+            Lex->mi.ssl_capath= $3.str;
           }
-        | MASTER_SSL_CERT_SYM '=' path_or_default
+        | MASTER_SSL_CERT_SYM '=' TEXT_STRING_sys
           {
-            Lex->mi.ssl_cert= [path= $3](Master_info_file *mi)
-            { mi->master_ssl_cert= path; };
+            Lex->mi.ssl_cert= $3.str;
           }
-        | MASTER_SSL_CIPHER_SYM '=' path_or_default
+        | MASTER_SSL_CIPHER_SYM '=' TEXT_STRING_sys
           {
-            Lex->mi.ssl_cipher= [path= $3](Master_info_file *mi)
-            { mi->master_ssl_cipher= path; };
+            Lex->mi.ssl_cipher= $3.str;
           }
-        | MASTER_SSL_KEY_SYM '=' path_or_default
+        | MASTER_SSL_KEY_SYM '=' TEXT_STRING_sys
           {
-            Lex->mi.ssl_key= [path= $3](Master_info_file *mi)
-            { mi->master_ssl_key= path; };
+            Lex->mi.ssl_key= $3.str;
           }
-        | MASTER_SSL_VERIFY_SERVER_CERT_SYM '=' bool_or_default
+        | MASTER_SSL_VERIFY_SERVER_CERT_SYM '=' ulong_num
           {
-            Lex->mi.ssl_verify_server_cert= [trilean= $3](Master_info_file *mi)
-            { mi->master_ssl_verify_server_cert= trilean; };
+            Lex->mi.ssl_verify_server_cert= $3 ?
+              LEX_MASTER_INFO::LEX_MI_ENABLE : LEX_MASTER_INFO::LEX_MI_DISABLE;
           }
-        | MASTER_SSL_CRL_SYM '=' path_or_default
+        | MASTER_SSL_CRL_SYM '=' TEXT_STRING_sys
           {
-            Lex->mi.ssl_crl= [path= $3](Master_info_file *mi)
-            { mi->master_ssl_crl= path; };
+            Lex->mi.ssl_crl= $3.str;
           }
-        | MASTER_SSL_CRLPATH_SYM '=' path_or_default
+        | MASTER_SSL_CRLPATH_SYM '=' TEXT_STRING_sys
           {
-            Lex->mi.ssl_crlpath= [path= $3](Master_info_file *mi)
-            { mi->master_ssl_crlpath= path; };
+            Lex->mi.ssl_crlpath= $3.str;
           }
 
-        | MASTER_HEARTBEAT_PERIOD_SYM '=' num_or_default
+        | MASTER_HEARTBEAT_PERIOD_SYM '=' NUM_literal
           {
-            if ($3)
+            Lex->mi.heartbeat_period= (float) $3->val_real();
+            if (unlikely(Lex->mi.heartbeat_period >
+                         SLAVE_MAX_HEARTBEAT_PERIOD) ||
+                unlikely(Lex->mi.heartbeat_period < 0.0))
+               my_yyabort_error((ER_SLAVE_HEARTBEAT_VALUE_OUT_OF_RANGE, MYF(0),
+                                 SLAVE_MAX_HEARTBEAT_PERIOD));
+
+            if (unlikely(Lex->mi.heartbeat_period > slave_net_timeout))
             {
-              uint32_t milliseconds;
-              bool overprecise;
-              auto decimal_buf= my_decimal(),
-                  *decimal= $3->val_decimal(&decimal_buf);
-              DBUG_ASSERT(decimal);
-              if (Master_info_file::Heartbeat_period_value::from_decimal(
-                milliseconds, *decimal, overprecise
-              ))
-                my_yyabort_error((ER_SLAVE_HEARTBEAT_VALUE_OUT_OF_RANGE, MYF(0),
-                  Master_info_file::Heartbeat_period_value::MAX));
-              if (unlikely(milliseconds > slave_net_timeout*1000ULL))
-                push_warning(thd, Sql_condition::WARN_LEVEL_WARN,
-                  ER_SLAVE_HEARTBEAT_VALUE_OUT_OF_RANGE_MAX,
-                  ER_THD(thd, ER_SLAVE_HEARTBEAT_VALUE_OUT_OF_RANGE_MAX));
-              else if (unlikely(!milliseconds && overprecise))
-                push_warning(thd, Sql_condition::WARN_LEVEL_WARN,
-                  ER_SLAVE_HEARTBEAT_VALUE_OUT_OF_RANGE_MIN,
-                  ER_THD(thd, ER_SLAVE_HEARTBEAT_VALUE_OUT_OF_RANGE_MIN));
-              Lex->mi.heartbeat_period= [milliseconds](Master_info_file *mi)
-              { mi->master_heartbeat_period= milliseconds; };
+              push_warning(thd, Sql_condition::WARN_LEVEL_WARN,
+                           ER_SLAVE_HEARTBEAT_VALUE_OUT_OF_RANGE_MAX,
+                           ER_THD(thd, ER_SLAVE_HEARTBEAT_VALUE_OUT_OF_RANGE_MAX));
             }
-            else
-              Lex->mi.heartbeat_period= [](Master_info_file *mi)
-              { mi->master_heartbeat_period.set_default(); };
+            if (unlikely(Lex->mi.heartbeat_period < 0.001))
+            {
+              if (unlikely(Lex->mi.heartbeat_period != 0.0))
+              {
+                push_warning(thd, Sql_condition::WARN_LEVEL_WARN,
+                             ER_SLAVE_HEARTBEAT_VALUE_OUT_OF_RANGE_MIN,
+                             ER_THD(thd, ER_SLAVE_HEARTBEAT_VALUE_OUT_OF_RANGE_MIN));
+                Lex->mi.heartbeat_period= 0.0;
+              }
+              Lex->mi.heartbeat_opt=  LEX_MASTER_INFO::LEX_MI_DISABLE;
+            }
+            Lex->mi.heartbeat_opt=  LEX_MASTER_INFO::LEX_MI_ENABLE;
           }
         | IGNORE_SERVER_IDS_SYM '=' '(' ignore_server_id_list ')'
           {
@@ -2463,32 +2292,6 @@ master_def:
           }
         |
         master_file_def
-        ;
-
-uint32_or_default:
-          ulong_num     { $$= {true, $1}; }
-        | DEFAULT       { $$= {false, 0}; }
-        ;
-uint64_or_default:
-          ulonglong_num { $$= {true, $1}; }
-        | DEFAULT       { $$= {false, 0}; }
-        ;
-path_or_default:
-          TEXT_STRING_sys { $$=  $1.str; DBUG_ASSERT($$); }
-        | DEFAULT         { $$= nullptr; }
-        ;
-bool_or_default:
-          bool { $$= $1 ? trilean::YES : trilean::NO; }
-        | DEFAULT { $$= trilean::DEFAULT; };
-master_use_gtid_enum:
-          NO_SYM          { $$= enum_master_use_gtid::NO; }
-        | CURRENT_POS_SYM { $$= enum_master_use_gtid::CURRENT_POS; }
-        | SLAVE_POS_SYM   { $$= enum_master_use_gtid::SLAVE_POS; }
-        | DEFAULT         { $$= enum_master_use_gtid::DEFAULT; }
-        ;
-num_or_default:
-          opt_plus NUM_literal { DBUG_ASSERT($2); $$= $2; }
-        | DEFAULT { $$= nullptr; }
         ;
 
 ignore_server_id_list:
@@ -2560,16 +2363,23 @@ master_file_def:
             /* Adjust if < BIN_LOG_HEADER_SIZE (same comment as Lex->mi.pos) */
             Lex->mi.relay_log_pos= MY_MAX(BIN_LOG_HEADER_SIZE, Lex->mi.relay_log_pos);
           }
-        | MASTER_USE_GTID_SYM '=' master_use_gtid_enum
+        | MASTER_USE_GTID_SYM '=' CURRENT_POS_SYM
           {
-            if (Lex->mi.use_gtid)
+            if (unlikely(Lex->mi.use_gtid_opt != LEX_MASTER_INFO::LEX_GTID_UNCHANGED))
               my_yyabort_error((ER_DUP_ARGUMENT, MYF(0), "MASTER_use_gtid"));
-            Lex->mi.use_gtid= [use_gtid= $3](Master_info_file *mi)
-            { mi->master_use_gtid= use_gtid; };
+            Lex->mi.use_gtid_opt= LEX_MASTER_INFO::LEX_GTID_CURRENT_POS;
           }
-        | MASTER_DEMOTE_TO_SLAVE_SYM '=' bool
+        | MASTER_USE_GTID_SYM '=' SLAVE_POS_SYM
           {
-            Lex->mi.is_demotion_opt= (bool) $3;
+            if (unlikely(Lex->mi.use_gtid_opt != LEX_MASTER_INFO::LEX_GTID_UNCHANGED))
+              my_yyabort_error((ER_DUP_ARGUMENT, MYF(0), "MASTER_use_gtid"));
+            Lex->mi.use_gtid_opt= LEX_MASTER_INFO::LEX_GTID_SLAVE_POS;
+          }
+        | MASTER_USE_GTID_SYM '=' NO_SYM
+          {
+            if (unlikely(Lex->mi.use_gtid_opt != LEX_MASTER_INFO::LEX_GTID_UNCHANGED))
+              my_yyabort_error((ER_DUP_ARGUMENT, MYF(0), "MASTER_use_gtid"));
+            Lex->mi.use_gtid_opt= LEX_MASTER_INFO::LEX_GTID_NO;
           }
         ;
 
@@ -2592,34 +2402,6 @@ connection_name:
 #endif
          }
          ;
-
-optional_for_channel:
-        /* empty */
-          {
-            /*do nothing */
-          }
-        | for_channel
-
-        ;
-
-for_channel:
-        FOR_SYM CHANNEL_SYM TEXT_STRING_sys
-        {
-          if (Lex->mi.connection_name.str != NULL)
-          {
-            my_yyabort_error((ER_WRONG_ARGUMENTS, MYF(0), "CONNECTION_NAME AND FOR CHANNEL CAN NOT BE SPECIFIED AT THE SAME TIME)"));
-          }
-          else
-          {
-            Lex->mi.connection_name= $3;
-#ifdef HAVE_REPLICATION
-           if (unlikely(check_master_connection_name(&$3)))
-              my_yyabort_error((ER_WRONG_ARGUMENTS, MYF(0), "MASTER_CONNECTION_NAME"));
-#endif
-          }
-
-          }
-          ;
 
 /* create a table */
 
@@ -2649,6 +2431,7 @@ create:
               If the table exists, we should either not create it or replace it
             */
             lex->query_tables->open_strategy= TABLE_LIST::OPEN_STUB;
+            lex->create_info.default_table_charset= NULL;
             lex->name= null_clex_str;
             lex->create_last_non_select_table= lex->last_table();
             lex->inc_select_stack_outer_barrier();
@@ -2693,8 +2476,7 @@ create:
          {
             LEX *lex= thd->lex;
 
-            if (unlikely(lex->create_info.seq_create_info->
-                         check_and_adjust(thd, 1)))
+            if (unlikely(lex->create_info.seq_create_info->check_and_adjust(1)))
             {
               my_error(ER_SEQUENCE_INVALID_DATA, MYF(0),
                        lex->first_select_lex()->table_list.first->db.str,
@@ -2704,13 +2486,12 @@ create:
             }
 
             /* No fields specified, generate them */
-            if (unlikely(
-                lex->create_info.seq_create_info->prepare_sequence_fields(
-                &lex->alter_info.create_list, false)))
+            if (unlikely(prepare_sequence_fields(thd,
+                         &lex->alter_info.create_list)))
                MYSQL_YYABORT;
 
             /* CREATE SEQUENCE always creates a sequence */
-            Lex->create_info.used_fields|= HA_CREATE_USED_SEQUENCE;
+	    Lex->create_info.used_fields|= HA_CREATE_USED_SEQUENCE;
             Lex->create_info.sequence= 1;
 
             create_table_set_open_action_and_adjust_tables(lex);
@@ -2773,7 +2554,7 @@ create:
           {
             Lex->pop_select(); //main select
           }
-        | create_or_replace spatial_or_vector INDEX_SYM
+        | create_or_replace spatial INDEX_SYM
           {
             if (Lex->main_select_push())
               MYSQL_YYABORT;
@@ -2786,15 +2567,16 @@ create:
             if (Lex->add_create_index($2, &$6, HA_KEY_ALG_UNDEF, $1 | $5))
               MYSQL_YYABORT;
           }
-          '(' key_part_simple ')' opt_lock_wait_timeout spatial_key_options
+          '(' key_list ')' opt_lock_wait_timeout spatial_key_options
           opt_index_lock_algorithm
           {
-            Lex->last_key->columns.push_back($11, thd->mem_root);
             Lex->pop_select(); //main select
           }
         | create_or_replace DATABASE opt_if_not_exists ident
           {
-            Lex->create_info.init();
+            Lex->create_info.default_table_charset= NULL;
+            Lex->create_info.schema_comment= NULL;
+            Lex->create_info.used_fields= 0;
           }
           opt_create_database_options
           {
@@ -2865,6 +2647,14 @@ create:
                          $1 | $3)))
               MYSQL_YYABORT;
           }
+        | CREATE LOGFILE_SYM GROUP_SYM logfile_group_info 
+          {
+            Lex->alter_tablespace_info->ts_cmd_type= CREATE_LOGFILE_GROUP;
+          }
+        | CREATE TABLESPACE tablespace_info
+          {
+            Lex->alter_tablespace_info->ts_cmd_type= CREATE_TABLESPACE;
+          }
         | create_or_replace { Lex->set_command(SQLCOM_CREATE_SERVER, $1); }
           server_def
           { }
@@ -2882,113 +2672,90 @@ sequence_defs:
         ;
 
 sequence_def:
-          AS int_type field_options
+        MINVALUE_SYM opt_equal longlong_num
           {
-            sequence_definition *seq= Lex->create_info.seq_create_info;
-            if (unlikely(seq->used_fields & seq_field_used_as))
-              my_yyabort_error((ER_DUP_ARGUMENT, MYF(0), "AS"));
-            if ($3 & ZEROFILL_FLAG)
-                my_yyabort_error((ER_BAD_OPTION_VALUE, MYF(0), "ZEROFILL",
-                                  "AS"));
-            seq->value_type = $2->field_type();
-            seq->is_unsigned= $3 & UNSIGNED_FLAG ? true : false;
-            seq->used_fields|= seq_field_used_as;
-          }
-        | MINVALUE_SYM opt_equal sequence_truncated_value_hybrid_num
-          {
-            sequence_definition *seq= Lex->create_info.seq_create_info;
-            if (unlikely(seq->used_fields & seq_field_used_min_value))
-              my_yyabort_error((ER_DUP_ARGUMENT, MYF(0), "MINVALUE"));
-            seq->min_value_from_parser= Longlong_hybrid($3.num, $3.is_unsigned);
-            seq->used_fields|=
-              seq_field_used_min_value;
-            seq->used_fields|=
-              seq_field_specified_min_value;
+            Lex->create_info.seq_create_info->min_value= $3;
+            Lex->create_info.seq_create_info->used_fields|= seq_field_used_min_value;
           }
         | NO_SYM MINVALUE_SYM
           {
-            sequence_definition *seq= Lex->create_info.seq_create_info;
-            if (unlikely(seq->used_fields & seq_field_used_min_value))
+            if (unlikely(Lex->create_info.seq_create_info->used_fields & seq_field_used_min_value))
               my_yyabort_error((ER_DUP_ARGUMENT, MYF(0), "MINVALUE"));
-            seq->used_fields|= seq_field_used_min_value;
+            Lex->create_info.seq_create_info->used_fields|= seq_field_used_min_value;
           }
         | NOMINVALUE_SYM
           {
-            sequence_definition *seq= Lex->create_info.seq_create_info;
-            if (unlikely(seq->used_fields & seq_field_used_min_value))
+            if (unlikely(Lex->create_info.seq_create_info->used_fields & seq_field_used_min_value))
               my_yyabort_error((ER_DUP_ARGUMENT, MYF(0), "MINVALUE"));
-            seq->used_fields|= seq_field_used_min_value;
+            Lex->create_info.seq_create_info->used_fields|= seq_field_used_min_value;
           }
-        | MAXVALUE_SYM opt_equal sequence_truncated_value_hybrid_num
+        | MAXVALUE_SYM opt_equal longlong_num
           {
-            sequence_definition *seq= Lex->create_info.seq_create_info;
-            if (unlikely(seq->used_fields & seq_field_used_max_value))
+           if (unlikely(Lex->create_info.seq_create_info->used_fields &
+               seq_field_used_max_value))
               my_yyabort_error((ER_DUP_ARGUMENT, MYF(0), "MAXVALUE"));
-            seq->max_value_from_parser= Longlong_hybrid($3.num, $3.is_unsigned);
-            seq->used_fields|= seq_field_used_max_value;
-            seq->used_fields|= seq_field_specified_max_value;
+            Lex->create_info.seq_create_info->max_value= $3;
+            Lex->create_info.seq_create_info->used_fields|= seq_field_used_max_value;
           }
         | NO_SYM MAXVALUE_SYM
           {
-            sequence_definition *seq= Lex->create_info.seq_create_info;
-            if (unlikely(seq->used_fields & seq_field_used_max_value))
+            if (unlikely(Lex->create_info.seq_create_info->used_fields & seq_field_used_max_value))
               my_yyabort_error((ER_DUP_ARGUMENT, MYF(0), "MAXVALUE"));
-            seq->used_fields|= seq_field_used_max_value;
+            Lex->create_info.seq_create_info->used_fields|= seq_field_used_max_value;
           }
         | NOMAXVALUE_SYM
           {
-            sequence_definition *seq= Lex->create_info.seq_create_info;
-            if (unlikely(seq->used_fields & seq_field_used_max_value))
+            if (unlikely(Lex->create_info.seq_create_info->used_fields & seq_field_used_max_value))
               my_yyabort_error((ER_DUP_ARGUMENT, MYF(0), "MAXVALUE"));
-            seq->used_fields|= seq_field_used_max_value;
+            Lex->create_info.seq_create_info->used_fields|= seq_field_used_max_value;
           }
-        | START_SYM opt_with sequence_value_hybrid_num
+        | START_SYM opt_with longlong_num
           {
-            sequence_definition *seq= Lex->create_info.seq_create_info;
-            if (unlikely(seq->used_fields & seq_field_used_start))
+            if (unlikely(Lex->create_info.seq_create_info->used_fields &
+                         seq_field_used_start))
               my_yyabort_error((ER_DUP_ARGUMENT, MYF(0), "START"));
-            seq->start_from_parser= Longlong_hybrid($3.num, $3.is_unsigned);
-            seq->used_fields|= seq_field_used_start;
+            Lex->create_info.seq_create_info->start= $3;
+            Lex->create_info.seq_create_info->used_fields|= seq_field_used_start;
           }
-        | INCREMENT_SYM opt_by sequence_value_num
+        | INCREMENT_SYM opt_by longlong_num
           {
-            sequence_definition *seq= Lex->create_info.seq_create_info;
-            if (unlikely(seq->used_fields & seq_field_used_increment))
+             if (unlikely(Lex->create_info.seq_create_info->used_fields &
+                seq_field_used_increment))
               my_yyabort_error((ER_DUP_ARGUMENT, MYF(0), "INCREMENT"));
-            seq->increment= $3;
-            seq->used_fields|= seq_field_used_increment;
+            Lex->create_info.seq_create_info->increment= $3;
+            Lex->create_info.seq_create_info->used_fields|= seq_field_used_increment;
           }
-        | CACHE_SYM opt_equal sequence_value_num
+        | CACHE_SYM opt_equal longlong_num
           {
-            sequence_definition *seq= Lex->create_info.seq_create_info;
-            if (unlikely(seq->used_fields & seq_field_used_cache))
+            if (unlikely(Lex->create_info.seq_create_info->used_fields &
+                seq_field_used_cache))
               my_yyabort_error((ER_DUP_ARGUMENT, MYF(0), "CACHE"));
-            seq->cache= $3;
-            seq->used_fields|= seq_field_used_cache;
+            Lex->create_info.seq_create_info->cache= $3;
+            Lex->create_info.seq_create_info->used_fields|= seq_field_used_cache;
           }
         | NOCACHE_SYM
           {
-            sequence_definition *seq= Lex->create_info.seq_create_info;
-            if (unlikely(seq->used_fields & seq_field_used_cache))
+            if (unlikely(Lex->create_info.seq_create_info->used_fields &
+                seq_field_used_cache))
               my_yyabort_error((ER_DUP_ARGUMENT, MYF(0), "CACHE"));
-            seq->cache= 0;
-            seq->used_fields|= seq_field_used_cache;
+            Lex->create_info.seq_create_info->cache= 0;
+            Lex->create_info.seq_create_info->used_fields|= seq_field_used_cache;
           }
         | CYCLE_SYM
           {
-            sequence_definition *seq= Lex->create_info.seq_create_info;
-            if (unlikely(seq->used_fields & seq_field_used_cycle))
+            if (unlikely(Lex->create_info.seq_create_info->used_fields &
+                seq_field_used_cycle))
               my_yyabort_error((ER_DUP_ARGUMENT, MYF(0), "CYCLE"));
-            seq->cycle= 1;
-            seq->used_fields|= seq_field_used_cycle;
+            Lex->create_info.seq_create_info->cycle= 1;
+            Lex->create_info.seq_create_info->used_fields|= seq_field_used_cycle;
           }
         | NOCYCLE_SYM
           {
-            sequence_definition *seq= Lex->create_info.seq_create_info;
-            if (unlikely(seq->used_fields & seq_field_used_cycle))
+            if (unlikely(Lex->create_info.seq_create_info->used_fields &
+                seq_field_used_cycle))
               my_yyabort_error((ER_DUP_ARGUMENT, MYF(0), "CYCLE"));
-            seq->cycle= 0;
-            seq->used_fields|= seq_field_used_cycle;
+            Lex->create_info.seq_create_info->cycle= 0;
+            Lex->create_info.seq_create_info->used_fields|= seq_field_used_cycle;
           }
         | RESTART_SYM
           {
@@ -2997,24 +2764,23 @@ sequence_def:
               thd->parse_error(ER_SYNTAX_ERROR, "RESTART");
               MYSQL_YYABORT;
             }
-            sequence_definition *seq= Lex->create_info.seq_create_info;
-            if (unlikely(seq->used_fields & seq_field_used_restart))
+            if (unlikely(Lex->create_info.seq_create_info->used_fields &
+                         seq_field_used_restart))
               my_yyabort_error((ER_DUP_ARGUMENT, MYF(0), "RESTART"));
-            seq->used_fields|= seq_field_used_restart;
+            Lex->create_info.seq_create_info->used_fields|= seq_field_used_restart;
           }
-        | RESTART_SYM opt_with sequence_value_hybrid_num
+        | RESTART_SYM opt_with longlong_num
           {
             if (unlikely(Lex->sql_command != SQLCOM_ALTER_SEQUENCE))
             {
               thd->parse_error(ER_SYNTAX_ERROR, "RESTART");
               MYSQL_YYABORT;
             }
-            sequence_definition *seq= Lex->create_info.seq_create_info;
-            if (unlikely(seq->used_fields & seq_field_used_restart))
+            if (unlikely(Lex->create_info.seq_create_info->used_fields &
+                         seq_field_used_restart))
               my_yyabort_error((ER_DUP_ARGUMENT, MYF(0), "RESTART"));
-            seq->restart_from_parser= Longlong_hybrid($3.num, $3.is_unsigned);
-            seq->used_fields|=
-              seq_field_used_restart | seq_field_used_restart_value;
+            Lex->create_info.seq_create_info->restart= $3;
+            Lex->create_info.seq_create_info->used_fields|= seq_field_used_restart | seq_field_used_restart_value;
           }
         ;
 
@@ -3041,69 +2807,37 @@ server_options_list:
 server_option:
           USER_SYM TEXT_STRING_sys
           {
-            engine_option_value *new_option=
-              new (thd->mem_root) engine_option_value(
-                engine_option_value::Name(
-                  safe_lexcstrdup_root(thd->mem_root, $1)),
-                engine_option_value::Value(
-                  safe_lexcstrdup_root(thd->mem_root, $2)), true);
-            new_option->link(&Lex->server_options.option_list,
-                             &Lex->option_list_last);
+            MYSQL_YYABORT_UNLESS(Lex->server_options.username.str == 0);
+            Lex->server_options.username= $2;
+          }
+        | HOST_SYM TEXT_STRING_sys
+          {
+            MYSQL_YYABORT_UNLESS(Lex->server_options.host.str == 0);
+            Lex->server_options.host= $2;
           }
         | DATABASE TEXT_STRING_sys
           {
-            engine_option_value *new_option=
-              new (thd->mem_root) engine_option_value(
-                engine_option_value::Name(
-                  safe_lexcstrdup_root(thd->mem_root, $1)),
-                engine_option_value::Value(
-                  safe_lexcstrdup_root(thd->mem_root, $2)), true);
-            new_option->link(&Lex->server_options.option_list,
-                             &Lex->option_list_last);
+            MYSQL_YYABORT_UNLESS(Lex->server_options.db.str == 0);
+            Lex->server_options.db= $2;
+          }
+        | OWNER_SYM TEXT_STRING_sys
+          {
+            MYSQL_YYABORT_UNLESS(Lex->server_options.owner.str == 0);
+            Lex->server_options.owner= $2;
           }
         | PASSWORD_SYM TEXT_STRING_sys
           {
-            engine_option_value *new_option=
-              new (thd->mem_root) engine_option_value(
-                engine_option_value::Name(
-                  safe_lexcstrdup_root(thd->mem_root, $1)),
-                engine_option_value::Value(
-                  safe_lexcstrdup_root(thd->mem_root, $2)), true);
-            new_option->link(&Lex->server_options.option_list,
-                             &Lex->option_list_last);
+            MYSQL_YYABORT_UNLESS(Lex->server_options.password.str == 0);
+            Lex->server_options.password= $2;
+          }
+        | SOCKET_SYM TEXT_STRING_sys
+          {
+            MYSQL_YYABORT_UNLESS(Lex->server_options.socket.str == 0);
+            Lex->server_options.socket= $2;
           }
         | PORT_SYM ulong_num
           {
-            engine_option_value *new_option=
-              new (thd->mem_root) engine_option_value(
-                engine_option_value::Name(
-                  safe_lexcstrdup_root(thd->mem_root, $1)),
-                $2, thd->mem_root);
-            new_option->link(&Lex->server_options.option_list,
-                             &Lex->option_list_last);
-          }
-        /* port can be a quoted number */
-        | PORT_SYM TEXT_STRING_sys
-          {
-            engine_option_value *new_option=
-              new (thd->mem_root) engine_option_value(
-                engine_option_value::Name(
-                  safe_lexcstrdup_root(thd->mem_root, $1)),
-                engine_option_value::Value(
-                  safe_lexcstrdup_root(thd->mem_root, $2)), true);
-            new_option->link(&Lex->server_options.option_list,
-                             &Lex->option_list_last);
-          }
-        | IDENT_sys TEXT_STRING_sys
-          {
-            engine_option_value *new_option=
-              new (thd->mem_root) engine_option_value(
-                engine_option_value::Name(
-                  safe_lexcstrdup_root(thd->mem_root, $1)),
-                engine_option_value::Value(
-                  safe_lexcstrdup_root(thd->mem_root, $2)), true);
-            new_option->link(&Lex->server_options.option_list,
-                             &Lex->option_list_last);
+            Lex->server_options.port= $2;
           }
         ;
 
@@ -3178,7 +2912,7 @@ opt_ev_status:
 ev_starts:
           /* empty */
           {
-            Item *item= new (thd->mem_root) Item_func_current_timestamp(thd, 0);
+            Item *item= new (thd->mem_root) Item_func_now_local(thd, 0);
             if (unlikely(item == NULL))
               MYSQL_YYABORT;
             Lex->event_parse_data->item_starts= item;
@@ -3281,43 +3015,20 @@ opt_aggregate:
 sp_handler:
           FUNCTION_SYM                       { $$= &sp_handler_function; }
         | PROCEDURE_SYM                      { $$= &sp_handler_procedure; }
-        | sp_handler_package_spec
-        | sp_handler_package_body
-        ;
-
-sp_handler_package_spec:
-         PACKAGE_ORACLE_SYM                   { $$= &sp_handler_package_spec; }
-       | PACKAGE_MARIADB_SYM                  { $$= &sp_handler_package_spec; }
-       ;
-
-sp_handler_package_body:
-         PACKAGE_ORACLE_SYM BODY_ORACLE_SYM   { $$= &sp_handler_package_body; }
-       | PACKAGE_MARIADB_SYM BODY_MARIADB_SYM { $$= &sp_handler_package_body; }
-       ;
-
-drop_routine:
-          DROP sp_handler opt_if_exists ident '.' ident
-          {
-            if (Lex->stmt_drop_routine($2, $3, $4, $6))
-              MYSQL_YYABORT;
-          }
-        | DROP sp_handler opt_if_exists ident
-          {
-            if (Lex->stmt_drop_routine($2, $3, Lex_ident_sys(), $4))
-              MYSQL_YYABORT;
-          }
+        | PACKAGE_ORACLE_SYM                 { $$= &sp_handler_package_spec; }
+        | PACKAGE_ORACLE_SYM BODY_ORACLE_SYM { $$= &sp_handler_package_body; }
         ;
 
 
 sp_name:
           ident '.' ident
           {
-            if (unlikely(!($$= Lex->make_sp_name(thd, $1, $3))))
+            if (unlikely(!($$= Lex->make_sp_name(thd, &$1, &$3))))
               MYSQL_YYABORT;
           }
         | ident
           {
-            if (unlikely(!($$= Lex->make_sp_name(thd, $1, true))))
+            if (unlikely(!($$= Lex->make_sp_name(thd, &$1))))
               MYSQL_YYABORT;
           }
         ;
@@ -3396,43 +3107,27 @@ call:
 
 /* CALL parameters */
 opt_sp_cparam_list:
-          /* Empty */ { $$= nullptr; }
+          /* Empty */
         | '('
         {
           thd->where= THD_WHERE::USE_WHERE_STRING;
           thd->where_str= "CALL";
         } opt_sp_cparams ')'
-        {
-          $$= $3;
-        }
         ;
-
-
-%ifdef ORACLE
-opt_parenthesized_opt_sp_cparams:
-          /* Empty */                    { $$= nullptr; }
-        | parenthesized_opt_sp_cparams   { $$= $1; }
-        ;
-
-parenthesized_opt_sp_cparams:
-        '(' opt_sp_cparams ')' { $$= $2; }
-        ;
-%endif
-
 
 opt_sp_cparams:
-          /* Empty */ { $$= nullptr; }
-        | sp_cparams  { $$= $1; }
+          /* Empty */
+        | sp_cparams
         ;
 
 sp_cparams:
           sp_cparams ',' expr
           {
-            ($$= $1)->push_back($3, thd->mem_root);
+           Lex->value_list.push_back($3, thd->mem_root);
           }
         | expr
           {
-            ($$= &Lex->value_list)->push_back($1, thd->mem_root);
+            Lex->value_list.push_back($1, thd->mem_root);
           }
         ;
 
@@ -3454,13 +3149,8 @@ sp_fdparam_list:
         ;
 
 sp_fdparams:
-          sp_fdparams ',' sp_param_default
-        | sp_param_default
-        ;
-
-sp_fdparams_no_default:
-          sp_fdparams_no_default ',' sp_param
-        | sp_param
+          sp_fdparams ',' sp_param_name_and_type
+        | sp_param_name_and_type
         ;
 
 sp_param_name:
@@ -3471,12 +3161,18 @@ sp_param_name:
           }
         ;
 
-sp_param_name_and_mode_init_vars:
-          sp_param_name_and_mode
+sp_param_name_and_type:
+          sp_param_name field_type
           {
-            Lex->sp_variable_declarations_init(thd, 1);
-            $$= $1;
+            if (unlikely(Lex->sp_param_fill_definition($$= $1, $2)))
+              MYSQL_YYABORT;
           }
+        | sp_param_name ROW_SYM row_type_body
+          {
+            if (unlikely(Lex->sphead->spvar_fill_row(thd, $$= $1, $3)))
+              MYSQL_YYABORT;
+          }
+        | sp_param_name_and_type_anchored
         ;
 
 /* Stored PROCEDURE parameter declaration list */
@@ -3486,8 +3182,8 @@ sp_pdparam_list:
         ;
 
 sp_pdparams:
-          sp_pdparams ',' sp_param_default
-        | sp_param_default
+          sp_pdparams ',' sp_pdparam
+        | sp_pdparam
         ;
 
 sp_parameter_type:
@@ -3505,22 +3201,6 @@ sp_parenthesized_pdparam_list:
           ')'
           {
             Lex->sphead->m_param_end= YYLIP->get_cpp_tok_start();
-          }
-        ;
-
-sp_param_default:
-          sp_param_init_vars sp_opt_default
-          {
-            if (unlikely(Lex->sp_param_set_default_and_finalize(($$= $1), $2.expr, $2.expr_str)))
-              MYSQL_YYABORT;
-          }
-        ;
-
-sp_param:
-          sp_param_init_vars
-          {
-            if (unlikely(Lex->sp_param_set_default_and_finalize(($$= $1), nullptr, empty_clex_str)))
-              MYSQL_YYABORT;
           }
         ;
 
@@ -3564,9 +3244,8 @@ optionally_qualified_column_ident:
 row_field_definition:
           row_field_name field_type
           {
-            if (Lex->last_field->set_attributes(thd, $2,
-                                              COLUMN_DEFINITION_ROUTINE_LOCAL))
-              MYSQL_YYABORT;
+            Lex->last_field->set_attributes(thd, $2, Lex->charset,
+                                            COLUMN_DEFINITION_ROUTINE_LOCAL);
           }
         ;
 
@@ -3587,52 +3266,6 @@ row_type_body:
           '(' row_field_definition_list ')' { $$= $2; }
         ;
 
-%ifdef ORACLE
-rec_field_definition:
-          row_field_name field_type
-          {
-            if (Lex->last_field->set_attributes(thd, $2,
-                                              COLUMN_DEFINITION_ROUTINE_LOCAL))
-              MYSQL_YYABORT;
-          }
-        | rec_field_definition_anchored
-        ;
-
-rec_field_definition_anchored:
-          row_field_name sp_decl_ident '.' ident PERCENT_ORACLE_SYM TYPE_SYM
-          {
-            if (unlikely(Lex->sphead->spvar_def_fill_type_reference(thd,
-                                                                    $1, $2,
-                                                                    $4)))
-              MYSQL_YYABORT;
-          }
-        | row_field_name sp_decl_ident '.' ident '.' ident PERCENT_ORACLE_SYM TYPE_SYM
-          {
-            if (unlikely(Lex->sphead->spvar_def_fill_type_reference(thd,
-                                                                    $1, $2,
-                                                                    $4, $6)))
-              MYSQL_YYABORT;
-          }
-        ;
-
-rec_field_definition_list:
-          rec_field_definition
-          {
-            if (!($$= Row_definition_list::make(thd->mem_root, $1)))
-              MYSQL_YYABORT;
-          }
-        | rec_field_definition_list ',' rec_field_definition
-          {
-            if (($$= $1)->append_uniq(thd->mem_root, $3))
-              MYSQL_YYABORT;
-          }
-        ;
-
-rec_type_body:
-          '(' rec_field_definition_list ')' { $$= $2; }
-        ;
-%endif
-
 sp_decl_idents_init_vars:
           sp_decl_idents
           {
@@ -3642,18 +3275,16 @@ sp_decl_idents_init_vars:
 
 sp_decl_variable_list:
           sp_decl_idents_init_vars
-          field_type_all_with_typedefs
+          field_type
           {
-            if (Lex->last_field->set_attributes(thd, $2,
-                                              COLUMN_DEFINITION_ROUTINE_LOCAL))
-              MYSQL_YYABORT;
+            Lex->last_field->set_attributes(thd, $2, Lex->charset,
+                                            COLUMN_DEFINITION_ROUTINE_LOCAL);
           }
           sp_opt_default
           {
             if (unlikely(Lex->sp_variable_declarations_finalize(thd, $1,
                                                                 &Lex->last_field[0],
-                                                                $4.expr,
-                                                                $4.expr_str)))
+                                                                $4)))
               MYSQL_YYABORT;
             $$.init_using_vars($1);
           }
@@ -3661,9 +3292,7 @@ sp_decl_variable_list:
           ROW_SYM row_type_body
           sp_opt_default
           {
-            if (unlikely(Lex->sp_variable_declarations_row_finalize(thd, $1, $3,
-                                                                    $4.expr,
-                                                                    $4.expr_str)))
+            if (unlikely(Lex->sp_variable_declarations_row_finalize(thd, $1, $3, $4)))
               MYSQL_YYABORT;
             $$.init_using_vars($1);
           }
@@ -3687,7 +3316,7 @@ sp_decl_handler:
 
 opt_parenthesized_cursor_formal_parameters:
           /* Empty */
-        | '(' sp_fdparams_no_default ')'
+        | '(' sp_fdparams ')'
         ;
 
 
@@ -3700,16 +3329,6 @@ sp_cursor_stmt_lex:
           }
         ;
 
-select_or_ps_name:
-          select { $$= Lex_ident_sys(); }
-        | ident { $$= $1; }
-        ;
-
-select_or_expr:
-          select_for_open_cursor { $$= nullptr; }
-        | expr { $$= $1; }
-        ;
-
 sp_cursor_stmt:
           sp_cursor_stmt_lex
           {
@@ -3718,33 +3337,13 @@ sp_cursor_stmt:
             if (Lex->main_select_push(true))
               MYSQL_YYABORT;
           }
-          remember_name select_or_ps_name remember_end
+          select
           {
             DBUG_ASSERT(Lex == $1);
-            if ($1->sp_cursor_stmt_finalize(thd, $4, $3, $5))
+            Lex->pop_select(); //main select
+            if (unlikely($1->stmt_finalize(thd)) ||
+                unlikely($1->sphead->restore_lex(thd)))
               MYSQL_YYABORT;
-
-            $$= $1;
-          }
-        ;
-
-sp_cursor_stmt_for_open:
-          sp_cursor_stmt_lex
-          {
-            DBUG_ASSERT(thd->free_list == NULL);
-            Lex->sphead->reset_lex(thd, $1);
-            if (Lex->main_select_push(true))
-              MYSQL_YYABORT;
-            Lex->clause_that_disallows_subselect= "OPEN..FOR";
-          }
-          remember_name select_or_expr remember_end
-          {
-            Lex->clause_that_disallows_subselect= NULL;
-            $1->prepared_stmt.set(Lex_ident_sys(), $4, nullptr);
-            DBUG_ASSERT(Lex == $1);
-            if ($1->sp_cursor_stmt_finalize(thd, Lex_ident_sys(), $3, $5))
-              MYSQL_YYABORT;
-
             $$= $1;
           }
         ;
@@ -3976,8 +3575,6 @@ signal_condition_information_item_name:
           { $$= DIAG_MESSAGE_TEXT; }
         | MYSQL_ERRNO_SYM
           { $$= DIAG_MYSQL_ERRNO; }
-        | ROW_NUMBER_SYM
-          { $$= DIAG_ROW_NUMBER; }
         ;
 
 resignal_stmt:
@@ -4063,11 +3660,6 @@ simple_target_specification:
           }
         | '@' ident_or_text
           {
-            if (!$2.length)
-            {
-              thd->parse_error();
-              MYSQL_YYABORT;
-            }
             $$= new (thd->mem_root) Item_func_get_user_var(thd, &$2);
             if (unlikely($$ == NULL))
               MYSQL_YYABORT;
@@ -4144,8 +3736,6 @@ condition_information_item_name:
           { $$= Condition_information_item::MYSQL_ERRNO; }
         | RETURNED_SQLSTATE_SYM
           { $$= Condition_information_item::RETURNED_SQLSTATE; }
-        | ROW_NUMBER_SYM
-          { $$= Condition_information_item::ROW_NUMBER; }
         ;
 
 sp_decl_ident:
@@ -4244,26 +3834,23 @@ sp_proc_stmt_return:
 sp_proc_stmt_exit_oracle:
           EXIT_ORACLE_SYM
           {
-            if (unlikely(Lex->sp_exit_statement(thd, nullptr, empty_clex_str)))
+            if (unlikely(Lex->sp_exit_statement(thd, NULL)))
               MYSQL_YYABORT;
           }
         | EXIT_ORACLE_SYM label_ident
           {
-            if (unlikely(Lex->sp_exit_statement(thd, &$2, nullptr,
-                                                empty_clex_str)))
+            if (unlikely(Lex->sp_exit_statement(thd, &$2, NULL)))
               MYSQL_YYABORT;
           }
         | EXIT_ORACLE_SYM WHEN_SYM expr_lex
           {
-            if (unlikely($3->sp_exit_statement(thd, $3->get_item(),
-                                               $3->get_expr_str())))
+            if (unlikely($3->sp_exit_statement(thd, $3->get_item())))
               MYSQL_YYABORT;
           }
           { /* See the comment 'COMMENT_FOR_DESCTRUCTOR' near %destructor */ }
         | EXIT_ORACLE_SYM label_ident WHEN_SYM expr_lex
           {
-            if (unlikely($4->sp_exit_statement(thd, &$2, $4->get_item(),
-                                               $4->get_expr_str())))
+            if (unlikely($4->sp_exit_statement(thd, &$2, $4->get_item())))
               MYSQL_YYABORT;
           }
           { /* See the comment 'COMMENT_FOR_DESCTRUCTOR' near %destructor */ }
@@ -4330,20 +3917,10 @@ expr_lex:
             if (Lex->main_select_push(true))
               MYSQL_YYABORT;
           }
-          remember_start_opt expr remember_end
+          expr
           {
             $$= $<expr_lex>1;
-            $$->set_item($3);
-
-            if (Lex->is_metadata_used())
-            {
-              LEX_CSTRING expr_str= make_string(thd, $2, $4);
-
-              if (expr_str.str == nullptr)
-                MYSQL_YYABORT;
-              $$->set_expr_str(expr_str);
-            }
-
+            $$->set_item($2);
             Lex->pop_select(); //min select
             if (Lex->check_cte_dependencies_and_resolve_references())
               MYSQL_YYABORT;
@@ -4370,21 +3947,11 @@ assignment_source_expr:
             if (Lex->main_select_push(true))
               MYSQL_YYABORT;
           }
-          remember_cpp_ptr expr remember_end
+          expr
           {
             DBUG_ASSERT($1 == thd->lex);
             $$= $1;
-            $$->set_item_and_free_list($4, thd->free_list);
-
-            if (Lex->is_metadata_used())
-            {
-              LEX_CSTRING expr_str= make_string(thd, $3, $5);
-
-              if (expr_str.str == nullptr)
-                MYSQL_YYABORT;
-              $$->set_expr_str(expr_str);
-            }
-
+            $$->set_item_and_free_list($3, thd->free_list);
             thd->free_list= NULL;
             Lex->pop_select(); //min select
             if ($$->sphead->restore_lex(thd))
@@ -4400,21 +3967,11 @@ for_loop_bound_expr:
               MYSQL_YYABORT;
             Lex->current_select->parsing_place= FOR_LOOP_BOUND;
           }
-          remember_cpp_ptr expr remember_end
+          expr
           {
             DBUG_ASSERT($1 == thd->lex);
             $$= $1;
-            $$->set_item_and_free_list($4, nullptr);
-
-            if (Lex->is_metadata_used())
-            {
-              LEX_CSTRING expr_str= make_string(thd, $3, $5);
-
-              if (expr_str.str == nullptr)
-                MYSQL_YYABORT;
-              $$->set_expr_str(expr_str);
-            }
-
+            $$->set_item_and_free_list($3, NULL);
             Lex->pop_select(); //main select
             if (unlikely($$->sphead->restore_lex(thd)))
               MYSQL_YYABORT;
@@ -4425,7 +3982,7 @@ for_loop_bound_expr:
 cursor_actual_parameters:
           assignment_source_expr
           {
-            if (unlikely(!($$= new (thd->mem_root) List_sp_assignment_lex)))
+            if (unlikely(!($$= new (thd->mem_root) List<sp_assignment_lex>)))
               MYSQL_YYABORT;
             $$->push_back($1, thd->mem_root);
           }
@@ -4450,23 +4007,7 @@ sp_proc_stmt_with_cursor:
 sp_proc_stmt_open:
           OPEN_SYM ident opt_parenthesized_cursor_actual_parameters
           {
-            if (unlikely(Lex->sp_open_cursor(thd, &$2, $3, nullptr)))
-              MYSQL_YYABORT;
-          }
-        | OPEN_SYM ident USING cursor_actual_parameters
-          {
-            if (unlikely(Lex->sp_open_cursor(thd, &$2, nullptr, $4)))
-              MYSQL_YYABORT;
-          }
-        | OPEN_SYM ident FOR_SYM sp_cursor_stmt_for_open
-          {
-            if (Lex->sp_open_cursor_for_stmt(thd, &$2, $4, nullptr))
-              MYSQL_YYABORT;
-          }
-        | OPEN_SYM ident FOR_SYM sp_cursor_stmt_for_open
-          USING cursor_actual_parameters
-          {
-            if (Lex->sp_open_cursor_for_stmt(thd, &$2, $4, $6))
+            if (unlikely(Lex->sp_open_cursor(thd, &$2, $3)))
               MYSQL_YYABORT;
           }
         ;
@@ -4474,26 +4015,23 @@ sp_proc_stmt_open:
 sp_proc_stmt_fetch_head:
           FETCH_SYM ident INTO
           {
-            if (unlikely(!($$= Lex->sp_add_instr_fetch_cursor(thd, &$2))))
+            if (unlikely(Lex->sp_add_cfetch(thd, &$2)))
               MYSQL_YYABORT;
           }
         | FETCH_SYM FROM ident INTO
           {
-            if (unlikely(!($$= Lex->sp_add_instr_fetch_cursor(thd, &$3))))
+            if (unlikely(Lex->sp_add_cfetch(thd, &$3)))
               MYSQL_YYABORT;
           }
        | FETCH_SYM NEXT_SYM FROM ident INTO
           {
-            if (unlikely(!($$= Lex->sp_add_instr_fetch_cursor(thd, &$4))))
+            if (unlikely(Lex->sp_add_cfetch(thd, &$4)))
               MYSQL_YYABORT;
           }
         ;
 
 sp_proc_stmt_fetch:
-         sp_proc_stmt_fetch_head sp_fetch_list
-         {
-           $1->set_fetch_target_list($2);
-         }
+         sp_proc_stmt_fetch_head sp_fetch_list { }
        | FETCH_SYM GROUP_SYM NEXT_SYM ROW_SYM
          {
            if (unlikely(Lex->sp_add_agg_cfetch()))
@@ -4504,7 +4042,17 @@ sp_proc_stmt_fetch:
 sp_proc_stmt_close:
           CLOSE_SYM ident
           {
-            if (Lex->sp_close(thd, $2))
+            LEX *lex= Lex;
+            sp_head *sp= lex->sphead;
+            uint offset;
+            sp_instr_cclose *i;
+
+            if (unlikely(!lex->spcont->find_cursor(&$2, &offset, false)))
+              my_yyabort_error((ER_SP_CURSOR_MISMATCH, MYF(0), $2.str));
+            i= new (thd->mem_root)
+              sp_instr_cclose(sp->instructions(), lex->spcont,  offset);
+            if (unlikely(i == NULL) ||
+                unlikely(sp->add_instr(i)))
               MYSQL_YYABORT;
           }
         ;
@@ -4512,16 +4060,35 @@ sp_proc_stmt_close:
 sp_fetch_list:
           ident
           {
-            sp_fetch_target *target= Lex->make_fetch_target(thd, $1);
-            if (!target ||
-                !($$= List<sp_fetch_target>::make(thd->mem_root, target)))
-              MYSQL_YYABORT;
+            LEX *lex= Lex;
+            sp_head *sp= lex->sphead;
+            sp_pcontext *spc= lex->spcont;
+            sp_variable *spv= likely(spc != NULL)
+              ? spc->find_variable(&$1, false)
+              : NULL;
+
+            if (unlikely(!spv))
+              my_yyabort_error((ER_SP_UNDECLARED_VAR, MYF(0), $1.str));
+
+            /* An SP local variable */
+            sp_instr_cfetch *i= (sp_instr_cfetch *)sp->last_instruction();
+            i->add_to_varlist(spv);
           }
         | sp_fetch_list ',' ident
           {
-            sp_fetch_target *target= Lex->make_fetch_target(thd, $3);
-            if (!target || $1->push_back(target, thd->mem_root))
-              MYSQL_YYABORT;
+            LEX *lex= Lex;
+            sp_head *sp= lex->sphead;
+            sp_pcontext *spc= lex->spcont;
+            sp_variable *spv= likely(spc != NULL)
+              ? spc->find_variable(&$3, false)
+              : NULL;
+
+            if (unlikely(!spv))
+              my_yyabort_error((ER_SP_UNDECLARED_VAR, MYF(0), $3.str));
+
+            /* An SP local variable */
+            sp_instr_cfetch *i= (sp_instr_cfetch *)sp->last_instruction();
+            i->add_to_varlist(spv);
           }
         ;
 
@@ -4865,17 +4432,356 @@ trg_action_time:
 
 trg_event:
             INSERT
-            { Lex->trg_chistics.events|= trg2bit(TRG_EVENT_INSERT); }
+            { Lex->trg_chistics.event= TRG_EVENT_INSERT; }
           | UPDATE_SYM
-            { Lex->trg_chistics.events|= trg2bit(TRG_EVENT_UPDATE); }
+            { Lex->trg_chistics.event= TRG_EVENT_UPDATE; }
           | DELETE_SYM
-            { Lex->trg_chistics.events|= trg2bit(TRG_EVENT_DELETE); }
+            { Lex->trg_chistics.event= TRG_EVENT_DELETE; }
           ;
+/*
+  This part of the parser contains common code for all TABLESPACE
+  commands.
+  CREATE TABLESPACE name ...
+  ALTER TABLESPACE name CHANGE DATAFILE ...
+  ALTER TABLESPACE name ADD DATAFILE ...
+  ALTER TABLESPACE name access_mode
+  CREATE LOGFILE GROUP_SYM name ...
+  ALTER LOGFILE GROUP_SYM name ADD UNDOFILE ..
+  ALTER LOGFILE GROUP_SYM name ADD REDOFILE ..
+  DROP TABLESPACE name
+  DROP LOGFILE GROUP_SYM name
+*/
+change_tablespace_access:
+          tablespace_name
+          ts_access_mode
+        ;
 
-trg_events:
-            trg_event
-          | trg_events OR_SYM trg_event
-          ;
+change_tablespace_info:
+          tablespace_name
+          CHANGE ts_datafile
+          change_ts_option_list
+        ;
+
+tablespace_info:
+          tablespace_name
+          ADD ts_datafile
+          opt_logfile_group_name
+          tablespace_option_list
+        ;
+
+opt_logfile_group_name:
+          /* empty */ {}
+        | USE_SYM LOGFILE_SYM GROUP_SYM ident
+          {
+            LEX *lex= Lex;
+            lex->alter_tablespace_info->logfile_group_name= $4.str;
+          }
+        ;
+
+alter_tablespace_info:
+          tablespace_name
+          ADD ts_datafile
+          alter_tablespace_option_list
+          { 
+            Lex->alter_tablespace_info->ts_alter_tablespace_type= ALTER_TABLESPACE_ADD_FILE; 
+          }
+        | tablespace_name
+          DROP ts_datafile
+          alter_tablespace_option_list
+          { 
+            Lex->alter_tablespace_info->ts_alter_tablespace_type= ALTER_TABLESPACE_DROP_FILE; 
+          }
+        ;
+
+logfile_group_info:
+          logfile_group_name
+          add_log_file
+          logfile_group_option_list
+        ;
+
+alter_logfile_group_info:
+          logfile_group_name
+          add_log_file
+          alter_logfile_group_option_list
+        ;
+
+add_log_file:
+          ADD lg_undofile
+        | ADD lg_redofile
+        ;
+
+change_ts_option_list:
+          /* empty */ {}
+          change_ts_options
+        ;
+
+change_ts_options:
+          change_ts_option
+        | change_ts_options change_ts_option
+        | change_ts_options ',' change_ts_option
+        ;
+
+change_ts_option:
+          opt_ts_initial_size
+        | opt_ts_autoextend_size
+        | opt_ts_max_size
+        ;
+
+tablespace_option_list:
+        tablespace_options
+        ;
+
+tablespace_options:
+          tablespace_option
+        | tablespace_options tablespace_option
+        | tablespace_options ',' tablespace_option
+        ;
+
+tablespace_option:
+          opt_ts_initial_size
+        | opt_ts_autoextend_size
+        | opt_ts_max_size
+        | opt_ts_extent_size
+        | opt_ts_nodegroup
+        | opt_ts_engine
+        | ts_wait
+        | opt_ts_comment
+        ;
+
+alter_tablespace_option_list:
+        alter_tablespace_options
+        ;
+
+alter_tablespace_options:
+          alter_tablespace_option
+        | alter_tablespace_options alter_tablespace_option
+        | alter_tablespace_options ',' alter_tablespace_option
+        ;
+
+alter_tablespace_option:
+          opt_ts_initial_size
+        | opt_ts_autoextend_size
+        | opt_ts_max_size
+        | opt_ts_engine
+        | ts_wait
+        ;
+
+logfile_group_option_list:
+        logfile_group_options
+        ;
+
+logfile_group_options:
+          logfile_group_option
+        | logfile_group_options logfile_group_option
+        | logfile_group_options ',' logfile_group_option
+        ;
+
+logfile_group_option:
+          opt_ts_initial_size
+        | opt_ts_undo_buffer_size
+        | opt_ts_redo_buffer_size
+        | opt_ts_nodegroup
+        | opt_ts_engine
+        | ts_wait
+        | opt_ts_comment
+        ;
+
+alter_logfile_group_option_list:
+          alter_logfile_group_options
+        ;
+
+alter_logfile_group_options:
+          alter_logfile_group_option
+        | alter_logfile_group_options alter_logfile_group_option
+        | alter_logfile_group_options ',' alter_logfile_group_option
+        ;
+
+alter_logfile_group_option:
+          opt_ts_initial_size
+        | opt_ts_engine
+        | ts_wait
+        ;
+
+
+ts_datafile:
+          DATAFILE_SYM TEXT_STRING_sys
+          {
+            LEX *lex= Lex;
+            lex->alter_tablespace_info->data_file_name= $2.str;
+          }
+        ;
+
+lg_undofile:
+          UNDOFILE_SYM TEXT_STRING_sys
+          {
+            LEX *lex= Lex;
+            lex->alter_tablespace_info->undo_file_name= $2.str;
+          }
+        ;
+
+lg_redofile:
+          REDOFILE_SYM TEXT_STRING_sys
+          {
+            LEX *lex= Lex;
+            lex->alter_tablespace_info->redo_file_name= $2.str;
+          }
+        ;
+
+tablespace_name:
+          ident
+          {
+            LEX *lex= Lex;
+            lex->alter_tablespace_info= (new (thd->mem_root)
+                                         st_alter_tablespace());
+            if (unlikely(lex->alter_tablespace_info == NULL))
+              MYSQL_YYABORT;
+            lex->alter_tablespace_info->tablespace_name= $1.str;
+            lex->sql_command= SQLCOM_ALTER_TABLESPACE;
+          }
+        ;
+
+logfile_group_name:
+          ident
+          {
+            LEX *lex= Lex;
+            lex->alter_tablespace_info= (new (thd->mem_root)
+                                         st_alter_tablespace());
+            if (unlikely(lex->alter_tablespace_info == NULL))
+              MYSQL_YYABORT;
+            lex->alter_tablespace_info->logfile_group_name= $1.str;
+            lex->sql_command= SQLCOM_ALTER_TABLESPACE;
+          }
+        ;
+
+ts_access_mode:
+          READ_ONLY_SYM
+          {
+            LEX *lex= Lex;
+            lex->alter_tablespace_info->ts_access_mode= TS_READ_ONLY;
+          }
+        | READ_WRITE_SYM
+          {
+            LEX *lex= Lex;
+            lex->alter_tablespace_info->ts_access_mode= TS_READ_WRITE;
+          }
+        | NOT_SYM ACCESSIBLE_SYM
+          {
+            LEX *lex= Lex;
+            lex->alter_tablespace_info->ts_access_mode= TS_NOT_ACCESSIBLE;
+          }
+        ;
+
+opt_ts_initial_size:
+          INITIAL_SIZE_SYM opt_equal size_number
+          {
+            LEX *lex= Lex;
+            lex->alter_tablespace_info->initial_size= $3;
+          }
+        ;
+
+opt_ts_autoextend_size:
+          AUTOEXTEND_SIZE_SYM opt_equal size_number
+          {
+            LEX *lex= Lex;
+            lex->alter_tablespace_info->autoextend_size= $3;
+          }
+        ;
+
+opt_ts_max_size:
+          MAX_SIZE_SYM opt_equal size_number
+          {
+            LEX *lex= Lex;
+            lex->alter_tablespace_info->max_size= $3;
+          }
+        ;
+
+opt_ts_extent_size:
+          EXTENT_SIZE_SYM opt_equal size_number
+          {
+            LEX *lex= Lex;
+            lex->alter_tablespace_info->extent_size= $3;
+          }
+        ;
+
+opt_ts_undo_buffer_size:
+          UNDO_BUFFER_SIZE_SYM opt_equal size_number
+          {
+            LEX *lex= Lex;
+            lex->alter_tablespace_info->undo_buffer_size= $3;
+          }
+        ;
+
+opt_ts_redo_buffer_size:
+          REDO_BUFFER_SIZE_SYM opt_equal size_number
+          {
+            LEX *lex= Lex;
+            lex->alter_tablespace_info->redo_buffer_size= $3;
+          }
+        ;
+
+opt_ts_nodegroup:
+          NODEGROUP_SYM opt_equal real_ulong_num
+          {
+            LEX *lex= Lex;
+            if (unlikely(lex->alter_tablespace_info->nodegroup_id != UNDEF_NODEGROUP))
+              my_yyabort_error((ER_FILEGROUP_OPTION_ONLY_ONCE,MYF(0),"NODEGROUP"));
+            lex->alter_tablespace_info->nodegroup_id= $3;
+          }
+        ;
+
+opt_ts_comment:
+          COMMENT_SYM opt_equal TEXT_STRING_sys
+          {
+            LEX *lex= Lex;
+            if (unlikely(lex->alter_tablespace_info->ts_comment != NULL))
+              my_yyabort_error((ER_FILEGROUP_OPTION_ONLY_ONCE,MYF(0),"COMMENT"));
+            lex->alter_tablespace_info->ts_comment= $3.str;
+          }
+        ;
+
+opt_ts_engine:
+          opt_storage ENGINE_SYM opt_equal storage_engines
+          {
+            LEX *lex= Lex;
+            if (unlikely(lex->alter_tablespace_info->storage_engine != NULL))
+              my_yyabort_error((ER_FILEGROUP_OPTION_ONLY_ONCE, MYF(0),
+                                "STORAGE ENGINE"));
+            lex->alter_tablespace_info->storage_engine= $4;
+          }
+        ;
+
+opt_ts_wait:
+          /* empty */
+        | ts_wait
+        ;
+
+ts_wait:
+          WAIT_SYM
+          {
+            LEX *lex= Lex;
+            lex->alter_tablespace_info->wait_until_completed= TRUE;
+          }
+        | NO_WAIT_SYM
+          {
+            LEX *lex= Lex;
+            if (unlikely(!(lex->alter_tablespace_info->wait_until_completed)))
+              my_yyabort_error((ER_FILEGROUP_OPTION_ONLY_ONCE,MYF(0),"NO_WAIT"));
+            lex->alter_tablespace_info->wait_until_completed= FALSE;
+          }
+        ;
+
+size_number:
+          real_ulonglong_num { $$= $1;}
+        | IDENT_sys
+          {
+            if ($1.to_size_number(&$$))
+              MYSQL_YYABORT;
+          }
+        ;
+
+/*
+  End tablespace part
+*/
 
 create_body:
           create_field_list_parens
@@ -5069,15 +4975,6 @@ opt_linear:
 opt_key_algo:
           /* empty */
           { Lex->part_info->key_algorithm= partition_info::KEY_ALGORITHM_NONE;}
-        | ALGORITHM_SYM '=' ident
-          {
-            if (unlikely(Lex->part_info->set_key_algorithm(&$3)))
-            {
-              my_error(ER_WRONG_VALUE, MYF(0),
-                       "PARTITION BY [LINEAR] KEY ALGORITHM", $3.str);
-              MYSQL_YYABORT;
-            }
-          }
         | ALGORITHM_SYM '=' real_ulong_num
           {
             switch ($3) {
@@ -5258,13 +5155,8 @@ part_def_list:
         | part_def_list ',' part_definition {}
         ;
 
-opt_partition:
-          /* empty */
-          | PARTITION_SYM
-          ;
-
 part_definition:
-          opt_partition
+          PARTITION_SYM
           {
             partition_info *part_info= Lex->part_info;
             partition_element *p_elem= new (thd->mem_root) partition_element();
@@ -5294,7 +5186,7 @@ part_name:
             partition_element *p_elem= part_info->curr_part_elem;
             if (unlikely(check_ident_length(&$1)))
               MYSQL_YYABORT;
-            p_elem->partition_name= Lex_ident_partition($1);
+            p_elem->partition_name= $1.str;
           }
         ;
 
@@ -5345,17 +5237,13 @@ opt_part_values:
           part_values_in {}
         | CURRENT_SYM
           {
-#ifdef WITH_PARTITION_STORAGE_ENGINE
             if (Lex->part_values_current(thd))
               MYSQL_YYABORT;
-#endif
           }
         | HISTORY_SYM
           {
-#ifdef WITH_PARTITION_STORAGE_ENGINE
             if (Lex->part_values_history(thd))
               MYSQL_YYABORT;
-#endif
           }
         | DEFAULT
          {
@@ -5590,7 +5478,7 @@ sub_part_definition:
             part_info->use_default_num_subpartitions= FALSE;
             part_info->count_curr_subparts++;
           }
-          sub_name opt_subpart_options {}
+          sub_name opt_part_options {}
         ;
 
 sub_name:
@@ -5598,48 +5486,34 @@ sub_name:
           {
             if (unlikely(check_ident_length(&$1)))
               MYSQL_YYABORT;
-            Lex->part_info->curr_part_elem->partition_name=
-              Lex_ident_partition($1);
+            Lex->part_info->curr_part_elem->partition_name= $1.str;
           }
         ;
 
 opt_part_options:
          /* empty */ {}
-       | part_option_list {}
+       | opt_part_option_list {}
        ;
 
-part_option_list:
-         part_option_list part_option {}
-       | part_option {}
+opt_part_option_list:
+         opt_part_option_list opt_part_option {}
+       | opt_part_option {}
        ;
 
-part_option:
-          server_part_option {}
-        | engine_defined_option
-          {
-            $1->link(&Lex->part_info->curr_part_elem->option_list,
-                     &Lex->option_list_last);
-          }
-        ;
-
-opt_subpart_options:
-         /* empty */ {}
-       | subpart_option_list {}
-       ;
-
-subpart_option_list:
-         subpart_option_list server_part_option {}
-       | server_part_option {}
-       ;
-
-server_part_option:
+opt_part_option:
           TABLESPACE opt_equal ident_or_text
-          { /* Compatibility with MySQL */ }
+          { Lex->part_info->curr_part_elem->tablespace_name= $3.str; }
         | opt_storage ENGINE_SYM opt_equal storage_engines
           {
             partition_info *part_info= Lex->part_info;
             part_info->curr_part_elem->engine_type= $4;
             part_info->default_engine_type= $4;
+          }
+        | CONNECTION_SYM opt_equal TEXT_STRING_sys
+          {
+            LEX *lex= Lex;
+            lex->part_info->curr_part_elem->connect_string.str= $3.str;
+            lex->part_info->curr_part_elem->connect_string.length= $3.length;
           }
         | NODEGROUP_SYM opt_equal real_ulong_num
           { Lex->part_info->curr_part_elem->nodegroup_id= (uint16) $3; }
@@ -5658,21 +5532,24 @@ server_part_option:
 opt_versioning_rotation:
          /* empty */ {}
        | { Lex->clause_that_disallows_subselect= "INTERVAL"; }
-         INTERVAL_SYM expr interval opt_versioning_interval_start opt_vers_auto_part
+         INTERVAL_SYM expr interval opt_versioning_interval_start
          {
            partition_info *part_info= Lex->part_info;
            const char *table_name= Lex->create_last_non_select_table->table_name.str;
-           if (unlikely(part_info->vers_set_interval(thd, $3, $4, $5, $6,
-                                                     table_name)))
+           if (unlikely(part_info->vers_set_interval(thd, $3, $4, $5, table_name)))
              MYSQL_YYABORT;
          }
-       | LIMIT ulonglong_num opt_vers_auto_part
+       | LIMIT ulonglong_num
+       {
+         partition_info *part_info= Lex->part_info;
+         if (unlikely(part_info->vers_set_limit($2)))
          {
-           partition_info *part_info= Lex->part_info;
-           const char *table_name= Lex->create_last_non_select_table->table_name.str;
-           if (unlikely(part_info->vers_set_limit($2, $3, table_name)))
-             MYSQL_YYABORT;
+           my_error(ER_PART_WRONG_VALUE, MYF(0),
+                    Lex->create_last_non_select_table->table_name.str,
+                    "LIMIT");
+           MYSQL_YYABORT;
          }
+       }
        ;
 
 
@@ -5687,16 +5564,6 @@ opt_versioning_interval_start:
          }
        ;
 
-opt_vers_auto_part:
-         /* empty */
-         {
-           $$= 0;
-         }
-       | AUTO_SYM
-         {
-           $$= 1;
-         }
-       ;
 /*
  End of partition parser part
 */
@@ -5738,7 +5605,7 @@ opt_if_not_exists_table_element:
          ;
 
 opt_if_not_exists:
-          /* empty */        %prec PREC_BELOW_CONTRACTION_TOKEN2
+          /* empty */
           {
             $$.init();
           }
@@ -5975,11 +5842,17 @@ create_table_option:
             Lex->create_info.used_fields|= HA_CREATE_USED_INDEXDIR;
           }
         | TABLESPACE ident
-          { /* Compatibility with MySQL */ }
+          {Lex->create_info.tablespace= $2.str;}
         | STORAGE_SYM DISK_SYM
           {Lex->create_info.storage_media= HA_SM_DISK;}
         | STORAGE_SYM MEMORY_SYM
           {Lex->create_info.storage_media= HA_SM_MEMORY;}
+        | CONNECTION_SYM opt_equal TEXT_STRING_sys
+          {
+            Lex->create_info.connect_string.str= $3.str;
+            Lex->create_info.connect_string.length= $3.length;
+            Lex->create_info.used_fields|= HA_CREATE_USED_CONNECTION;
+          }
         | KEY_BLOCK_SIZE opt_equal ulong_num
           {
             Lex->create_info.used_fields|= HA_CREATE_USED_KEY_BLOCK_SIZE;
@@ -5990,68 +5863,42 @@ create_table_option:
 	    Lex->create_info.used_fields|= HA_CREATE_USED_TRANSACTIONAL;
             Lex->create_info.transactional= $3;
           }
-        | engine_defined_option
+        | IDENT_sys equal TEXT_STRING_sys
           {
-            $1->link(&Lex->create_info.option_list, &Lex->option_list_last);
+            if (unlikely($3.length > ENGINE_OPTION_MAX_LENGTH))
+              my_yyabort_error((ER_VALUE_TOO_LONG, MYF(0), $1.str));
+            (void) new (thd->mem_root)
+                   engine_option_value($1, $3, true,
+                                       &Lex->create_info.option_list,
+                                       &Lex->option_list_last);
+          }
+        | IDENT_sys equal ident
+          {
+            if (unlikely($3.length > ENGINE_OPTION_MAX_LENGTH))
+              my_yyabort_error((ER_VALUE_TOO_LONG, MYF(0), $1.str));
+            (void) new (thd->mem_root)
+                   engine_option_value($1, $3, false,
+                                       &Lex->create_info.option_list,
+                                       &Lex->option_list_last);
+          }
+        | IDENT_sys equal real_ulonglong_num
+          {
+            (void) new (thd->mem_root)
+                   engine_option_value($1, $3, &Lex->create_info.option_list,
+                                       &Lex->option_list_last, thd->mem_root);
+          }
+        | IDENT_sys equal DEFAULT
+          {
+            (void) new (thd->mem_root)
+                   engine_option_value($1, &Lex->create_info.option_list,
+                                       &Lex->option_list_last);
           }
         | SEQUENCE_SYM opt_equal choice
           {
-            Lex->create_info.used_fields|= HA_CREATE_USED_SEQUENCE;
+	    Lex->create_info.used_fields|= HA_CREATE_USED_SEQUENCE;
             Lex->create_info.sequence= ($3 == HA_CHOICE_YES);
-          }
+	  }
         | versioning_option
-        ;
-
-engine_defined_option:
-          ident_options equal TEXT_STRING_sys
-          {
-            if (unlikely($3.length > ENGINE_OPTION_MAX_LENGTH))
-              my_yyabort_error((ER_VALUE_TOO_LONG, MYF(0), $1.str));
-            $$= new (thd->mem_root) engine_option_value(
-                                      engine_option_value::Name($1),
-                                      engine_option_value::Value($3), true);
-            MYSQL_YYABORT_UNLESS($$);
-          }
-        | ident_options equal ident
-          {
-            if (unlikely($3.length > ENGINE_OPTION_MAX_LENGTH))
-              my_yyabort_error((ER_VALUE_TOO_LONG, MYF(0), $1.str));
-            $$= new (thd->mem_root) engine_option_value(
-                                      engine_option_value::Name($1),
-                                      engine_option_value::Value($3), false);
-            MYSQL_YYABORT_UNLESS($$);
-          }
-        | ident_options equal real_ulonglong_num
-          {
-            $$= new (thd->mem_root) engine_option_value(
-                                      engine_option_value::Name($1),
-                                      $3, thd->mem_root);
-            MYSQL_YYABORT_UNLESS($$);
-          }
-        | ident_options equal DEFAULT
-          {
-            $$= new (thd->mem_root) engine_option_value(
-                                      engine_option_value::Name($1));
-            MYSQL_YYABORT_UNLESS($$);
-          }
-        ;
-
-ident_options:
-          IDENT_sys
-        | keyword_options
-          {
-            if (unlikely($$.copy_keyword(thd, &$1)))
-              MYSQL_YYABORT;
-          }
-        ;
-
-/*
-  These keywords are fine for option names.
-*/
-keyword_options:
-          READ_ONLY_SYM
-        | CONNECTION_SYM
-        | WRAPPER_SYM
         ;
 
 opt_versioning_option:
@@ -6064,7 +5911,7 @@ versioning_option:
           {
             if (unlikely(Lex->create_info.options & HA_LEX_CREATE_TMP_TABLE))
             {
-              if (!DBUG_IF("sysvers_force"))
+              if (DBUG_EVALUATE_IF("sysvers_force", 0, 1))
               {
                 my_error(ER_VERS_NOT_SUPPORTED, MYF(0), "CREATE TEMPORARY TABLE");
                 MYSQL_YYABORT;
@@ -6081,8 +5928,7 @@ versioning_option:
 default_charset:
           opt_default charset opt_equal charset_name_or_default
           {
-            if (unlikely(Lex->create_info.add_table_option_default_charset(
-                           thd, thd->variables.character_set_collations, $4)))
+            if (unlikely(Lex->create_info.add_table_option_default_charset($4)))
               MYSQL_YYABORT;
           }
         ;
@@ -6090,10 +5936,15 @@ default_charset:
 default_collation:
           opt_default COLLATE_SYM opt_equal collation_name_or_default
           {
-            Table_specification_st *cinfo= &Lex->create_info;
-            if (unlikely(cinfo->add_table_option_default_collation(
-                           thd, thd->variables.character_set_collations, $4)))
+            HA_CREATE_INFO *cinfo= &Lex->create_info;
+            if (unlikely((cinfo->used_fields & HA_CREATE_USED_DEFAULT_CHARSET) &&
+                         cinfo->default_table_charset && $4 &&
+                         !($4= merge_charset_and_collation(cinfo->default_table_charset,
+                                                           $4))))
               MYSQL_YYABORT;
+
+            Lex->create_info.default_table_charset= $4;
+            Lex->create_info.used_fields|= HA_CREATE_USED_DEFAULT_CHARSET;
           }
         ;
 
@@ -6203,16 +6054,13 @@ key_def:
               MYSQL_YYABORT;
           }
           '(' key_list ')' fulltext_key_options { }
-        | spatial_or_vector opt_key_or_index opt_if_not_exists opt_ident
+        | spatial opt_key_or_index opt_if_not_exists opt_ident
           {
             Lex->option_list= NULL;
             if (unlikely(Lex->add_key($1, &$4, HA_KEY_ALG_UNDEF, $3)))
               MYSQL_YYABORT;
           }
-          '(' key_part_simple ')' spatial_key_options
-          {
-            Lex->last_key->columns.push_back($7, thd->mem_root);
-          }
+          '(' key_list ')' spatial_key_options { }
         | opt_constraint constraint_key_type
           opt_if_not_exists opt_ident
           opt_USING_key_algorithm
@@ -6260,14 +6108,14 @@ period_for_system_time:
           PERIOD_SYM FOR_SYSTEM_TIME_SYM '(' ident ',' ident ')'
           {
             Vers_parse_info &info= Lex->vers_get_info();
-            info.set_period(Lex_ident_column($4), Lex_ident_column($6));
+            info.set_period($4, $6);
           }
         ;
 
 period_for_application_time:
           FOR_SYM ident '(' ident ',' ident ')'
           {
-            if (Lex->add_period(Lex_ident_column($2), $4, $6))
+            if (Lex->add_period($2, $4, $6))
               MYSQL_YYABORT;
           }
         ;
@@ -6317,7 +6165,7 @@ field_spec:
             if (unlikely(!f))
               MYSQL_YYABORT;
 
-            lex->init_last_field(f, &$1);
+            lex->init_last_field(f, &$1, NULL);
             $<create_field>$= f;
             lex->parsing_options.lookup_keywords_after_qualifier= true;
           }
@@ -6345,20 +6193,10 @@ field_spec:
 field_type_or_serial:
           qualified_field_type
           {
-            if (Lex->last_field->set_attributes(thd, $1,
-                                                COLUMN_DEFINITION_TABLE_FIELD))
-              MYSQL_YYABORT;
+             Lex->last_field->set_attributes(thd, $1, Lex->charset,
+                                             COLUMN_DEFINITION_TABLE_FIELD);
           }
           field_def
-          {
-            auto tmp= $1.charset_collation_attrs();
-            if (tmp.merge_column_charset_clause_and_collate_clause(
-                     thd, thd->variables.character_set_collations, $3))
-              MYSQL_YYABORT;
-            Lex->last_field->set_charset_collation_attrs(
-                               thd, thd->variables.character_set_collations,
-                               tmp);
-          }
         | SERIAL_SYM
           {
             Lex->last_field->set_handler(&type_handler_ulonglong);
@@ -6390,27 +6228,24 @@ opt_asrow_attribute_list:
         ;
 
 field_def:
-          /* empty */     { $$.init(); }
+          /* empty */ { }
         | attribute_list
+        | attribute_list compressed_deprecated_column_attribute
+        | attribute_list compressed_deprecated_column_attribute attribute_list
         | opt_generated_always AS virtual_column_func
          {
            Lex->last_field->vcol_info= $3;
          }
           vcol_opt_specifier vcol_opt_attribute
-          {
-            $$.init();
-          }
         | opt_generated_always AS ROW_SYM START_SYM opt_asrow_attribute
           {
             if (Lex->last_field_generated_always_as_row_start())
               MYSQL_YYABORT;
-            $$.init();
           }
         | opt_generated_always AS ROW_SYM END opt_asrow_attribute
           {
             if (Lex->last_field_generated_always_as_row_end())
               MYSQL_YYABORT;
-            $$.init();
           }
         ;
 
@@ -6422,19 +6257,19 @@ opt_generated_always:
 vcol_opt_specifier:
           /* empty */
           {
-            Lex->last_field->vcol_info->set_vcol_type(VCOL_GENERATED_VIRTUAL);
+            Lex->last_field->vcol_info->set_stored_in_db_flag(FALSE);
           }
         | VIRTUAL_SYM
           {
-            Lex->last_field->vcol_info->set_vcol_type(VCOL_GENERATED_VIRTUAL);
+            Lex->last_field->vcol_info->set_stored_in_db_flag(FALSE);
           }
         | PERSISTENT_SYM
           {
-            Lex->last_field->vcol_info->set_vcol_type(VCOL_GENERATED_STORED);
+            Lex->last_field->vcol_info->set_stored_in_db_flag(TRUE);
           }
         | STORED_SYM
           {
-            Lex->last_field->vcol_info->set_vcol_type(VCOL_GENERATED_STORED);
+            Lex->last_field->vcol_info->set_stored_in_db_flag(TRUE);
           }
         ;
 
@@ -6557,31 +6392,15 @@ udt_name:
         | non_reserved_keyword_udt      { $$= $1; }
         ;
 
-field_type_all_builtin:
+field_type_all:
           field_type_numeric
         | field_type_temporal
         | field_type_string
         | field_type_lob
         | field_type_misc
-      ;
-
-field_type_all:
-          field_type_all_builtin
-        | udt_name float_options srid_option opt_binary
-          {
-            if (Lex->set_field_type_udt(&$$, $1, $2, $4))
-              MYSQL_YYABORT;
-          }
-        ;
-
-field_type_all_with_typedefs:
-          field_type_all_builtin
-          {
-            Lex->map_data_type(Lex_ident_sys(), &($$= $1));
-          }
         | udt_name float_options srid_option
           {
-            if (unlikely(Lex->set_field_type_udt_or_typedef(&$$, $1, $2)))
+            if (Lex->set_field_type_udt(&$$, $1, $2))
               MYSQL_YYABORT;
           }
         ;
@@ -6595,12 +6414,14 @@ field_type_numeric:
         | FLOAT_SYM float_options last_field_options
           {
             $$.set(&type_handler_float, $2);
-            if ($2.has_explicit_length() && !$2.has_explicit_dec())
+            if ($2.length() && !$2.dec())
             {
-              if (unlikely($2.length() > PRECISION_FOR_DOUBLE))
+              int err;
+              ulonglong tmp_length= my_strtoll10($2.length(), NULL, &err);
+              if (unlikely(err || tmp_length > PRECISION_FOR_DOUBLE))
                 my_yyabort_error((ER_WRONG_FIELD_SPEC, MYF(0),
                                   Lex->last_field->field_name.str));
-              if ($2.length() > PRECISION_FOR_FLOAT)
+              if (tmp_length > PRECISION_FOR_FLOAT)
                 $$.set(&type_handler_double);
               else
                 $$.set(&type_handler_float);
@@ -6612,17 +6433,17 @@ field_type_numeric:
           }
         | BOOL_SYM
           {
-            $$.set_handler_length(&type_handler_stiny, 1);
+            $$.set(&type_handler_stiny, "1");
           }
         | BOOLEAN_SYM
           {
-            $$.set_handler_length(&type_handler_stiny, 1);
+            $$.set(&type_handler_stiny, "1");
           }
         | DECIMAL_SYM float_options last_field_options
           { $$.set(&type_handler_newdecimal, $2);}
         | NUMBER_ORACLE_SYM float_options last_field_options
           {
-            if ($2.has_explicit_length())
+            if ($2.length() != 0)
               $$.set(&type_handler_newdecimal, $2);
             else
               $$.set(&type_handler_double);
@@ -6635,58 +6456,67 @@ field_type_numeric:
 
 
 opt_binary_and_compression:
-          /* empty */                                      { $$.init(); }
-        | binary                                           { $$= $1; }
-        | compressed opt_binary                            { $$= $2; }
+          /* empty */
+        | binary
+        | binary compressed_deprecated_data_type_attribute
+        | compressed opt_binary
         ;
 
 field_type_string:
           char opt_field_length opt_binary
           {
-            $$.set(&type_handler_string, $2, $3);
+            $$.set(&type_handler_string, $2);
           }
         | nchar opt_field_length opt_bin_mod
           {
-            $$.set(&type_handler_string, $2,
-                   Lex_exact_charset_extended_collation_attrs::national($3));
+            $$.set(&type_handler_string, $2);
+            bincmp_collation(national_charset_info, $3);
           }
         | BINARY opt_field_length
           {
-            $$.set(&type_handler_string, $2, &my_charset_bin);
+            Lex->charset=&my_charset_bin;
+            $$.set(&type_handler_string, $2);
           }
         | varchar opt_field_length opt_binary_and_compression
           {
-            $$.set(&type_handler_varchar, $2, $3);
+            $$.set(&type_handler_varchar, $2);
           }
         | VARCHAR2_ORACLE_SYM opt_field_length opt_binary_and_compression
           {
-            $$.set(&type_handler_varchar, $2, $3);
+            $$.set(&type_handler_varchar, $2);
           }
         | nvarchar opt_field_length opt_compressed opt_bin_mod
           {
-            $$.set(&type_handler_varchar, $2,
-                   Lex_exact_charset_extended_collation_attrs::national($4));
+            $$.set(&type_handler_varchar, $2);
+            bincmp_collation(national_charset_info, $4);
           }
         | VARBINARY opt_field_length opt_compressed
           {
-            $$.set(&type_handler_varchar, $2, &my_charset_bin);
+            Lex->charset=&my_charset_bin;
+            $$.set(&type_handler_varchar, $2);
           }
         | RAW_ORACLE_SYM opt_field_length opt_compressed
           {
-            $$.set(&type_handler_varchar, $2, &my_charset_bin);
+            Lex->charset= &my_charset_bin;
+            $$.set(&type_handler_varchar, $2);
           }
         ;
 
 field_type_temporal:
           YEAR_SYM opt_field_length last_field_options
           {
-            if ($2.has_explicit_length())
+            if ($2)
             {
-              if ($2.length() != 4)
+              errno= 0;
+              ulong length= strtoul($2, NULL, 10);
+              if (errno == 0 && length <= MAX_FIELD_BLOBLENGTH && length != 4)
               {
                 char buff[sizeof("YEAR()") + MY_INT64_NUM_DECIMAL_DIGITS + 1];
-                my_snprintf(buff, sizeof(buff), "YEAR(%u)", (uint) $2.length());
-                warn_deprecated<1007>(thd, buff, "YEAR(4)");
+                my_snprintf(buff, sizeof(buff), "YEAR(%lu)", length);
+                push_warning_printf(thd, Sql_condition::WARN_LEVEL_NOTE,
+                                    ER_WARN_DEPRECATED_SYNTAX,
+                                    ER_THD(thd, ER_WARN_DEPRECATED_SYNTAX),
+                                    buff, "YEAR(4)");
               }
             }
             $$.set(&type_handler_year, $2);
@@ -6716,57 +6546,65 @@ field_type_temporal:
 field_type_lob:
           TINYBLOB opt_compressed
           {
-            $$.set(&type_handler_tiny_blob, &my_charset_bin);
+            Lex->charset=&my_charset_bin;
+            $$.set(&type_handler_tiny_blob);
           }
         | BLOB_MARIADB_SYM opt_field_length opt_compressed
           {
-            $$.set(&type_handler_blob, $2, &my_charset_bin);
+            Lex->charset=&my_charset_bin;
+            $$.set(&type_handler_blob, $2);
           }
         | BLOB_ORACLE_SYM field_length opt_compressed
           {
-            $$.set(&type_handler_blob, $2, &my_charset_bin);
+            Lex->charset=&my_charset_bin;
+            $$.set(&type_handler_blob, $2);
           }
         | BLOB_ORACLE_SYM opt_compressed
           {
-            $$.set(&type_handler_long_blob, &my_charset_bin);
+            Lex->charset=&my_charset_bin;
+            $$.set(&type_handler_long_blob);
           }
         | MEDIUMBLOB opt_compressed
           {
-            $$.set(&type_handler_medium_blob, &my_charset_bin);
+            Lex->charset=&my_charset_bin;
+            $$.set(&type_handler_medium_blob);
           }
         | LONGBLOB opt_compressed
           {
-            $$.set(&type_handler_long_blob, &my_charset_bin);
+            Lex->charset=&my_charset_bin;
+            $$.set(&type_handler_long_blob);
           }
         | LONG_SYM VARBINARY opt_compressed
           {
-            $$.set(&type_handler_medium_blob, &my_charset_bin);
+            Lex->charset=&my_charset_bin;
+            $$.set(&type_handler_medium_blob);
           }
         | LONG_SYM varchar opt_binary_and_compression
-          { $$.set(&type_handler_medium_blob, $3); }
+          { $$.set(&type_handler_medium_blob); }
         | TINYTEXT opt_binary_and_compression
-          { $$.set(&type_handler_tiny_blob, $2); }
+          { $$.set(&type_handler_tiny_blob); }
         | TEXT_SYM opt_field_length opt_binary_and_compression
-          { $$.set(&type_handler_blob, $2, $3); }
+          { $$.set(&type_handler_blob, $2); }
         | MEDIUMTEXT opt_binary_and_compression
-          { $$.set(&type_handler_medium_blob, $2); }
+          { $$.set(&type_handler_medium_blob); }
         | LONGTEXT opt_binary_and_compression
-          { $$.set(&type_handler_long_blob, $2); }
+          { $$.set(&type_handler_long_blob); }
         | CLOB_ORACLE_SYM opt_binary_and_compression
-          { $$.set(&type_handler_long_blob, $2); }
+          { $$.set(&type_handler_long_blob); }
         | LONG_SYM opt_binary_and_compression
-          { $$.set(&type_handler_medium_blob, $2); }
+          { $$.set(&type_handler_medium_blob); }
         | JSON_SYM opt_compressed
           {
-            $$.set(&type_handler_long_blob_json, &MY_CHARSET_UTF8MB4_BIN);
+            Lex->charset= &MY_CHARSET_UTF8MB4_BIN;
+            $$.set(&type_handler_long_blob_json);
           }
         ;
 
 field_type_misc:
           ENUM '(' string_list ')' opt_binary
-          { $$.set(&type_handler_enum, $5); }
+          { $$.set(&type_handler_enum); }
         | SET '(' string_list ')' opt_binary
-          { $$.set(&type_handler_set, $5); }
+          { $$.set(&type_handler_set); }
         ;
 
 char:
@@ -6812,18 +6650,18 @@ real_type:
 
 srid_option:
           /* empty */
-          { Lex->last_field->set_attr_uint32(0, 0); }
+          { Lex->last_field->srid= 0; }
         |
           REF_SYSTEM_ID_SYM '=' NUM
           {
-            Lex->last_field->set_attr_uint32(0, (uint32) atoi($3.str));
+            Lex->last_field->srid=atoi($3.str);
           }
         ;
 
 float_options:
-          /* empty */  { $$.reset();  }
-        | field_length
-        | precision
+          /* empty */  { $$.set(0, 0);  }
+        | field_length { $$.set($1, 0); }
+        | precision    { $$= $1; }
         ;
 
 precision:
@@ -6843,44 +6681,26 @@ last_field_options:
           field_options { Lex->last_field->flags|= ($$= $1); }
         ;
 
-field_length_str:
+field_length:
           '(' LONG_NUM ')'      { $$= $2.str; }
         | '(' ULONGLONG_NUM ')' { $$= $2.str; }
         | '(' DECIMAL_NUM ')'   { $$= $2.str; }
         | '(' NUM ')'           { $$= $2.str; }
         ;
 
-field_length: field_length_str  { $$.set($1, NULL); }
-        ;
-
-
-field_scale: field_length_str   { $$.set(NULL, $1); }
-        ;
-
-
 opt_field_length:
-          /* empty */  { $$.reset(); /* use default length */ }
-        | field_length
-        ;
-
-opt_field_scale:
-          /* empty */ { $$.reset(); }
-        | field_scale
+          /* empty */  { $$= (char*) 0; /* use default length */ }
+        | field_length { $$= $1; }
         ;
 
 opt_precision:
-          /* empty */    { $$.reset(); }
+          /* empty */    { $$.set(0, 0); }
         | precision      { $$= $1; }
         ;
 
 
 attribute_list:
-          attribute_list attribute
-          {
-            if (($$= $1).merge_column_collate_clause_and_collate_clause(
-                           thd, thd->variables.character_set_collations, $2))
-              MYSQL_YYABORT;
-          }
+          attribute_list attribute {}
         | attribute
         ;
 
@@ -6889,34 +6709,30 @@ attribute:
           {
             Lex->last_field->flags&= ~NOT_NULL_FLAG;
             Lex->last_field->explicitly_nullable= true;
-            $$.init();
           }
-        | DEFAULT column_default_expr
-          {
-            Lex->last_field->default_value= $2;
-            $$.init();
-          }
+        | DEFAULT column_default_expr { Lex->last_field->default_value= $2; }
         | ON UPDATE_SYM NOW_SYM opt_default_time_precision
           {
-            Item *item= new (thd->mem_root) Item_func_current_timestamp(thd, $4);
+            Item *item= new (thd->mem_root) Item_func_now_local(thd, $4);
             if (unlikely(item == NULL))
               MYSQL_YYABORT;
             Lex->last_field->on_update= item;
-            $$.init();
           }
-        | AUTO_INC { Lex->last_field->flags|= AUTO_INCREMENT_FLAG | NOT_NULL_FLAG; $$.init(); }
+        | AUTO_INC { Lex->last_field->flags|= AUTO_INCREMENT_FLAG | NOT_NULL_FLAG; }
         | SERIAL_SYM DEFAULT VALUE_SYM
           {
             LEX *lex=Lex;
             lex->last_field->flags|= AUTO_INCREMENT_FLAG | NOT_NULL_FLAG | UNIQUE_KEY_FLAG;
             lex->alter_info.flags|= ALTER_ADD_INDEX;
-            $$.init();
           }
         | COLLATE_SYM collation_name
           {
-            $$= Lex_exact_charset_extended_collation_attrs($2);
+            if (unlikely(Lex->charset && !my_charset_same(Lex->charset,$2)))
+              my_yyabort_error((ER_COLLATION_CHARSET_MISMATCH, MYF(0),
+                                $2->coll_name.str, Lex->charset->cs_name.str));
+            Lex->last_field->charset= $2;
           }
-        | serial_attribute { $$.init(); }
+        | serial_attribute
         ;
 
 opt_compression_method:
@@ -6942,6 +6758,23 @@ compressed:
           }
         ;
 
+compressed_deprecated_data_type_attribute:
+          COMPRESSED_SYM opt_compression_method
+          {
+            if (unlikely(Lex->last_field->set_compressed_deprecated(thd, $2)))
+              MYSQL_YYABORT;
+          }
+        ;
+
+compressed_deprecated_column_attribute:
+          COMPRESSED_SYM opt_compression_method
+          {
+            if (unlikely(Lex->last_field->
+                set_compressed_deprecated_column_attribute(thd, $1.pos(), $2)))
+              MYSQL_YYABORT;
+          }
+        ;
+
 asrow_attribute:
           not NULL_SYM opt_enable
           {
@@ -6958,9 +6791,35 @@ asrow_attribute:
 
 serial_attribute:
           asrow_attribute
-        | engine_defined_option
+        | IDENT_sys equal TEXT_STRING_sys
           {
-            $1->link(&Lex->last_field->option_list, &Lex->option_list_last);
+            if (unlikely($3.length > ENGINE_OPTION_MAX_LENGTH))
+              my_yyabort_error((ER_VALUE_TOO_LONG, MYF(0), $1.str));
+            (void) new (thd->mem_root)
+                   engine_option_value($1, $3, true,
+                                       &Lex->last_field->option_list,
+                                       &Lex->option_list_last);
+          }
+        | IDENT_sys equal ident
+          {
+            if (unlikely($3.length > ENGINE_OPTION_MAX_LENGTH))
+              my_yyabort_error((ER_VALUE_TOO_LONG, MYF(0), $1.str));
+            (void) new (thd->mem_root)
+                   engine_option_value($1, $3, false,
+                                       &Lex->last_field->option_list,
+                                       &Lex->option_list_last);
+          }
+        | IDENT_sys equal real_ulonglong_num
+          {
+            (void) new (thd->mem_root)
+                   engine_option_value($1, $3, &Lex->last_field->option_list,
+                                       &Lex->option_list_last, thd->mem_root);
+          }
+        | IDENT_sys equal DEFAULT
+          {
+            (void) new (thd->mem_root)
+                   engine_option_value($1, &Lex->last_field->option_list,
+                                       &Lex->option_list_last);
           }
         | with_or_without_system VERSIONING_SYM
           {
@@ -7023,7 +6882,7 @@ old_or_new_charset_name:
             if (unlikely(!($$=get_charset_by_csname($1.str,
                                                     MY_CS_PRIMARY,
                                                     MYF(utf8_flag))) &&
-                         !($$=get_old_charset_by_name($1))))
+                         !($$=get_old_charset_by_name($1.str))))
               my_yyabort_error((ER_UNKNOWN_CHARACTER_SET, MYF(0), $1.str));
           }
         | BINARY { $$= &my_charset_bin; }
@@ -7037,19 +6896,20 @@ old_or_new_charset_name_or_default:
 collation_name:
           ident_or_text
           {
-            if ($$.set_by_name($1.str, thd->get_utf8_flag()))
+            if (unlikely(!($$= mysqld_collation_get_by_name($1.str,
+                                                            thd->get_utf8_flag()))))
               MYSQL_YYABORT;
           }
         ;
 
+opt_collate:
+          /* empty */ { $$=NULL; }
+        | COLLATE_SYM collation_name_or_default { $$=$2; }
+        ;
+
 collation_name_or_default:
           collation_name { $$=$1; }
-        | DEFAULT        { $$.set_collate_default(); }
-        | BINARY // MySQL compatibility
-          {
-            const Lex_exact_collation bin(&my_charset_bin);
-            $$= Lex_extended_collation(bin);
-          }
+        | DEFAULT    { $$=NULL; }
         ;
 
 opt_default:
@@ -7067,71 +6927,32 @@ charset_or_alias:
           }
         ;
 
+collate: COLLATE_SYM collation_name_or_default { $$= $2; }
+       ;
+
 opt_binary:
-          /* empty */             { $$.init(); }
-        | binary
+          /* empty */             { bincmp_collation(NULL, false); }
+        | binary {}
         ;
 
 binary:
-          BYTE_SYM
+          BYTE_SYM                { bincmp_collation(&my_charset_bin, false); }
+        | charset_or_alias opt_bin_mod { bincmp_collation($1, $2); }
+        | BINARY                  { bincmp_collation(NULL, true); }
+        | BINARY charset_or_alias { bincmp_collation($2, true); }
+        | charset_or_alias collate
           {
-            $$.set_charset(Lex_exact_charset(&my_charset_bin));
+            if (!$2)
+              Lex->charset= $1; // CHARACTER SET cs COLLATE DEFAULT
+            else
+            {
+              if (!my_charset_same($2, $1))
+                my_yyabort_error((ER_COLLATION_CHARSET_MISMATCH, MYF(0),
+                                  $2->coll_name.str, $1->cs_name.str));
+              Lex->charset= $2;
+            }
           }
-        | charset_or_alias
-          {
-            $$.set_charset(Lex_exact_charset($1));
-          }
-        | charset_or_alias BINARY
-          {
-            if ($$.set_charset_collate_binary(Lex_exact_charset($1)))
-              MYSQL_YYABORT;
-          }
-        | BINARY { $$.set_contextually_typed_binary_style(); }
-        | BINARY charset_or_alias
-          {
-            if ($$.set_charset_collate_binary(Lex_exact_charset($2)))
-              MYSQL_YYABORT;
-          }
-        | charset_or_alias COLLATE_SYM DEFAULT
-          {
-            $$.set_charset_collate_default(
-                 thd,
-                 thd->variables.character_set_collations,
-                 Lex_exact_charset($1));
-          }
-        | charset_or_alias COLLATE_SYM collation_name
-          {
-            if ($3.merge_exact_charset(
-                     thd,
-                     thd->variables.character_set_collations,
-                     Lex_exact_charset($1)))
-              MYSQL_YYABORT;
-            $$= Lex_exact_charset_extended_collation_attrs($3);
-          }
-        | COLLATE_SYM collation_name
-          {
-            $$= Lex_exact_charset_extended_collation_attrs($2);
-          }
-        | COLLATE_SYM DEFAULT
-          {
-            $$.set_collate_default();
-          }
-        | charset_or_alias COLLATE_SYM BINARY // MySQL compatibility
-          {
-            const Lex_exact_collation bin(&my_charset_bin);
-            Lex_extended_collation tmp(bin);
-            if (tmp.merge_exact_charset(thd,
-                                        thd->variables.character_set_collations,
-                                        Lex_exact_charset($1)))
-              MYSQL_YYABORT;
-            $$= Lex_exact_charset_extended_collation_attrs(tmp);
-          }
-        | COLLATE_SYM BINARY // MySQL compatibility
-          {
-            const Lex_exact_collation bin(&my_charset_bin);
-            const Lex_extended_collation tmp(bin);
-            $$= Lex_exact_charset_extended_collation_attrs(tmp);
-          }
+        | collate { Lex->charset= $1; }
         ;
 
 opt_bin_mod:
@@ -7327,12 +7148,16 @@ fulltext:
           FULLTEXT_SYM { $$= Key::FULLTEXT;}
         ;
 
-spatial_or_vector:
+spatial:
           SPATIAL_SYM
           {
+#ifdef HAVE_SPATIAL
             $$= Key::SPATIAL;
+#else
+            my_yyabort_error((ER_FEATURE_DISABLED, MYF(0), sym_group_geom.name,
+                              sym_group_geom.needed_define));
+#endif
           }
-        | VECTOR_SYM { $$= Key::VECTOR;}
         ;
 
 normal_key_options:
@@ -7400,9 +7225,33 @@ all_key_opt:
           {
             Lex->last_key->key_create_info.is_ignored= $1;
           }
-        | engine_defined_option
+        | IDENT_sys equal TEXT_STRING_sys
           {
-            $1->link(&Lex->option_list, &Lex->option_list_last);
+            if (unlikely($3.length > ENGINE_OPTION_MAX_LENGTH))
+              my_yyabort_error((ER_VALUE_TOO_LONG, MYF(0), $1.str));
+            (void) new (thd->mem_root)
+                   engine_option_value($1, $3, true, &Lex->option_list,
+                                       &Lex->option_list_last);
+          }
+        | IDENT_sys equal ident
+          {
+            if (unlikely($3.length > ENGINE_OPTION_MAX_LENGTH))
+              my_yyabort_error((ER_VALUE_TOO_LONG, MYF(0), $1.str));
+            (void) new (thd->mem_root)
+                   engine_option_value($1, $3, false, &Lex->option_list,
+                                       &Lex->option_list_last);
+          }
+        | IDENT_sys equal real_ulonglong_num
+          {
+            (void) new (thd->mem_root)
+                  engine_option_value($1, $3, &Lex->option_list,
+                                      &Lex->option_list_last, thd->mem_root);
+          }
+        | IDENT_sys equal DEFAULT
+          {
+            (void) new (thd->mem_root)
+                   engine_option_value($1, &Lex->option_list,
+                                       &Lex->option_list_last);
           }
         ;
 
@@ -7440,12 +7289,10 @@ ignorability:
 key_list:
           key_list ',' key_part order_dir
           {
-            $3->asc= $4;
             Lex->last_key->columns.push_back($3, thd->mem_root);
           }
         | key_part order_dir
           {
-            $1->asc= $2;
             Lex->last_key->columns.push_back($1, thd->mem_root);
           }
         ;
@@ -7455,12 +7302,17 @@ opt_without_overlaps:
          | ',' ident WITHOUT OVERLAPS_SYM
           {
             Lex->last_key->without_overlaps= true;
-            Lex->last_key->period= Lex_ident_column($2);
+            Lex->last_key->period= $2;
           }
          ;
 
 key_part:
-          key_part_simple
+          ident
+          {
+            $$= new (thd->mem_root) Key_part_spec(&$1, 0);
+            if (unlikely($$ == NULL))
+              MYSQL_YYABORT;
+          }
         | ident '(' NUM ')'
           {
             int key_part_len= atoi($3.str);
@@ -7471,15 +7323,6 @@ key_part:
               MYSQL_YYABORT;
           }
         ;
-
-key_part_simple:
-          ident
-          {
-            $$= new (thd->mem_root) Key_part_spec(&$1, 0);
-            if (unlikely($$ == NULL))
-              MYSQL_YYABORT;
-          }
-          ;
 
 opt_ident:
           /* empty */ { $$= null_clex_str; }
@@ -7530,7 +7373,7 @@ alter:
           {
             if (likely(!Lex->m_sql_cmd))
             {
-              /* Create a generic ALTER TABLE statement. */
+              /* Create a generic ALTER TABLE statment. */
               Lex->m_sql_cmd= new (thd->mem_root) Sql_cmd_alter_table();
               if (unlikely(Lex->m_sql_cmd == NULL))
                 MYSQL_YYABORT;
@@ -7539,7 +7382,9 @@ alter:
           }
         | ALTER DATABASE ident_or_empty
           {
-            Lex->create_info.init();
+            Lex->create_info.default_table_charset= NULL;
+            Lex->create_info.schema_comment= NULL;
+            Lex->create_info.used_fields= 0;
             if (Lex->main_select_push(true))
               MYSQL_YYABORT;
           }
@@ -7555,7 +7400,8 @@ alter:
           }
         | ALTER DATABASE COMMENT_SYM opt_equal TEXT_STRING_sys
           {
-            Lex->create_info.init();
+            Lex->create_info.default_table_charset= NULL;
+            Lex->create_info.used_fields= 0;
             Lex->create_info.schema_comment= thd->make_clex_string($5);
             Lex->create_info.used_fields|= HA_CREATE_USED_COMMENT;
           }
@@ -7617,7 +7463,7 @@ alter:
               MYSQL_YYABORT;
             /*
               It is safe to use Lex->spname because
-              ALTER EVENT xxx RENAME TO yyy DO ALTER EVENT RENAME TO
+              ALTER EVENT xxx RENATE TO yyy DO ALTER EVENT RENAME TO
               is not allowed. Lex->spname is used in the case of RENAME TO
               If it had to be supported spname had to be added to
               Event_parse_data.
@@ -7649,6 +7495,26 @@ alter:
             Lex->stmt_definition_end= (char*)YYLIP->get_cpp_ptr();
 
             Lex->pop_select(); //main select
+          }
+        | ALTER TABLESPACE alter_tablespace_info
+          {
+            LEX *lex= Lex;
+            lex->alter_tablespace_info->ts_cmd_type= ALTER_TABLESPACE;
+          }
+        | ALTER LOGFILE_SYM GROUP_SYM alter_logfile_group_info
+          {
+            LEX *lex= Lex;
+            lex->alter_tablespace_info->ts_cmd_type= ALTER_LOGFILE_GROUP;
+          }
+        | ALTER TABLESPACE change_tablespace_info
+          {
+            LEX *lex= Lex;
+            lex->alter_tablespace_info->ts_cmd_type= CHANGE_FILE_TABLESPACE;
+          }
+        | ALTER TABLESPACE change_tablespace_access
+          {
+            LEX *lex= Lex;
+            lex->alter_tablespace_info->ts_cmd_type= ALTER_ACCESS_MODE_TABLESPACE;
           }
         | ALTER SERVER_SYM ident_or_text
           {
@@ -7684,15 +7550,8 @@ alter:
           }
           sequence_defs
           {
-            /* Create a generic ALTER SEQUENCE statement. */
+            /* Create a generic ALTER SEQUENCE statment. */
             Lex->m_sql_cmd= new (thd->mem_root) Sql_cmd_alter_sequence($3);
-            if ((Lex->create_info.seq_create_info->used_fields &
-                 seq_field_used_as) &&
-                (Lex->create_info.seq_create_info->used_fields -
-                 seq_field_used_as))
-              my_yyabort_error((ER_NOT_SUPPORTED_YET, MYF(0),
-                                "ALTER SEQUENCE with both AS <type> and "
-                                "something else."));
             if (unlikely(Lex->m_sql_cmd == NULL))
               MYSQL_YYABORT;
           } stmt_end {}
@@ -7784,7 +7643,6 @@ alter_commands:
             Lex->m_sql_cmd= new (thd->mem_root)
               Sql_cmd_discard_import_tablespace(
                 Sql_cmd_discard_import_tablespace::IMPORT_TABLESPACE);
-            Lex->create_info.add(DDL_options_st::OPT_IMPORT_TABLESPACE);
             if (unlikely(Lex->m_sql_cmd == NULL))
               MYSQL_YYABORT;
           }
@@ -7883,57 +7741,9 @@ alter_commands:
           }
         | reorg_partition_rule
         | EXCHANGE_SYM PARTITION_SYM alt_part_name_item
-          WITH TABLE_SYM table_ident opt_without_validation have_partitioning
+          WITH TABLE_SYM table_ident have_partitioning
           {
             if (Lex->stmt_alter_table_exchange_partition($6))
-              MYSQL_YYABORT;
-          }
-        | CONVERT_SYM PARTITION_SYM alt_part_name_item
-          TO_SYM TABLE_SYM table_ident opt_without_validation have_partitioning
-          {
-            LEX *lex= Lex;
-            if (Lex->stmt_alter_table($6))
-              MYSQL_YYABORT;
-            lex->m_sql_cmd= new (thd->mem_root) Sql_cmd_alter_table();
-            if (unlikely(lex->m_sql_cmd == NULL))
-              MYSQL_YYABORT;
-            lex->alter_info.partition_flags|= ALTER_PARTITION_CONVERT_OUT;
-          }
-        | CONVERT_SYM TABLE_SYM table_ident
-          {
-            LEX *lex= Lex;
-            if (!lex->first_select_lex()->add_table_to_list(thd, $3, nullptr, 0,
-                                                            TL_READ_NO_INSERT,
-                                                            MDL_SHARED_NO_WRITE))
-              MYSQL_YYABORT;
-
-            /*
-              This will appear as (new_db, new_name) in alter_ctx.
-              new_db will be IX-locked and new_name X-locked.
-            */
-            lex->first_select_lex()->db= $3->db;
-            lex->name= $3->table;
-            if (lex->first_select_lex()->db.str == NULL &&
-                lex->copy_db_to(&lex->first_select_lex()->db))
-              MYSQL_YYABORT;
-
-            lex->part_info= new (thd->mem_root) partition_info();
-            if (unlikely(!lex->part_info))
-              MYSQL_YYABORT;
-
-            lex->part_info->num_parts= 1;
-            /*
-              OR-ed with ALTER_PARTITION_ADD because too many checks of
-              ALTER_PARTITION_ADD required.
-            */
-            lex->alter_info.partition_flags|= ALTER_PARTITION_ADD |
-                                              ALTER_PARTITION_CONVERT_IN;
-          }
-          TO_SYM PARTITION_SYM part_definition opt_without_validation have_partitioning
-          {
-            LEX *lex= Lex;
-            lex->m_sql_cmd= new (thd->mem_root) Sql_cmd_alter_table();
-            if (unlikely(lex->m_sql_cmd == NULL))
               MYSQL_YYABORT;
           }
         ;
@@ -8046,7 +7856,7 @@ alter_list_item:
             LEX *lex=Lex;
             lex->create_last_non_select_table= lex->last_table();
             lex->alter_info.flags|= ALTER_PARSER_ADD_COLUMN;
-            $2->after= Lex_ident_column($3);
+            $2->after= $3;
           }
         | ADD key_def
           {
@@ -8085,8 +7895,8 @@ alter_list_item:
           {
             Lex->alter_info.flags|= ALTER_CHANGE_COLUMN | ALTER_RENAME_COLUMN;
             Lex->create_last_non_select_table= Lex->last_table();
-            $5->change= Lex_ident_column($4);
-            $5->after= Lex_ident_column($6);
+            $5->change= $4;
+            $5->after= $6;
           }
         | MODIFY_SYM opt_column opt_if_exists_table_element
           field_spec opt_place
@@ -8094,13 +7904,13 @@ alter_list_item:
             Lex->alter_info.flags|= ALTER_CHANGE_COLUMN;
             Lex->create_last_non_select_table= Lex->last_table();
             $4->change= $4->field_name;
-            $4->after= Lex_ident_column($5);
+            $4->after= $5;
           }
         | DROP opt_column opt_if_exists_table_element field_ident opt_restrict
           {
             LEX *lex=Lex;
             Alter_drop *ad= (new (thd->mem_root)
-                             Alter_drop(Alter_drop::COLUMN, $4, $3));
+                             Alter_drop(Alter_drop::COLUMN, $4.str, $3));
             if (unlikely(ad == NULL))
               MYSQL_YYABORT;
             lex->alter_info.drop_list.push_back(ad, thd->mem_root);
@@ -8111,7 +7921,7 @@ alter_list_item:
             LEX *lex=Lex;
             Alter_drop *ad= (new (thd->mem_root)
                              Alter_drop(Alter_drop::CHECK_CONSTRAINT,
-                                        $4, $3));
+                                        $4.str, $3));
             if (unlikely(ad == NULL))
               MYSQL_YYABORT;
             lex->alter_info.drop_list.push_back(ad, thd->mem_root);
@@ -8121,7 +7931,7 @@ alter_list_item:
           {
             LEX *lex=Lex;
             Alter_drop *ad= (new (thd->mem_root)
-                             Alter_drop(Alter_drop::FOREIGN_KEY, $5, $4));
+                             Alter_drop(Alter_drop::FOREIGN_KEY, $5.str, $4));
             if (unlikely(ad == NULL))
               MYSQL_YYABORT;
             lex->alter_info.drop_list.push_back(ad, thd->mem_root);
@@ -8131,7 +7941,7 @@ alter_list_item:
           {
             LEX *lex=Lex;
             Alter_drop *ad= (new (thd->mem_root)
-                             Alter_drop(Alter_drop::KEY, primary_key_name,
+                             Alter_drop(Alter_drop::KEY, primary_key_name.str,
                                         FALSE));
             if (unlikely(ad == NULL))
               MYSQL_YYABORT;
@@ -8142,7 +7952,7 @@ alter_list_item:
           {
             LEX *lex=Lex;
             Alter_drop *ad= (new (thd->mem_root)
-                             Alter_drop(Alter_drop::KEY, $4, $3));
+                             Alter_drop(Alter_drop::KEY, $4.str, $3));
             if (unlikely(ad == NULL))
               MYSQL_YYABORT;
             lex->alter_info.drop_list.push_back(ad, thd->mem_root);
@@ -8162,7 +7972,7 @@ alter_list_item:
           }
         | ALTER opt_column opt_if_exists_table_element field_ident SET DEFAULT column_default_expr
           {
-            if (check_expression($7, Lex_ident_column($4), VCOL_DEFAULT))
+            if (check_expression($7, &$4, VCOL_DEFAULT))
               MYSQL_YYABORT;
             if (unlikely(Lex->add_alter_list($4, $7, $3)))
               MYSQL_YYABORT;
@@ -8171,7 +7981,7 @@ alter_list_item:
           {
             LEX *lex= Lex;
             Alter_index_ignorability *ac= new (thd->mem_root)
-                                        Alter_index_ignorability($4, $5, $3);
+                                        Alter_index_ignorability($4.str, $5, $3);
             if (ac == NULL)
               MYSQL_YYABORT;
             lex->alter_info.alter_index_ignorability_list.push_back(ac);
@@ -8184,9 +7994,17 @@ alter_list_item:
           }
         | RENAME opt_to table_ident
           {
-            if (Lex->stmt_alter_table($3))
+            LEX *lex=Lex;
+            lex->first_select_lex()->db= $3->db;
+            if (lex->first_select_lex()->db.str == NULL &&
+                lex->copy_db_to(&lex->first_select_lex()->db))
               MYSQL_YYABORT;
-            Lex->alter_info.flags|= ALTER_RENAME;
+            if (unlikely(check_table_name($3->table.str,$3->table.length,
+                                          FALSE)) ||
+                ($3->db.str && unlikely(check_db_name((LEX_STRING*) &$3->db))))
+              my_yyabort_error((ER_WRONG_TABLE_NAME, MYF(0), $3->table.str));
+            lex->name= $3->table;
+            lex->alter_info.flags|= ALTER_RENAME;
           }
         | RENAME COLUMN_SYM opt_if_exists_table_element ident TO_SYM ident
           {
@@ -8203,18 +8021,19 @@ alter_list_item:
             lex->alter_info.alter_rename_key_list.push_back(ak);
             lex->alter_info.flags|= ALTER_RENAME_INDEX;
           }
-        | CONVERT_SYM TO_SYM charset charset_name_or_default
+        | CONVERT_SYM TO_SYM charset charset_name_or_default opt_collate
           {
-            if (Lex->add_alter_list_item_convert_to_charset(
-                       thd, thd->variables.character_set_collations, $4))
+            if (!$4)
+            {
+              $4= thd->variables.collation_database;
+            }
+            $5= $5 ? $5 : $4;
+            if (unlikely(!my_charset_same($4,$5)))
+              my_yyabort_error((ER_COLLATION_CHARSET_MISMATCH, MYF(0),
+                                $5->coll_name.str, $4->cs_name.str));
+            if (unlikely(Lex->create_info.add_alter_list_item_convert_to_charset($5)))
               MYSQL_YYABORT;
-          }
-        | CONVERT_SYM TO_SYM charset charset_name_or_default
-                             COLLATE_SYM collation_name_or_default
-          {
-            if (Lex->add_alter_list_item_convert_to_charset(
-                       thd, thd->variables.character_set_collations, $4, $6))
-              MYSQL_YYABORT;
+            Lex->alter_info.flags|= ALTER_CONVERT_TO;
           }
         | create_table_options_space_separated
           {
@@ -8248,24 +8067,12 @@ alter_list_item:
           }
         | DROP PERIOD_SYM opt_if_exists_table_element FOR_SYM ident
           {
-            Alter_drop *ad= new Alter_drop(Alter_drop::PERIOD, $5, $3);
+            Alter_drop *ad= new Alter_drop(Alter_drop::PERIOD, $5.str, $3);
             if (unlikely(ad == NULL))
               MYSQL_YYABORT;
             Lex->alter_info.drop_list.push_back(ad, thd->mem_root);
             Lex->alter_info.flags|= ALTER_DROP_CHECK_CONSTRAINT;
           }
-        ;
-
-opt_without_validation:
-          /* empty */
-        | WITH VALIDATION_SYM
-        {
-          Lex->without_validation= 0;
-        }
-        | WITHOUT VALIDATION_SYM
-        {
-          Lex->without_validation= 1;
-        }
         ;
 
 opt_index_lock_algorithm:
@@ -8279,7 +8086,8 @@ opt_index_lock_algorithm:
 alter_algorithm_option:
           ALGORITHM_SYM opt_equal DEFAULT
           {
-            Lex->alter_info.set_requested_algorithm(Alter_info::ALTER_TABLE_ALGORITHM_DEFAULT);
+            Lex->alter_info.set_requested_algorithm(
+              Alter_info::ALTER_TABLE_ALGORITHM_DEFAULT);
           }
         | ALGORITHM_SYM opt_equal ident
           {
@@ -8363,7 +8171,7 @@ opt_to:
         ;
 
 slave:
-          START_SYM SLAVE optional_connection_name slave_thread_opts optional_for_channel
+          START_SYM SLAVE optional_connection_name slave_thread_opts
           {
             LEX *lex=Lex;
             lex->sql_command = SQLCOM_SLAVE_START;
@@ -8380,7 +8188,7 @@ slave:
             /* If you change this code don't forget to update STOP SLAVE too */
           }
           {}
-        | STOP_SYM SLAVE optional_connection_name slave_thread_opts optional_for_channel
+        | STOP_SYM SLAVE optional_connection_name slave_thread_opts
           {
             LEX *lex=Lex;
             lex->sql_command = SQLCOM_SLAVE_STOP;
@@ -8480,55 +8288,13 @@ slave_until:
         | UNTIL_SYM MASTER_GTID_POS_SYM '=' TEXT_STRING_sys
           {
             Lex->mi.gtid_pos_str = $4;
-            Lex->mi.is_until_before_gtids= false;
-          }
-        | UNTIL_SYM SQL_AFTER_GTIDS_SYM '=' TEXT_STRING_sys
-          {
-            Lex->mi.gtid_pos_str = $4;
-            Lex->mi.is_until_before_gtids= false;
-          }
-        | UNTIL_SYM SQL_BEFORE_GTIDS_SYM '=' TEXT_STRING_sys
-          {
-            Lex->mi.gtid_pos_str = $4;
-            Lex->mi.is_until_before_gtids= true;
           }
         ;
 
 slave_until_opts:
-          slave_until_file_def
-        | slave_until_opts ',' slave_until_file_def
+          master_file_def
+        | slave_until_opts ',' master_file_def
         ;
-
-slave_until_file_def:
-    MASTER_LOG_FILE_SYM '=' TEXT_STRING_sys
-    {
-      Lex->mi.log_file_name = $3.str;
-    }
-  | MASTER_LOG_POS_SYM '=' ulonglong_num
-    {
-      /* 
-          If the user specified a value < BIN_LOG_HEADER_SIZE, adjust it
-          instead of causing subsequent errors. 
-          We need to do it in this file, because only there we know that 
-          MASTER_LOG_POS has been explicitly specified. On the contrary
-          in change_master() (sql_repl.cc) we cannot distinguish between 0
-          (MASTER_LOG_POS explicitly specified as 0) and 0 (unspecified),
-          whereas we want to distinguish (specified 0 means "read the binlog
-          from 0" (4 in fact), unspecified means "don't change the position
-          (keep the preceding value)").
-      */
-      Lex->mi.pos= MY_MAX(BIN_LOG_HEADER_SIZE, $3);
-    }
-  | RELAY_LOG_FILE_SYM '=' TEXT_STRING_sys
-    {
-      Lex->mi.relay_log_name = $3.str;
-    }
-  | RELAY_LOG_POS_SYM '=' ulong_num
-    {
-      /* Adjust if < BIN_LOG_HEADER_SIZE (same comment as Lex->mi.pos) */
-      Lex->mi.relay_log_pos= MY_MAX(BIN_LOG_HEADER_SIZE, $3);
-    }
-  ;
 
 checksum:
           CHECKSUM_SYM table_or_tables
@@ -8590,7 +8356,6 @@ mi_repair_type:
           QUICK        { Lex->check_opt.flags|= T_QUICK; }
         | EXTENDED_SYM { Lex->check_opt.flags|= T_EXTEND; }
         | USE_FRM      { Lex->check_opt.sql_flags|= TT_USEFRM; }
-        | FORCE_SYM    { Lex->check_opt.sql_flags|= TT_FORCE; }
         ;
 
 opt_view_repair_type:
@@ -8676,7 +8441,7 @@ persistent_index_stat_spec:
 table_column_list:
           /* empty */
           {}
-        | ident
+        | ident 
           {
             Lex->column_list->push_back((LEX_STRING*)
                 thd->memdup(&$1, sizeof(LEX_STRING)), thd->mem_root);
@@ -8909,7 +8674,7 @@ assign_to_keycache_parts:
 
 key_cache_name:
           ident    { $$= $1; }
-        | DEFAULT  { $$ = default_base; }
+        | DEFAULT  { $$ = default_key_cache_base; }
         ;
 
 preload:
@@ -8992,8 +8757,8 @@ opt_ignore_leaves:
 */
 
 
-select_no_with_clause_no_parens:
-          query_expression_body_ext
+select:
+          query_expression_no_with_clause
           {
             if (Lex->push_select($1->fake_select_lex ?
                                  $1->fake_select_lex :
@@ -9007,27 +8772,7 @@ select_no_with_clause_no_parens:
             if (Lex->select_finalize($1, $3))
               MYSQL_YYABORT;
           }
-        ;
-
-select_no_with_clause_parens:
-          query_expression_body_ext_parens
-          {
-            if (Lex->push_select($1->fake_select_lex ?
-                                 $1->fake_select_lex :
-                                 $1->first_select()))
-              MYSQL_YYABORT;
-          }
-          opt_procedure_or_into
-          {
-            Lex->pop_select();
-            $1->set_with_clause(NULL);
-            if (Lex->select_finalize($1, $3))
-              MYSQL_YYABORT;
-          }
-        ;
-
-select_with_with_clause:
-          with_clause query_expression_no_with_clause
+        | with_clause query_expression_no_with_clause
           {
             if (Lex->push_select($2->fake_select_lex ?
                                  $2->fake_select_lex :
@@ -9043,20 +8788,6 @@ select_with_with_clause:
               MYSQL_YYABORT;
           }
         ;
-
-
-select:
-          select_no_with_clause_no_parens
-        | select_no_with_clause_parens
-        | select_with_with_clause
-        ;
-
-
-select_for_open_cursor:
-          select_no_with_clause_no_parens
-        | select_with_with_clause
-        ;
-
 
 select_into:
           select_into_query_specification
@@ -9112,32 +8843,14 @@ table_value_constructor:
 	  }
 	;
 
-opt_hint_comment:
-          /*empty */   { $$.init(); }
-        | HINT_COMMENT { $$= $1; }
-        ;
-
-opt_optimizer_hint:
-          { YYLIP->hint_comment= true; }
-          opt_hint_comment
-          {
-            YYLIP->hint_comment= false;
-            std::pair<bool, Optimizer_hint_parser_output *> parse_res=
-              Lex->parse_optimizer_hints($2);
-            if (!($$= parse_res.second) && parse_res.first)
-              MYSQL_YYABORT;
-          }
-        ;
-
 query_specification_start:
-          SELECT_SYM opt_optimizer_hint
+          SELECT_SYM
           {
             SELECT_LEX *sel;
             LEX *lex= Lex;
             if (!(sel= lex->alloc_select(TRUE)) || lex->push_select(sel))
               MYSQL_YYABORT;
             sel->init_select();
-            sel->set_optimizer_hints($2);
             sel->braces= FALSE;
           }
           select_options
@@ -9158,7 +8871,6 @@ query_specification:
           opt_having_clause
           opt_window_clause
           {
-            Lex->handle_parsed_optimizer_hints_in_last_select();
             $$= Lex->pop_select();
           }
         ;
@@ -9172,7 +8884,6 @@ select_into_query_specification:
           opt_having_clause
           opt_window_clause
           {
-            Lex->handle_parsed_optimizer_hints_in_last_select();
             $$= Lex->pop_select();
           }
         ;
@@ -9503,7 +9214,7 @@ for_portion_of_time_clause:
             Lex->period_conditions.init(SYSTEM_TIME_FROM_TO,
                                         Vers_history_point(VERS_TIMESTAMP, $7),
                                         Vers_history_point(VERS_TIMESTAMP, $9),
-                                        Lex_ident_column($5));
+                                        $5);
           }
         ;
 
@@ -9665,7 +9376,7 @@ select_item:
             if ($4.str)
             {
               if (unlikely(Lex->sql_command == SQLCOM_CREATE_VIEW &&
-                          check_column_name($4)))
+                          check_column_name($4.str)))
                 my_yyabort_error((ER_WRONG_COLUMN_NAME, MYF(0), $4.str));
               $2->base_flags|= item_base_t::IS_EXPLICIT_NAME;
               $2->set_name(thd, $4);
@@ -9692,36 +9403,6 @@ remember_name:
 remember_end:
           {
             $$= (char*) YYLIP->get_cpp_tok_end_rtrim();
-          }
-        ;
-
-remember_cpp_ptr:
-          {
-            $$= (char*) YYLIP->get_cpp_ptr();
-          }
-        ;
-
-remember_start_opt:
-          {
-            if (yychar == YYEMPTY)
-              $$= (char*) YYLIP->get_cpp_ptr();
-            else
-              $$= (char*) YYLIP->get_cpp_tok_start();
-          }
-        ;
-
-remember_end_opt:
-          {
-            if (yychar == YYEMPTY)
-              $$= (char*) YYLIP->get_cpp_ptr_rtrim();
-            else
-              $$= (char*) YYLIP->get_cpp_tok_end_rtrim();
-          }
-        ;
-
-remember_lex:
-          {
-            $$= thd->lex;
           }
         ;
 
@@ -9915,24 +9596,6 @@ boolean_test:
             if (unlikely($$ == NULL))
               MYSQL_YYABORT;
           }
-        | boolean_test IS json_predicate %prec IS
-          {
-            $$= new (thd->mem_root) Item_func_is_json(thd, $1,
-                                                      false,
-                                                      $3.type_constraint,
-                                                      $3.with_unique_keys);
-            if (unlikely($$ == NULL))
-              MYSQL_YYABORT;
-          }
-        | boolean_test IS not json_predicate %prec IS
-          {
-            $$= new (thd->mem_root) Item_func_is_json(thd, $1,
-                                                      true,
-                                                      $4.type_constraint,
-                                                      $4.with_unique_keys);
-            if (unlikely($$ == NULL))
-              MYSQL_YYABORT;
-          }
         | boolean_test EQUAL_SYM predicate %prec EQUAL_SYM
           {
             $$= new (thd->mem_root) Item_func_equal(thd, $1, $3);
@@ -9953,29 +9616,6 @@ boolean_test:
           }
         | predicate %prec BETWEEN_SYM
         ;
-
-json_predicate:
-          JSON_SYM json_type_constraint json_key_unique_constraint
-          {
-            $$.type_constraint= $2;
-            $$.with_unique_keys= $3;
-          }
-        ;
-
-json_type_constraint:
-          ARRAY_SYM        { $$= Item_func_is_json::JSON_ARRAY; }
-        | OBJECT_SYM       { $$= Item_func_is_json::JSON_OBJECT; }
-        | SCALAR_SYM       { $$= Item_func_is_json::JSON_SCALAR; }
-        | VALUE_SYM        { $$= Item_func_is_json::JSON_VALUE_ANY; }
-        | /* empty */      { $$= Item_func_is_json::JSON_VALUE_ANY; }
-        ;
-
-json_key_unique_constraint:
-          WITH UNIQUE_SYM              { $$ = true; }
-        | WITH UNIQUE_SYM KEYS         { $$ = true; }
-        | WITHOUT UNIQUE_SYM           { $$ = false; }
-        | WITHOUT UNIQUE_SYM KEYS      { $$ = false; }
-        | /* empty */                  { $$ = false; }
 
 predicate:
           predicate IN_SYM subquery
@@ -10244,14 +9884,15 @@ opt_dyncol_type:
           /* empty */ 
           {
             $$.set(DYN_COL_NULL); /* automatic type */
+            Lex->charset= NULL;
 	  }
         | AS dyncol_type { $$= $2; }
         ;
 
 dyncol_type:
-          numeric_dyncol_type
-        | temporal_dyncol_type
-        | string_dyncol_type
+          numeric_dyncol_type             { $$= $1; Lex->charset= NULL; }
+        | temporal_dyncol_type            { $$= $1; Lex->charset= NULL; }
+        | string_dyncol_type              { $$= $1; }
         ;
 
 numeric_dyncol_type:
@@ -10265,27 +9906,28 @@ numeric_dyncol_type:
 
 temporal_dyncol_type:
           DATE_SYM                        { $$.set(DYN_COL_DATE); }
-        | TIME_SYM opt_field_scale        { $$.set(DYN_COL_TIME, $2); }
-        | DATETIME opt_field_scale        { $$.set(DYN_COL_DATETIME, $2); }
+        | TIME_SYM opt_field_length       { $$.set(DYN_COL_TIME, 0, $2); }
+        | DATETIME opt_field_length       { $$.set(DYN_COL_DATETIME, 0, $2); }
         ;
 
 string_dyncol_type:
-          char opt_binary
+          char
+          { Lex->charset= thd->variables.collation_connection; }
+          opt_binary
           {
-            if ($$.set(DYN_COL_STRING, thd,
-                       thd->variables.character_set_collations,
-                       $2, thd->variables.collation_connection))
-              MYSQL_YYABORT;
+            $$.set(DYN_COL_STRING);
           }
         | nchar
           {
-            $$.set(DYN_COL_STRING, national_charset_info);
+            $$.set(DYN_COL_STRING);
+            Lex->charset= national_charset_info;
           }
         ;
 
 dyncall_create_element:
    expr ',' expr opt_dyncol_type
    {
+     LEX *lex= Lex;
      $$= (DYNCALL_CREATE_DEF *)
        alloc_root(thd->mem_root, sizeof(DYNCALL_CREATE_DEF));
      if (unlikely($$ == NULL))
@@ -10293,13 +9935,13 @@ dyncall_create_element:
      $$->key= $1;
      $$->value= $3;
      $$->type= (DYNAMIC_COLUMN_TYPE)$4.dyncol_type();
-     $$->cs= $4.charset_collation();
-     if ($4.has_explicit_length())
-       $$->len= $4.length();
+     $$->cs= lex->charset;
+     if ($4.length())
+       $$->len= strtoul($4.length(), NULL, 10);
      else
        $$->len= 0;
-     if ($4.has_explicit_dec())
-       $$->frac= $4.dec();
+     if ($4.dec())
+       $$->frac= strtoul($4.dec(), NULL, 10);
      else
        $$->len= 0;
    }
@@ -10367,7 +10009,7 @@ trim_operands_special:
   - the collation of the column `a`, or
   - the collation of the string literal 'a'
 
-  This restriction allows to parse the above query unambiguously:
+  This restriction allows to parse the above query unambiguiusly:
   COLLATE belongs to the column rather than the literal.
   If one needs COLLATE to belong to the literal, parentheses must be used:
     CREATE TABLE t1 (a TEXT DEFAULT ('a' COLLATE latin1_bin));
@@ -10440,7 +10082,8 @@ column_default_non_parenthesized_expr:
           }
         | CAST_SYM '(' expr AS cast_type ')'
           {
-            if (unlikely(!($$= $5.create_typecast_item_or_error(thd, $3))))
+            if (unlikely(!($$= $5.create_typecast_item_or_error(thd, $3,
+                                                                Lex->charset))))
               MYSQL_YYABORT;
           }
         | CASE_SYM when_list_opt_else END
@@ -10456,13 +10099,12 @@ column_default_non_parenthesized_expr:
           }
         | CONVERT_SYM '(' expr ',' cast_type ')'
           {
-            if (unlikely(!($$= $5.create_typecast_item_or_error(thd, $3))))
+            if (unlikely(!($$= $5.create_typecast_item_or_error(thd, $3,
+                                                                Lex->charset))))
               MYSQL_YYABORT;
           }
         | CONVERT_SYM '(' expr USING charset_name ')'
           {
-            $5= thd->variables.character_set_collations.
-                                 get_collation_for_charset(thd, $5);
             $$= new (thd->mem_root) Item_func_conv_charset(thd, $3, $5);
             if (unlikely($$ == NULL))
               MYSQL_YYABORT;
@@ -10505,44 +10147,21 @@ column_default_non_parenthesized_expr:
             if (unlikely(!($$= Lex->create_item_func_lastval(thd, $3))))
               MYSQL_YYABORT;
           }
-        | SETVAL_SYM '(' table_ident ',' sequence_value_hybrid_num ')'
+        | SETVAL_SYM '(' table_ident ',' longlong_num ')'
           {
-            if (unlikely(!($$= Lex->create_item_func_setval(
-                                      thd, $3,
-                                      Longlong_hybrid($5.num, $5.is_unsigned),
-                                      0, 1))))
+            if (unlikely(!($$= Lex->create_item_func_setval(thd, $3, $5, 0, 1))))
               MYSQL_YYABORT;
           }
-        | SETVAL_SYM '(' table_ident ',' sequence_value_hybrid_num ',' bool ')'
+        | SETVAL_SYM '(' table_ident ',' longlong_num ',' bool ')'
           {
-            if (unlikely(!($$= Lex->create_item_func_setval(
-                                      thd, $3,
-                                      Longlong_hybrid($5.num, $5.is_unsigned),
-                                      0, $7))))
+            if (unlikely(!($$= Lex->create_item_func_setval(thd, $3, $5, 0, $7))))
               MYSQL_YYABORT;
           }
-        | SETVAL_SYM '(' table_ident ',' sequence_value_hybrid_num ',' bool ','
-          ulonglong_num ')'
+        | SETVAL_SYM '(' table_ident ',' longlong_num ',' bool ',' ulonglong_num ')'
           {
-            if (unlikely(!($$= Lex->create_item_func_setval(
-                                      thd, $3,
-                                      Longlong_hybrid($5.num, $5.is_unsigned),
-                                      $9, $7))))
+            if (unlikely(!($$= Lex->create_item_func_setval(thd, $3, $5, $9, $7))))
               MYSQL_YYABORT;
           }
-        | TO_DATE '(' expr ',' expr opt_nls_param')'
-        {
-          $$= new (thd->mem_root) Item_func_to_date(thd, $3, $5, &$6);
-          if (unlikely($$ == 0))
-            MYSQL_YYABORT;
-        }
-        | TO_DATE '(' expr DEFAULT expr ON CONVERSION_SYM ERROR_SYM
-           ',' expr opt_nls_param')'
-        {
-          $$= new (thd->mem_root) Item_func_to_date(thd, $3, $10, $5, &$11);
-          if (unlikely($$ == NULL))
-            MYSQL_YYABORT;
-        }
         ;
 
 primary_expr:
@@ -10560,8 +10179,7 @@ string_factor_expr:
           primary_expr
         | string_factor_expr COLLATE_SYM collation_name
           {
-            if (unlikely(!($$= new (thd->mem_root)
-                               Item_func_set_collation(thd, $1, $3))))
+            if (unlikely(!($$= new (thd->mem_root) Item_func_set_collation(thd, $1, $3))))
               MYSQL_YYABORT;
           }
         ;
@@ -10623,18 +10241,6 @@ function_call_keyword_timestamp:
               MYSQL_YYABORT;
           }
         ;
-
-opt_nls_param:
-          /* empty */
-          {
-            $$= (LEX_CSTRING) empty_clex_str;
-	  }
-          | ',' TEXT_STRING_sys
-          {
-            $$= $2;
-          }
-
-
 /*
   Function call syntax using official SQL 2003 keywords.
   Because the function name is an official token,
@@ -10650,19 +10256,9 @@ function_call_keyword:
           }
         | CHAR_SYM '(' expr_list USING charset_name ')'
           {
-            $5= thd->variables.character_set_collations.
-                                 get_collation_for_charset(thd, $5);
             $$= new (thd->mem_root) Item_func_char(thd, *$3, $5);
             if (unlikely($$ == NULL))
               MYSQL_YYABORT;
-          }
-        | CURRENT_PATH optional_braces
-          {
-            $$= new (thd->mem_root) Item_func_current_path(thd);
-            if (unlikely($$ == NULL))
-              MYSQL_YYABORT;
-            Lex->set_stmt_unsafe(LEX::BINLOG_STMT_UNSAFE_SYSTEM_FUNCTION);
-            Lex->safe_to_cache_query= 0;
           }
         | CURRENT_USER optional_braces
           {
@@ -10687,7 +10283,6 @@ function_call_keyword:
             $$= new (thd->mem_root) Item_date_typecast(thd, $3);
             if (unlikely($$ == NULL))
               MYSQL_YYABORT;
-            Lex->set_date_funcs_used_flag();
           }
         | DAY_SYM '(' expr ')'
           {
@@ -10750,7 +10345,6 @@ function_call_keyword:
             $$= new (thd->mem_root) Item_func_month(thd, $3);
             if (unlikely($$ == NULL))
               MYSQL_YYABORT;
-            Lex->set_date_funcs_used_flag();
           }
         | RIGHT '(' expr ',' expr ')'
           {
@@ -10771,14 +10365,6 @@ function_call_keyword:
               MYSQL_YYABORT;
             Lex->set_stmt_unsafe(LEX::BINLOG_STMT_UNSAFE_SYSTEM_FUNCTION);
             Lex->safe_to_cache_query= 0;
-          }
-        | SESSION_USER_SYM '(' ')'
-          {
-            $$= new (thd->mem_root) Item_func_session_user(thd);
-            if (unlikely($$ == NULL))
-              MYSQL_YYABORT;
-            Lex->set_stmt_unsafe(LEX::BINLOG_STMT_UNSAFE_SYSTEM_FUNCTION);
-            Lex->safe_to_cache_query=0;
           }
         | TIME_SYM '(' expr ')'
           {
@@ -10810,7 +10396,6 @@ function_call_keyword:
             $$= new (thd->mem_root) Item_func_year(thd, $3);
             if (unlikely($$ == NULL))
               MYSQL_YYABORT;
-             Lex->set_date_funcs_used_flag();
           }
         ;
 
@@ -10906,16 +10491,9 @@ function_call_nonkeyword:
             if (unlikely($$ == NULL))
               MYSQL_YYABORT;
           }
-        | LOCALTIMESTAMP opt_time_precision
-          {
-            $$= new (thd->mem_root) Item_func_now_local(thd, $2);
-            if (unlikely($$ == NULL))
-              MYSQL_YYABORT;
-            Lex->safe_to_cache_query= false;
-          }
         | NOW_SYM opt_time_precision
           {
-            $$= new (thd->mem_root) Item_func_current_timestamp(thd, $2);
+            $$= new (thd->mem_root) Item_func_now_local(thd, $2);
             if (unlikely($$ == NULL))
               MYSQL_YYABORT;
             Lex->safe_to_cache_query=0;
@@ -11035,8 +10613,10 @@ function_call_nonkeyword:
         |
           COLUMN_GET_SYM '(' expr ',' expr AS cast_type ')'
           {
+            LEX *lex= Lex;
             $$= create_func_dyncol_get(thd, $3, $5, $7.type_handler(),
-                                        $7, $7.charset());
+                                        $7.length(), $7.dec(),
+                                        lex->charset);
             if (unlikely($$ == NULL))
               MYSQL_YYABORT;
           }
@@ -11164,45 +10744,32 @@ function_call_conflict:
   in sql/item_create.cc
 */
 function_call_generic:
-          ident_cli_func '('
+          ident_func '('
           {
 #ifdef HAVE_DLOPEN
             udf_func *udf= 0;
             LEX *lex= Lex;
-            if (using_udf_functions)
+            if (using_udf_functions &&
+                (udf= find_udf($1.str, $1.length)) &&
+                udf->type == UDFTYPE_AGGREGATE)
             {
-              // find_udf expectes a 0-terminated string
-              const Lex_ident_sys sysname(thd, &$1);
-              if (sysname.is_null())
-                MYSQL_YYABORT; // EOM
-              if ((udf= find_udf(sysname.str, sysname.length)) &&
-                  udf->type == UDFTYPE_AGGREGATE)
+              if (unlikely(lex->current_select->inc_in_sum_expr()))
               {
-                if (unlikely(lex->current_select->inc_in_sum_expr()))
-                {
-                  thd->parse_error();
-                  MYSQL_YYABORT;
-                }
+                thd->parse_error();
+                MYSQL_YYABORT;
               }
             }
             /* Temporary placing the result of find_udf in $3 */
             $<udf>$= udf;
 #endif
           }
-
-          opt_udf_expr_list_or_join_operator ')' opt_object_member_access
+          opt_udf_expr_list ')'
           {
             const Type_handler *h;
             Create_func *builder;
             Item *item= NULL;
-            const sp_type_def *tdef= NULL;
-            const Lex_ident_sys ident(thd, &$1);
-            const Sp_rcontext_handler *rh;
-            sp_variable *spv= NULL;
-            bool allow_field_accessor= false;
 
-            if (unlikely(ident.is_null() ||
-                         Lex_ident_routine::check_name_with_error(ident)))
+            if (unlikely(check_routine_name(&$1)))
               MYSQL_YYABORT;
 
             /*
@@ -11215,46 +10782,16 @@ function_call_generic:
 
               This will be revised with WL#2128 (SQL PATH)
             */
-            if ($4 && $4->elements == 1 &&
-                dynamic_cast<Item_join_operator_plus*>($4->head()))
+            builder= Schema::find_implied(thd)->
+                       find_native_function_builder(thd, $1);
+            if (builder)
             {
-              if ($6.str)
-              {
-                thd->parse_error();
-                MYSQL_YYABORT;
-              }
-              item= Lex->create_item_ident(thd, &$1);
-              if (!item || Lex->mark_item_ident_for_ora_join(thd, item))
-                MYSQL_YYABORT;
-            } else if ((builder= Schema::find_implied(thd)->
-                        find_native_function_builder(thd, ident)))
-            {
-              item= builder->create_func(thd, &ident, $4);
+              item= builder->create_func(thd, &$1, $4);
             }
-            else if ((h= Type_handler::handler_by_name(thd, ident)) &&
+            else if ((h= Type_handler::handler_by_name(thd, $1)) &&
                      (item= h->make_constructor_item(thd, $4)))
             {
               // Found a constructor with a proper argument count
-            }
-            else if (Lex->spcont && (tdef= Lex->find_type_def(ident)))
-            {
-              item= tdef->make_constructor_item(thd, $4);
-            }
-            else if (Lex->spcont &&
-                    (spv= Lex->find_variable(&ident, &rh)) &&
-                    spv->type_handler()->has_functors())
-            {
-              const char *end= $6.str ? $6.end() : $5.end();
-              const Lex_ident_cli name_cli($1.pos(), end - $1.pos());
-              auto ident2= $6.str ? Lex_ident_sys(thd, &$6) : Lex_ident_sys();
-              if (($6.str && ident2.is_null()) ||
-                  !(item= Lex->create_item_functor(thd, ident, $4,
-                                                   ident2, name_cli)))
-                MYSQL_YYABORT;
-              item->set_name(thd, $1.pos(), end - $1.pos(), thd->charset());
-
-              // Only allow 'result accessors' for associative arrays
-              allow_field_accessor= true;
             }
             else
             {
@@ -11276,15 +10813,8 @@ function_call_generic:
               {
                 builder= find_qualified_function_builder(thd);
                 DBUG_ASSERT(builder);
-                item= builder->create_func(thd, &ident, $4);
+                item= builder->create_func(thd, &$1, $4);
               }
-            }
-
-            if ($6.str && !allow_field_accessor)
-            {
-              Lex_ident_sys field_sys(thd, &$6);
-              my_error(ER_BAD_FIELD_ERROR, MYF(0), field_sys.str, ident.str);
-              MYSQL_YYABORT;
             }
 
             if (unlikely(! ($$= item)))
@@ -11308,29 +10838,12 @@ function_call_generic:
                                                                      $1, $3)))
               MYSQL_YYABORT;
           }
-        | ident_cli '.' ident_cli '(' opt_expr_list_or_join_operator ')'
+        | ident_cli '.' ident_cli '(' opt_expr_list ')'
           {
-            const Lex_ident_cli pos($1.pos(), $6.pos() - $1.pos() + 1);
-            if (unlikely(!($$= Lex->make_item_func_or_method_call(thd, $1,
-                                                                  $3, $5,
-                                                                  pos))))
+            if (unlikely(!($$= Lex->make_item_func_call_generic(thd, &$1, &$3, $5))))
               MYSQL_YYABORT;
           }
-        | '.' ident_cli '.' ident_cli '(' '+' ')'
-          {
-            /*
-               This grammar branch is needed for symmetry with simple_ident,
-               to handle Oracle style outer join:
-                 WHERE t1.a = .t2.a(+)
-            */
-            Lex_ident_cli empty($2.pos(), 0);
-            List<Item> *list= Item_join_operator_plus::make_as_item_list(thd);
-            if (unlikely(
-                !list ||
-                !($$= Lex->make_item_func_call_generic(thd, &empty, &$2, &$4, list))))
-              MYSQL_YYABORT;
-          }
-        | ident_cli '.' ident_cli '.' ident_cli '(' opt_expr_list_or_join_operator ')'
+        | ident_cli '.' ident_cli '.' ident_cli '(' opt_expr_list ')'
           {
             if (unlikely(!($$= Lex->make_item_func_call_generic(thd, &$1, &$3, &$5, $7))))
               MYSQL_YYABORT;
@@ -11374,11 +10887,6 @@ function_call_generic:
           */
         ;
 
-opt_object_member_access:
-          /* empty */    { $$= Lex_ident_cli((const char *)nullptr, 0); }
-        | '.' ident_cli  { $$= $2; }
-        ;
-
 fulltext_options:
           opt_natural_language_mode opt_query_expansion
           { $$= $1 | $2; }
@@ -11399,22 +10907,6 @@ opt_query_expansion:
 opt_udf_expr_list:
         /* empty */     { $$= NULL; }
         | udf_expr_list { $$= $1; }
-%ifdef ORACLE
-        | named_expr_list { $$= $1; }
-%endif
-        ;
-
-opt_udf_expr_list_or_join_operator:
-          opt_udf_expr_list
-        | remember_name '+' remember_end
-          {
-            /*
-              remember_name and remember_end are needed here
-              to avoid a shift/reduce conflict with the rule udf_expr.
-            */
-            if (!($$= Item_join_operator_plus::make_as_item_list(thd)))
-              MYSQL_YYABORT;
-          }
         ;
 
 udf_expr_list:
@@ -11641,12 +11133,6 @@ sum_expr:
             if (unlikely($$ == NULL))
               MYSQL_YYABORT;
           }
-        | ST_COLLECT_SYM '(' opt_distinct in_sum_expr ')'
-          {
-            $$= new (thd->mem_root) Item_func_collect(thd, $3, $4);
-            if (unlikely($$ == NULL))
-              MYSQL_YYABORT;
-          }
         ;
 
 window_func_expr:
@@ -11655,7 +11141,7 @@ window_func_expr:
             $$= new (thd->mem_root) Item_window_func(thd, (Item_sum *) $1, $3);
             if (unlikely($$ == NULL))
               MYSQL_YYABORT;
-            if (unlikely(Select->add_window_func(thd, (Item_window_func *) $$)))
+            if (unlikely(Select->add_window_func((Item_window_func *) $$)))
               MYSQL_YYABORT;
           }
         |
@@ -11671,7 +11157,7 @@ window_func_expr:
                                                       thd->lex->win_spec); 
             if (unlikely($$ == NULL))
               MYSQL_YYABORT;
-            if (unlikely(Select->add_window_func(thd, (Item_window_func *) $$)))
+            if (unlikely(Select->add_window_func((Item_window_func *) $$)))
               MYSQL_YYABORT;
           }
         ;
@@ -11812,7 +11298,7 @@ inverse_distribution_function:
                                                      thd->lex->win_spec);
             if (unlikely($$ == NULL))
               MYSQL_YYABORT;
-            if (unlikely(Select->add_window_func(thd, (Item_window_func *) $$)))
+            if (unlikely(Select->add_window_func((Item_window_func *) $$)))
               MYSQL_YYABORT;
           }
         ;
@@ -11889,11 +11375,6 @@ variable_aux:
           ident_or_text SET_VAR expr
           {
             Item_func_set_user_var *item;
-            if (!$1.length)
-            {
-              thd->parse_error();
-              MYSQL_YYABORT;
-            }
             $$= item= new (thd->mem_root) Item_func_set_user_var(thd, &$1, $3);
             if (unlikely($$ == NULL))
               MYSQL_YYABORT;
@@ -11903,11 +11384,6 @@ variable_aux:
           }
         | ident_or_text
           {
-            if (!$1.length)
-            {
-              thd->parse_error();
-              MYSQL_YYABORT;
-            }
             $$= new (thd->mem_root) Item_func_get_user_var(thd, &$1);
             if (unlikely($$ == NULL))
               MYSQL_YYABORT;
@@ -12000,37 +11476,29 @@ in_sum_expr:
 
 cast_type:
           BINARY opt_field_length
-          { $$.set(&type_handler_long_blob, $2, &my_charset_bin); }
-        | CHAR_SYM opt_field_length opt_binary
-          {
-            if ($$.set(&type_handler_long_blob,
-                       $2, thd, thd->variables.character_set_collations, $3,
-                       thd->variables.collation_connection))
-              MYSQL_YYABORT;
-          }
-        | VARCHAR field_length opt_binary
-          {
-            if ($$.set(&type_handler_long_blob,
-                       $2, thd, thd->variables.character_set_collations, $3,
-                       thd->variables.collation_connection))
-              MYSQL_YYABORT;
-          }
-        | VARCHAR2_ORACLE_SYM field_length opt_binary
-          {
-            if ($$.set(&type_handler_long_blob,
-                       $2, thd, thd->variables.character_set_collations, $3,
-                       thd->variables.collation_connection))
-              MYSQL_YYABORT;
-          }
+          { $$.set(&type_handler_long_blob, $2); Lex->charset= &my_charset_bin; }
+        | CHAR_SYM opt_field_length
+          { Lex->charset= thd->variables.collation_connection; }
+          opt_binary
+          { $$.set(&type_handler_long_blob, $2); }
+        | VARCHAR field_length
+          { Lex->charset= thd->variables.collation_connection; }
+          opt_binary
+          { $$.set(&type_handler_long_blob, $2); }
+        | VARCHAR2_ORACLE_SYM field_length
+          { Lex->charset= thd->variables.collation_connection; }
+          opt_binary
+          { $$.set(&type_handler_long_blob, $2); }
         | NCHAR_SYM opt_field_length
           {
-            $$.set(&type_handler_long_blob, $2, national_charset_info);
+            Lex->charset= national_charset_info;
+            $$.set(&type_handler_long_blob, $2, 0);
           }
-        | cast_type_numeric  { $$= $1; }
-        | cast_type_temporal { $$= $1; }
-        | udt_name opt_binary
+        | cast_type_numeric  { $$= $1; Lex->charset= NULL; }
+        | cast_type_temporal { $$= $1; Lex->charset= NULL; }
+        | udt_name
           {
-            if (Lex->set_cast_type_udt(&$$, $1, $2))
+            if (Lex->set_cast_type_udt(&$$, $1))
               MYSQL_YYABORT;
           }
         ;
@@ -12048,26 +11516,17 @@ cast_type_numeric:
 
 cast_type_temporal:
           DATE_SYM                       { $$.set(&type_handler_newdate); }
-        | TIME_SYM opt_field_scale       { $$.set(&type_handler_time2, $2); }
-        | DATETIME opt_field_scale       { $$.set(&type_handler_datetime2, $2); }
-        | INTERVAL_SYM DAY_SECOND_SYM field_scale
+        | TIME_SYM opt_field_length      { $$.set(&type_handler_time2, 0, $2); }
+        | DATETIME opt_field_length      { $$.set(&type_handler_datetime2, 0, $2); }
+        | INTERVAL_SYM DAY_SECOND_SYM field_length
           {
-            $$.set(&type_handler_interval_DDhhmmssff, $3);
+            $$.set(&type_handler_interval_DDhhmmssff, 0, $3);
           }
         ;
 
 opt_expr_list:
           /* empty */ { $$= NULL; }
         | expr_list { $$= $1;}
-        ;
-
-opt_expr_list_or_join_operator:
-          opt_expr_list
-        | '+'
-          {
-            if (!($$= Item_join_operator_plus::make_as_item_list(thd)))
-              MYSQL_YYABORT;
-          }
         ;
 
 expr_list:
@@ -12138,12 +11597,8 @@ table_ref:
           table_factor     { $$= $1; }
         | join_table
           {
-            if (Lex->current_select->table_list.elements > MAX_TABLES)
-            {
-              my_error(ER_TOO_MANY_TABLES, MYF(0), static_cast<int>(MAX_TABLES));
-              MYSQL_YYABORT;
-            }
-            if (!($$= Lex->current_select->nest_last_join(thd)))
+            LEX *lex= Lex;
+            if (unlikely(!($$= lex->current_select->nest_last_join(thd))))
             {
               thd->parse_error();
               MYSQL_YYABORT;
@@ -12193,7 +11648,7 @@ json_table_column:
                 !lex->json_table->m_cur_json_table_column))
               MYSQL_YYABORT;
 
-            lex->init_last_field(f, &$1);
+            lex->init_last_field(f, &$1, NULL);
           }
           json_table_column_type
           {
@@ -12223,35 +11678,29 @@ json_table_column_type:
           FOR_SYM ORDINALITY_SYM
           {
             Lex_field_type_st type;
-            type.set(&type_handler_slong);
-            if (Lex->last_field->set_attributes(thd, type,
-                                                COLUMN_DEFINITION_TABLE_FIELD))
-              MYSQL_YYABORT;
+            type.set_handler_length_flags(&type_handler_slong, 0, 0);
+            Lex->last_field->set_attributes(thd, type, Lex->charset,
+                                            COLUMN_DEFINITION_TABLE_FIELD);
             Lex->json_table->m_cur_json_table_column->
               set(Json_table_column::FOR_ORDINALITY);
           }
         | json_table_field_type PATH_SYM json_text_literal
             json_opt_on_empty_or_error
           {
-            if (Lex->last_field->set_attributes(thd, $1,
-                                                COLUMN_DEFINITION_TABLE_FIELD))
-              MYSQL_YYABORT;
+            Lex->last_field->set_attributes(thd, $1, Lex->charset,
+                                            COLUMN_DEFINITION_TABLE_FIELD);
             if (Lex->json_table->m_cur_json_table_column->
-                  set(thd, Json_table_column::PATH, $3,
-                      $1.charset_collation_attrs()))
+                  set(thd, Json_table_column::PATH, $3, Lex->charset))
             {
               MYSQL_YYABORT;
             }
           }
         | json_table_field_type EXISTS PATH_SYM json_text_literal
           {
-            if (Lex->last_field->set_attributes(thd, $1,
-                                                COLUMN_DEFINITION_TABLE_FIELD))
-              MYSQL_YYABORT;
-            if (Lex->json_table->m_cur_json_table_column->
-                  set(thd, Json_table_column::EXISTS_PATH, $4,
-                      $1.charset_collation_attrs()))
-               MYSQL_YYABORT;
+            Lex->last_field->set_attributes(thd, $1, Lex->charset,
+                                            COLUMN_DEFINITION_TABLE_FIELD);
+            Lex->json_table->m_cur_json_table_column->
+              set(thd, Json_table_column::EXISTS_PATH, $4, Lex->charset);
           }
         ;
 
@@ -12628,17 +12077,11 @@ table_primary_ident:
           }
         ;
 
-derived_column_list:
-        opt_column_name_list
-        ;
-
 table_primary_derived:
           subquery
-          opt_for_system_time_clause
-          table_alias_clause
-          derived_column_list
+          opt_for_system_time_clause table_alias_clause
           {
-            if (!($$= Lex->parsed_derived_table($1->master_unit(), $2, $3, $4)))
+            if (!($$= Lex->parsed_derived_table($1->master_unit(), $2, $3)))
               MYSQL_YYABORT;
           }
 %ifdef ORACLE
@@ -12661,8 +12104,7 @@ opt_outer:
 index_hint_clause:
           /* empty */
           {
-            $$= (thd->variables.old_behavior & OLD_MODE_IGNORE_INDEX_ONLY_FOR_JOIN) ?
-                INDEX_HINT_MASK_JOIN : INDEX_HINT_MASK_ALL;
+            $$= thd->variables.old_mode ?  INDEX_HINT_MASK_JOIN : INDEX_HINT_MASK_ALL; 
           }
         | FOR_SYM JOIN_SYM      { $$= INDEX_HINT_MASK_JOIN;  }
         | FOR_SYM ORDER_SYM BY  { $$= INDEX_HINT_MASK_ORDER; }
@@ -12811,9 +12253,11 @@ opt_where_clause:
           }
           search_condition
           {
-            $3->top_level_item();
-            Select->where= normalize_cond(thd, $3);
-            Select->parsing_place= NO_MATTER;
+            SELECT_LEX *select= Select;
+            select->where= normalize_cond(thd, $3);
+            select->parsing_place= NO_MATTER;
+            if ($3)
+              $3->top_level_item();
           }
         ;
 
@@ -12946,7 +12390,7 @@ opt_window_partition_clause:
 
 opt_window_order_clause:
           /* empty */ { }
-        | ORDER_SYM BY order_list { Select->order_list= *($3); }
+        | ORDER_SYM BY order_list { Select->order_list= *($3); } 
         ;
 
 opt_window_frame_clause:
@@ -13081,7 +12525,6 @@ order_clause:
           ORDER_SYM BY
           {
             thd->where= THD_WHERE::ORDER_CLAUSE;
-            thd->lex->clause_winfuncs.empty();
           }
           order_list
           {
@@ -13349,23 +12792,16 @@ opt_procedure_or_into:
           }
         | into opt_select_lock_type
           {
+            push_warning_printf(thd, Sql_condition::WARN_LEVEL_WARN,
+                                ER_WARN_DEPRECATED_SYNTAX,
+                                ER_THD(thd, ER_WARN_DEPRECATED_SYNTAX),
+                                "<select expression> INTO <destination>;",
+                                "'SELECT <select list> INTO <destination>"
+                                " FROM...'");
             $$= $2;
-            status_var_increment(thd->status_var.feature_into_outfile);
           }
         ;
 
-opt_order_or_limit:
-          /* empty */
-          {
-            $$= NULL;
-          }
-        |
-          order_or_limit
-          {
-            $1->lock.empty();
-            $$= $1;
-          }
-        ;
 
 order_or_limit:
           order_clause opt_limit_clause
@@ -13414,141 +12850,11 @@ real_ulong_num:
         | dec_num_error { MYSQL_YYABORT; }
         ;
 
-/*
-  For simple sequence metadata values that are signed and do not need
-  truncation
-*/
-sequence_value_num:
-          opt_plus NUM
-          {
-            int error;
-            $$= (longlong) my_strtoll10($2.str, (char**) 0, &error);
-          }
-        | opt_plus LONG_NUM
-          {
-            int error;
-            $$= (longlong) my_strtoll10($2.str, (char**) 0, &error);
-          }
-        | '-' NUM
-          {
-            int error;
-            $$= -(longlong) my_strtoll10($2.str, (char**) 0, &error);
-          }
-        | '-' LONG_NUM
-          {
-            int error;
-            $$= -(longlong) my_strtoll10($2.str, (char**) 0, &error);
-          }
-        | '-' ULONGLONG_NUM
-          {
-            int error;
-            const ulonglong abs= my_strtoll10($2.str, (char**) 0, &error);
-            if (abs == 1 + (ulonglong) LONGLONG_MAX)
-              $$= LONGLONG_MIN;
-            else
-              thd->parse_error(ER_DATA_OUT_OF_RANGE);
-          }
-        ;
-
-/*
-  For sequence metadata values that may be unsigned but do not need
-  truncation (start, restart)
-*/
-sequence_value_hybrid_num:
-          opt_plus NUM
-          {
-            int error;
-            $$.num= my_strtoll10($2.str, (char**) 0, &error);
-            $$.is_unsigned= false;
-          }
-        | opt_plus LONG_NUM
-          {
-            int error;
-            $$.num= my_strtoll10($2.str, (char**) 0, &error);
-            $$.is_unsigned= false;
-          }
-        | opt_plus ULONGLONG_NUM
-          {
-            int error;
-            $$.num= my_strtoll10($2.str, (char**) 0, &error);
-            $$.is_unsigned= true;
-          }
-        | '-' NUM
-          {
-            int error;
-            $$.num= - my_strtoll10($2.str, (char**) 0, &error);
-            $$.is_unsigned= false;
-          }
-        | '-' LONG_NUM
-          {
-            int error;
-            $$.num= - my_strtoll10($2.str, (char**) 0, &error);
-            $$.is_unsigned= false;
-          }
-        | '-' ULONGLONG_NUM
-          {
-            int error;
-            const ulonglong abs= my_strtoll10($2.str, (char**) 0, &error);
-            if (abs == 1 + (ulonglong) LONGLONG_MAX)
-            {
-              $$.num= LONGLONG_MIN;
-              $$.is_unsigned= false;
-            }
-            else
-              thd->parse_error(ER_DATA_OUT_OF_RANGE);
-          }
-        ;
-
-/*
-  For sequence metadata values that may be unsigned and need
-  truncation (maxvalue, minvalue)
-*/
-sequence_truncated_value_hybrid_num:
-          opt_plus NUM
-          {
-            int error;
-            $$.num= my_strtoll10($2.str, (char**) 0, &error);
-            $$.is_unsigned= false;
-          }
-        | opt_plus LONG_NUM
-          {
-            int error;
-            $$.num= my_strtoll10($2.str, (char**) 0, &error);
-            $$.is_unsigned= false;
-          }
-        | opt_plus ULONGLONG_NUM
-          {
-            int error;
-            $$.num= my_strtoll10($2.str, (char**) 0, &error);
-            $$.is_unsigned= true;
-          }
-        | opt_plus DECIMAL_NUM
-          {
-            $$.num= ULONGLONG_MAX;
-            $$.is_unsigned= true;
-          }
-        | '-' NUM
-          {
-            int error;
-            $$.num= - my_strtoll10($2.str, (char**) 0, &error);
-            $$.is_unsigned= false;
-          }
-        | '-' LONG_NUM
-          {
-            int error;
-            $$.num= - my_strtoll10($2.str, (char**) 0, &error);
-            $$.is_unsigned= false;
-          }
-        | '-' ULONGLONG_NUM
-          {
-            $$.num= LONGLONG_MIN;
-            $$.is_unsigned= false;
-          }
-        | '-' DECIMAL_NUM
-          {
-            $$.num= LONGLONG_MIN;
-            $$.is_unsigned= false;
-          }
+longlong_num:
+          opt_plus NUM           { int error; $$= (longlong) my_strtoll10($2.str, (char**) 0, &error); }
+        | LONG_NUM      { int error; $$= (longlong) my_strtoll10($1.str, (char**) 0, &error); }
+        | '-' NUM         { int error; $$= -(longlong) my_strtoll10($2.str, (char**) 0, &error); }
+        | '-' LONG_NUM  { int error; $$= -(longlong) my_strtoll10($2.str, (char**) 0, &error); }
         ;
 
 ulonglong_num:
@@ -13608,7 +12914,7 @@ procedure_clause:
             /*
               PROCEDURE CLAUSE cannot handle subquery as one of its parameter,
               so disallow any subqueries further.
-              Allow subqueries back once the parameters are reduced.
+              Alow subqueries back once the parameters are reduced.
             */
             Lex->clause_that_disallows_subselect= "PROCEDURE";
             Select->options|= OPTION_PROCEDURE_CLAUSE;
@@ -13679,32 +12985,16 @@ select_var_ident: select_outvar
 select_outvar:
           '@' ident_or_text
           {
-            if (!$2.length)
-            {
-              thd->parse_error();
-              MYSQL_YYABORT;
-            }
-
             $$ = Lex->result ? new (thd->mem_root) my_var_user(&$2) : NULL;
           }
         | ident_or_text
           {
-            const Lex_ident_sys name(thd, &$1);
-            if (unlikely(!($$= Lex->create_outvar(thd, name)) && Lex->result))
+            if (unlikely(!($$= Lex->create_outvar(thd, &$1)) && Lex->result))
               MYSQL_YYABORT;
           }
         | ident '.' ident
           {
-            if (unlikely(!($$= Lex->create_outvar(thd, $1, $3)) && Lex->result))
-              MYSQL_YYABORT;
-          }
-        | ident '(' expr ')' opt_object_member_access
-          {
-            auto field= $5.str ? Lex_ident_sys(thd, &$5) : Lex_ident_sys();
-            if (unlikely(($5.str && !field.str) ||
-                         (!($$= Lex->create_outvar_lvalue_function(thd, $1, $3,
-                                                                   field)) &&
-                          Lex->result)))
+            if (unlikely(!($$= Lex->create_outvar(thd, &$1, &$3)) && Lex->result))
               MYSQL_YYABORT;
           }
         ;
@@ -13725,7 +13015,6 @@ into_destination:
                          new (thd->mem_root)
                          select_export(thd, lex->exchange))))
               MYSQL_YYABORT;
-            status_var_increment(thd->status_var.feature_into_outfile);
           }
           opt_load_data_charset
           { Lex->exchange->cs= $4; }
@@ -13748,7 +13037,6 @@ into_destination:
         | select_var_list_init
           {
             Lex->uncacheable(UNCACHEABLE_SIDEEFFECT);
-            status_var_increment(thd->status_var.feature_into_variable);
           }
         ;
 
@@ -13763,7 +13051,7 @@ do:
             lex->sql_command = SQLCOM_DO;
             if (lex->main_select_push(true))
               MYSQL_YYABORT;
-            lex->init_select();
+            mysql_init_select(lex);
           }
           expr_list
           {
@@ -13797,7 +13085,7 @@ drop:
           {
             LEX *lex=Lex;
             Alter_drop *ad= (new (thd->mem_root)
-                             Alter_drop(Alter_drop::KEY, $5, $4));
+                             Alter_drop(Alter_drop::KEY, $5.str, $4));
             if (unlikely(ad == NULL))
               MYSQL_YYABORT;
             lex->sql_command= SQLCOM_DROP_INDEX;
@@ -13844,6 +13132,16 @@ drop:
             LEX *lex= Lex;
             lex->set_command(SQLCOM_DROP_TRIGGER, $3);
             lex->spname= $4;
+          }
+        | DROP TABLESPACE tablespace_name opt_ts_engine opt_ts_wait
+          {
+            LEX *lex= Lex;
+            lex->alter_tablespace_info->ts_cmd_type= DROP_TABLESPACE;
+          }
+        | DROP LOGFILE_SYM GROUP_SYM logfile_group_name opt_ts_engine opt_ts_wait
+          {
+            LEX *lex= Lex;
+            lex->alter_tablespace_info->ts_cmd_type= DROP_LOGFILE_GROUP;
           }
         | DROP SERVER_SYM opt_if_exists ident_or_text
           {
@@ -13926,7 +13224,7 @@ opt_if_exists_table_element:
         ;
 
 opt_if_exists:
-          /* empty */        %prec PREC_BELOW_CONTRACTION_TOKEN2
+          /* empty */
         {
           $$.set(DDL_options_st::OPT_NONE);
         }
@@ -13945,67 +13243,49 @@ opt_temporary:
 */
 
 insert:
-          INSERT opt_optimizer_hint
+          INSERT
           {
             Lex->sql_command= SQLCOM_INSERT;
             Lex->duplicates= DUP_ERROR;
-            thd->get_stmt_da()->opt_clear_warning_info(thd->query_id);
-            thd->get_stmt_da()->reset_current_row_for_warning(1);
           }
           insert_start insert_lock_option opt_ignore opt_into insert_table
           {
-            Lex->first_select_lex()->set_optimizer_hints($2);
-            Select->set_lock_for_tables($5, true, false);
+            Select->set_lock_for_tables($4, true, false);
           }
           insert_field_spec opt_insert_update opt_returning
-          insert_stmt_end
+          stmt_end
           {
-            Lex->handle_parsed_optimizer_hints_in_last_select();
             Lex->mark_first_table_as_inserting();
-            thd->get_stmt_da()->reset_current_row_for_warning(0);
           }
           ;
 
 replace:
-          REPLACE opt_optimizer_hint
+          REPLACE
           {
             Lex->sql_command = SQLCOM_REPLACE;
             Lex->duplicates= DUP_REPLACE;
-            thd->get_stmt_da()->opt_clear_warning_info(thd->query_id);
-            thd->get_stmt_da()->reset_current_row_for_warning(1);
           }
           insert_start replace_lock_option opt_into insert_table
           {
-            Lex->first_select_lex()->set_optimizer_hints($2);
-            Select->set_lock_for_tables($5, true, false);
+            Select->set_lock_for_tables($4, true, false);
           }
           insert_field_spec opt_returning
-          insert_stmt_end
+          stmt_end
           {
-            Lex->handle_parsed_optimizer_hints_in_last_select();
             Lex->mark_first_table_as_inserting();
-            thd->get_stmt_da()->reset_current_row_for_warning(0);
           }
           ;
 
 insert_start: {
                 if (Lex->main_select_push())
                   MYSQL_YYABORT;
-                Lex->init_select();
+                mysql_init_select(Lex);
                 Lex->inc_select_stack_outer_barrier();
                 Lex->current_select->parsing_place= BEFORE_OPT_LIST;
               }
               ;
 
 stmt_end: {
-              Lex->handle_parsed_optimizer_hints_in_last_select();
-              Lex->pop_select(); //main select
-              if (Lex->check_main_unit_semantics())
-                MYSQL_YYABORT;
-            }
-            ;
-
-insert_stmt_end: {
               Lex->pop_select(); //main select
               if (Lex->check_main_unit_semantics())
                 MYSQL_YYABORT;
@@ -14144,7 +13424,6 @@ no_braces:
           opt_values ')'
           {
             LEX *lex=Lex;
-            thd->get_stmt_da()->inc_current_row_for_warning();
             if (unlikely(lex->many_values.push_back(lex->insert_list,
                                                     thd->mem_root)))
               MYSQL_YYABORT;
@@ -14160,7 +13439,6 @@ no_braces_with_names:
           opt_values_with_names ')'
           {
             LEX *lex=Lex;
-            thd->get_stmt_da()->inc_current_row_for_warning();
             if (unlikely(lex->many_values.push_back(lex->insert_list,
                                                     thd->mem_root)))
               MYSQL_YYABORT;
@@ -14262,31 +13540,21 @@ update_table_list:
 /* Update rows in a table */
 
 update:
-          opt_with_clause
-          UPDATE_SYM opt_optimizer_hint
+          UPDATE_SYM
           {
             LEX *lex= Lex;
             if (Lex->main_select_push())
               MYSQL_YYABORT;
-            lex->init_select();
-            Lex->first_select_lex()->set_optimizer_hints($3);
+            mysql_init_select(lex);
             lex->sql_command= SQLCOM_UPDATE;
             lex->duplicates= DUP_ERROR; 
-            Lex->first_select_lex()->master_unit()->set_with_clause($1);
-            if ($1)
-              $1->attach_to(Lex->first_select_lex());
           }
           opt_low_priority opt_ignore update_table_list
           SET update_list
           {
-            bool is_multiupdate= false;
-            LEX *lex= Lex;
             SELECT_LEX *slex= Lex->first_select_lex();
             if (slex->table_list.elements > 1)
-            {
               Lex->sql_command= SQLCOM_UPDATE_MULTI;
-              is_multiupdate= true;
-            }
             else if (slex->get_table_list()->derived)
             {
               /* it is single table update and it is update of derived table */
@@ -14294,20 +13562,17 @@ update:
                        slex->get_table_list()->alias.str, "UPDATE");
               MYSQL_YYABORT;
             }
-            if (!(lex->m_sql_cmd=
-                  new (thd->mem_root) Sql_cmd_update(is_multiupdate)))
-              MYSQL_YYABORT;
             /*
               In case of multi-update setting write lock for all tables may
-              be too pessimistic. We will decrease lock level if possible
-              later while processing the statement.
+              be too pessimistic. We will decrease lock level if possible in
+              mysql_multi_update().
             */
-            slex->set_lock_for_tables($5, slex->table_list.elements == 1, false);
+            slex->set_lock_for_tables($3, slex->table_list.elements == 1, false);
           }
           opt_where_clause opt_order_clause delete_limit_clause
           {
-            if ($12)
-              Select->order_list= *($12);
+            if ($10)
+              Select->order_list= *($10);
           } stmt_end {}
         ;
 
@@ -14355,27 +13620,22 @@ opt_low_priority:
 /* Delete rows from a table */
 
 delete:
-          opt_with_clause
-          DELETE_SYM opt_optimizer_hint
+          DELETE_SYM
           {
             LEX *lex= Lex;
+            lex->sql_command= SQLCOM_DELETE;
             YYPS->m_lock_type= TL_WRITE_DEFAULT;
             YYPS->m_mdl_type= MDL_SHARED_WRITE;
             if (Lex->main_select_push())
               MYSQL_YYABORT;
-            mysql_init_delete(lex);
+            mysql_init_select(lex);
             lex->ignore= 0;
             lex->first_select_lex()->order_list.empty();
-            lex->first_select_lex()->set_optimizer_hints($3);
-            lex->first_select_lex()->master_unit()->set_with_clause($1);
-            if ($1)
-              $1->attach_to(lex->first_select_lex());
           }
           delete_part2
           {
             if (Lex->check_cte_dependencies_and_resolve_references())
               MYSQL_YYABORT;
-            Lex->handle_parsed_optimizer_hints_in_last_select();
           }
           ;
 
@@ -14394,44 +13654,23 @@ delete_part2:
           opt_delete_options single_multi {}
         | HISTORY_SYM delete_single_table opt_delete_system_time
           {
-            LEX *lex= Lex;
-            lex->last_table()->vers_conditions= lex->vers_conditions;
-            lex->sql_command= SQLCOM_DELETE;
-            if (!(lex->m_sql_cmd=
-                  new (thd->mem_root) Sql_cmd_delete(false)))
-              MYSQL_YYABORT;
-            if (lex->check_main_unit_semantics())
+            Lex->last_table()->vers_conditions= Lex->vers_conditions;
+            Lex->pop_select(); //main select
+            if (Lex->check_main_unit_semantics())
               MYSQL_YYABORT;
           }
-          stmt_end
-          {}
         ;
 
 delete_single_table:
-          FROM table_ident opt_table_alias_clause opt_key_definition opt_use_partition
+          FROM table_ident opt_use_partition
           {
             if (unlikely(!Select->
-                         add_table_to_list(thd, $2, $3, TL_OPTION_UPDATING,
+                         add_table_to_list(thd, $2, NULL, TL_OPTION_UPDATING,
                                            YYPS->m_lock_type,
                                            YYPS->m_mdl_type,
                                            NULL,
-                                           0)))
+                                           $3)))
               MYSQL_YYABORT;
-            Select->table_list.save_and_clear(&Lex->auxiliary_table_list);
-            /* Save the number of auxiliary tables */
-            Lex->table_count_update= 1;
-
-            Lex->query_tables= 0;
-            Lex->query_tables_last= &Lex->query_tables;
-            if (unlikely(!Select->
-                         add_table_to_list(thd, $2, $3, TL_OPTION_UPDATING,
-                                           YYPS->m_lock_type,
-                                           YYPS->m_mdl_type,
-                                           Select->pop_index_hints(),
-                                           $5)))
-              MYSQL_YYABORT;
-            Lex->auxiliary_table_list.first->correspondent_table=
-              Lex->query_tables;
             YYPS->m_lock_type= TL_READ_DEFAULT;
             YYPS->m_mdl_type= MDL_SHARED_READ;
           }
@@ -14452,58 +13691,33 @@ single_multi:
           delete_limit_clause
           opt_returning
           {
-            LEX *lex= Lex;
             if ($3)
               Select->order_list= *($3);
-            lex->sql_command= SQLCOM_DELETE;
-            if (!(lex->m_sql_cmd=
-                  new (thd->mem_root) Sql_cmd_delete(false)))
-              MYSQL_YYABORT;
+            Lex->pop_select(); //main select
             if (Lex->check_main_unit_semantics())
               MYSQL_YYABORT;
           }
-          stmt_end {}
-        | table_alias_ref_list
+        | table_wild_list
           {
-            LEX *lex= Lex;
-            lex->sql_command= SQLCOM_DELETE_MULTI;
-            if (!(lex->m_sql_cmd=
-                  new (thd->mem_root) Sql_cmd_delete(true)))
-              MYSQL_YYABORT;
             mysql_init_multi_delete(Lex);
             YYPS->m_lock_type= TL_READ_DEFAULT;
             YYPS->m_mdl_type= MDL_SHARED_READ;
           }
-          FROM join_table_list opt_where_clause opt_order_or_limit
+          FROM join_table_list opt_where_clause
           {
             if (unlikely(multi_delete_set_locks_and_link_aux_tables(Lex)))
               MYSQL_YYABORT;
-            if ($6)
-            {
-              DBUG_ASSERT(Lex->select_stack_head() == Select);
-              $6->set_to(Lex->select_stack_head());
-            }
           } stmt_end {}
         | FROM table_alias_ref_list
           {
-            LEX *lex= Lex;
-            lex->sql_command= SQLCOM_DELETE_MULTI;
-            if (!(lex->m_sql_cmd=
-                  new (thd->mem_root) Sql_cmd_delete(true)))
-              MYSQL_YYABORT;
             mysql_init_multi_delete(Lex);
             YYPS->m_lock_type= TL_READ_DEFAULT;
             YYPS->m_mdl_type= MDL_SHARED_READ;
           }
-          USING join_table_list opt_where_clause opt_order_or_limit
+          USING join_table_list opt_where_clause
           {
             if (unlikely(multi_delete_set_locks_and_link_aux_tables(Lex)))
               MYSQL_YYABORT;
-            if ($7)
-            {
-              DBUG_ASSERT(Lex->select_stack_head() == Select);
-              $7->set_to(Lex->select_stack_head());
-            }
           } stmt_end {}
         ;
 
@@ -14537,12 +13751,49 @@ opt_returning:
 
             thd->lex->current_select->parsing_place= IN_RETURNING;
             thd->lex->push_context(&thd->lex->returning()->context);
-            thd->lex->has_returning_list= true;
           }
           select_item_list
           {
             thd->lex->pop_context();
             thd->lex->current_select->parsing_place= NO_MATTER;
+          }
+        ;
+
+table_wild_list:
+          table_wild_one
+        | table_wild_list ',' table_wild_one
+        ;
+
+table_wild_one:
+          ident opt_wild
+          {
+            Table_ident *ti= new (thd->mem_root) Table_ident(&$1);
+            if (unlikely(ti == NULL))
+              MYSQL_YYABORT;
+            if (unlikely(!Select->
+                         add_table_to_list(thd,
+                                           ti,
+                                           NULL,
+                                           (TL_OPTION_UPDATING |
+                                            TL_OPTION_ALIAS),
+                                           YYPS->m_lock_type,
+                                           YYPS->m_mdl_type)))
+              MYSQL_YYABORT;
+          }
+        | ident '.' ident opt_wild
+          {
+            Table_ident *ti= new (thd->mem_root) Table_ident(thd, &$1, &$3, 0);
+            if (unlikely(ti == NULL))
+              MYSQL_YYABORT;
+            if (unlikely(!Select->
+                         add_table_to_list(thd,
+                                           ti,
+                                           NULL,
+                                           (TL_OPTION_UPDATING |
+                                            TL_OPTION_ALIAS),
+                                           YYPS->m_lock_type,
+                                           YYPS->m_mdl_type)))
+              MYSQL_YYABORT;
           }
         ;
 
@@ -14658,7 +13909,7 @@ show:
             lex->ident= null_clex_str;
             if (Lex->main_select_push())
               MYSQL_YYABORT;
-            lex->init_select();
+            mysql_init_select(lex);
             lex->current_select->parsing_place= SELECT_LIST;
             lex->create_info.init();
           }
@@ -14769,8 +14020,7 @@ show_param:
             LEX *lex= Lex;
             lex->sql_command= SQLCOM_SHOW_RELAYLOG_EVENTS;
           }
-          opt_global_limit_clause optional_for_channel
-          { }
+          opt_global_limit_clause
         | keys_or_index from_or_in table_ident opt_db opt_where_clause
           {
             LEX *lex= Lex;
@@ -14860,7 +14110,8 @@ show_param:
         | GRANTS
           {
             Lex->sql_command= SQLCOM_SHOW_GRANTS;
-            if (unlikely(!(Lex->grant_user= thd->calloc<LEX_USER>(1))))
+            if (unlikely(!(Lex->grant_user=
+                          (LEX_USER*)thd->alloc(sizeof(LEX_USER)))))
               MYSQL_YYABORT;
             Lex->grant_user->user= current_user_and_current_role;
           }
@@ -14907,29 +14158,28 @@ show_param:
           {
             Lex->sql_command = SQLCOM_SHOW_BINLOG_STAT;
           }
-        | BINARY LOG_SYM STATUS_SYM
-          {
-            Lex->sql_command = SQLCOM_SHOW_BINLOG_STAT;
-          }
         | ALL SLAVES STATUS_SYM
           {
-            LEX *lex= Lex;
-            lex->sql_command= SQLCOM_SHOW_SLAVE_STAT;
-            lex->mi.show_all_slaves= 1;
-#ifdef HAVE_REPLICATION
-            if (prepare_schema_table(thd, lex, 0, SCH_SLAVE_STATUS))
+            if (!(Lex->m_sql_cmd= new (thd->mem_root)
+                  Sql_cmd_show_slave_status(true)))
               MYSQL_YYABORT;
-#endif
+            Lex->sql_command = SQLCOM_SHOW_SLAVE_STAT;
           }
-        | SLAVE optional_connection_name STATUS_SYM optional_for_channel
+        | SLAVE STATUS_SYM
           {
-            LEX *lex= Lex;
-            lex->sql_command= SQLCOM_SHOW_SLAVE_STAT;
-            lex->mi.show_all_slaves= 0;
-#ifdef HAVE_REPLICATION
-            if (prepare_schema_table(thd, lex, 0, SCH_SLAVE_STATUS))
+            LEX *lex= thd->lex;
+            lex->mi.connection_name= null_clex_str;
+            if (!(lex->m_sql_cmd= new (thd->mem_root)
+                  Sql_cmd_show_slave_status()))
               MYSQL_YYABORT;
-#endif
+            lex->sql_command = SQLCOM_SHOW_SLAVE_STAT;
+          }
+        | SLAVE connection_name STATUS_SYM
+          {
+            if (!(Lex->m_sql_cmd= new (thd->mem_root)
+                  Sql_cmd_show_slave_status()))
+              MYSQL_YYABORT;
+            Lex->sql_command = SQLCOM_SHOW_SLAVE_STAT;
           }
         | CREATE PROCEDURE_SYM sp_name
           {
@@ -14969,12 +14219,6 @@ show_param:
             lex->sql_command = SQLCOM_SHOW_CREATE_PACKAGE_BODY;
             lex->spname= $4;
           }
-        | CREATE SERVER_SYM ident_or_text
-          {
-            LEX *lex= Lex;
-            lex->sql_command = SQLCOM_SHOW_CREATE_SERVER;
-            lex->name= $3;
-          }
         | CREATE TRIGGER_SYM sp_name
           {
             LEX *lex= Lex;
@@ -14984,7 +14228,8 @@ show_param:
         | CREATE USER_SYM
           {
             Lex->sql_command= SQLCOM_SHOW_CREATE_USER;
-            if (unlikely(!(Lex->grant_user= thd->calloc<LEX_USER>(1))))
+            if (unlikely(!(Lex->grant_user=
+                          (LEX_USER*)thd->alloc(sizeof(LEX_USER)))))
               MYSQL_YYABORT;
             Lex->grant_user->user= current_user;
           }
@@ -15037,50 +14282,35 @@ show_param:
           }
         | PROCEDURE_SYM CODE_SYM sp_name
           {
-            if (Lex->show_routine_code_start(thd, SQLCOM_SHOW_PROC_CODE, $3))
-              MYSQL_YYABORT;
+            Lex->sql_command= SQLCOM_SHOW_PROC_CODE;
+            Lex->spname= $3;
           }
         | FUNCTION_SYM CODE_SYM sp_name
           {
-            if (Lex->show_routine_code_start(thd, SQLCOM_SHOW_FUNC_CODE, $3))
-              MYSQL_YYABORT;
+            Lex->sql_command= SQLCOM_SHOW_FUNC_CODE;
+            Lex->spname= $3;
           }
         | PACKAGE_MARIADB_SYM BODY_MARIADB_SYM CODE_SYM sp_name
           {
-            if (Lex->show_routine_code_start(thd, SQLCOM_SHOW_PACKAGE_BODY_CODE,
-                                             $4))
-              MYSQL_YYABORT;
+            Lex->sql_command= SQLCOM_SHOW_PACKAGE_BODY_CODE;
+            Lex->spname= $4;
           }
         | PACKAGE_ORACLE_SYM BODY_ORACLE_SYM CODE_SYM sp_name
           {
-            if (Lex->show_routine_code_start(thd, SQLCOM_SHOW_PACKAGE_BODY_CODE,
-                                             $4))
-              MYSQL_YYABORT;
+            Lex->sql_command= SQLCOM_SHOW_PACKAGE_BODY_CODE;
+            Lex->spname= $4;
           }
         | CREATE EVENT_SYM sp_name
           {
             Lex->spname= $3;
             Lex->sql_command = SQLCOM_SHOW_CREATE_EVENT;
           }
-        | describe_command opt_format_json FOR_SYM expr
-          /*
-            The alternative syntax for this command is MySQL-compatible
-            EXPLAIN FOR CONNECTION
-          */
+        | describe_command FOR_SYM expr
           {
             Lex->sql_command= SQLCOM_SHOW_EXPLAIN;
-            if (unlikely(prepare_schema_table(thd, Lex, 0,
-                Lex->explain_json ? SCH_EXPLAIN_JSON : SCH_EXPLAIN_TABULAR)))
+            if (unlikely(prepare_schema_table(thd, Lex, 0, SCH_EXPLAIN)))
               MYSQL_YYABORT;
-            add_value_to_list(thd, $4);
-          }
-        | ANALYZE_SYM opt_format_json FOR_SYM expr
-          {
-            Lex->sql_command= SQLCOM_SHOW_ANALYZE;
-            if (unlikely(prepare_schema_table(thd, Lex, 0,
-                Lex->explain_json ? SCH_ANALYZE_JSON : SCH_ANALYZE_TABULAR)))
-              MYSQL_YYABORT;
-            add_value_to_list(thd, $4);
+            add_value_to_list(thd, $3);
           }
         | IDENT_sys remember_tok_start wild_and_where
            {
@@ -15174,7 +14404,7 @@ describe:
             LEX *lex= Lex;
             if (lex->main_select_push())
               MYSQL_YYABORT;
-            lex->init_select();
+            mysql_init_select(lex);
             lex->current_select->parsing_place= SELECT_LIST;
             lex->sql_command= SQLCOM_SHOW_FIELDS;
             lex->first_select_lex()->db= null_clex_str;
@@ -15234,8 +14464,8 @@ opt_format_json:
             else if (lex_string_eq(&$3, STRING_WITH_LEN("TRADITIONAL")))
               DBUG_ASSERT(Lex->explain_json==false);
             else
-              my_yyabort_error((ER_UNKNOWN_EXPLAIN_FORMAT, MYF(0),
-                                "EXPLAIN/ANALYZE", $3.str));
+              my_yyabort_error((ER_UNKNOWN_EXPLAIN_FORMAT, MYF(0), "EXPLAIN",
+                               $3.str));
           }
         ;
 
@@ -15252,35 +14482,6 @@ opt_describe_column:
           }
         ;
 
-explain_for_connection:
-          /*
-            EXPLAIN FOR CONNECTION is an alternative syntax for
-            SHOW EXPLAIN FOR command. It was introduced for compatibility
-            with MySQL which implements EXPLAIN FOR CONNECTION command
-          */
-          describe_command opt_format_json
-          {
-            LEX *lex= Lex;
-            lex->wild= 0;
-            lex->ident= null_clex_str;
-            if (Lex->main_select_push())
-              MYSQL_YYABORT;
-            lex->init_select();
-            lex->current_select->parsing_place= SELECT_LIST;
-          }
-          FOR_SYM CONNECTION_SYM expr
-          {
-            LEX *lex= Lex;
-            lex->create_info.init();
-            Select->parsing_place= NO_MATTER;
-            Lex->pop_select(); //main select
-            Lex->sql_command= SQLCOM_SHOW_EXPLAIN;
-            if (unlikely(prepare_schema_table(thd, Lex, 0,
-                Lex->explain_json ? SCH_EXPLAIN_JSON : SCH_EXPLAIN_TABULAR)))
-              MYSQL_YYABORT;
-            add_value_to_list(thd, $6);
-          }
-        ;
 
 /* flush things */
 
@@ -15358,7 +14559,7 @@ flush_option:
           { Lex->type|= REFRESH_SLOW_LOG; }
         | BINARY LOGS_SYM opt_delete_gtid_domain
           { Lex->type|= REFRESH_BINARY_LOG; }
-        | RELAY LOGS_SYM optional_connection_name optional_for_channel
+        | RELAY LOGS_SYM optional_connection_name
           {
             LEX *lex= Lex;
             if (unlikely(lex->type & REFRESH_RELAY_LOG))
@@ -15378,16 +14579,7 @@ flush_option:
             Lex->relay_log_connection_name= empty_clex_str;
           }
         | STATUS_SYM
-          {
-            if (thd->variables.old_behavior & OLD_MODE_OLD_FLUSH_STATUS)
-              Lex->type|= REFRESH_STATUS;
-            else
-              Lex->type|= REFRESH_SESSION_STATUS;
-          }
-        | SESSION_SYM STATUS_SYM
-          { Lex->type|= REFRESH_SESSION_STATUS; }
-        | GLOBAL_SYM STATUS_SYM
-          { Lex->type|= REFRESH_GLOBAL_STATUS; }
+          { Lex->type|= REFRESH_STATUS; }
         | SLAVE optional_connection_name 
           { 
             LEX *lex= Lex;
@@ -15518,8 +14710,7 @@ reset_options:
 reset_option:
           SLAVE               { Lex->type|= REFRESH_SLAVE; }
           optional_connection_name
-          slave_reset_options optional_for_channel
-          { }
+          slave_reset_options { }
         | MASTER_SYM
           {
              Lex->type|= REFRESH_MASTER;
@@ -15650,7 +14841,7 @@ load:
             }
             if (lex->main_select_push())
               MYSQL_YYABORT;
-            lex->init_select();
+            mysql_init_select(lex);
           }
           load_data_lock opt_local INFILE TEXT_STRING_filesystem
           {
@@ -15811,12 +15002,6 @@ field_or_var:
           simple_ident_nospvar {$$= $1;}
         | '@' ident_or_text
           {
-            if (!$2.length)
-            {
-              thd->parse_error();
-              MYSQL_YYABORT;
-            }
-
             $$= new (thd->mem_root) Item_user_var_as_out_param(thd, &$2);
             if (unlikely($$ == NULL))
               MYSQL_YYABORT;
@@ -15859,8 +15044,6 @@ text_literal:
           }
         | UNDERSCORE_CHARSET TEXT_STRING
           {
-            $1= thd->variables.character_set_collations.
-                                 get_collation_for_charset(thd, $1);
             if (unlikely(!($$= thd->make_string_literal_charset($2, $1))))
               MYSQL_YYABORT;
           }
@@ -16000,8 +15183,6 @@ literal:
             Item_string_with_introducer *item_str;
             LEX_CSTRING tmp;
             $2->get_value(&tmp);
-            $1= thd->variables.character_set_collations.
-                                 get_collation_for_charset(thd, $1);
             /*
               Pass NULL as name. Name will be set in the "select_item" rule and
               will include the introducer and the original hex/bin notation.
@@ -16084,11 +15265,6 @@ temporal_literal:
           }
         ;
 
-opt_with_clause:
-          /* empty */ { $$= NULL; }
-        | with_clause { $$= $1; }
-        ;
-
 with_clause:
           WITH opt_recursive
           {
@@ -16125,13 +15301,10 @@ with_list:
 	| with_list ',' with_list_element
 	;
 
-with_column_list:
-        opt_column_name_list
-        ;
 
 with_list_element:
           with_element_head
-	  with_column_list
+	  opt_with_column_list 
           AS '(' query_expression ')' opt_cycle
  	  {
             LEX *lex= thd->lex;
@@ -16169,14 +15342,19 @@ opt_cycle:
          }
          ;
 
-opt_column_name_list:
+
+opt_with_column_list:
           /* empty */
           {
             if (($$= new (thd->mem_root) List<Lex_ident_sys>) == NULL)
               MYSQL_YYABORT;
           }
-        | '(' comma_separated_ident_list ')'
+        | '(' with_column_list ')'
           { $$= $2; }
+        ;
+
+with_column_list:
+          comma_separated_ident_list
         ;
 
 ident_sys_alloc:
@@ -16204,9 +15382,10 @@ comma_separated_ident_list:
 with_element_head:
           ident
           {
-            $$= new (thd->mem_root) With_element_head(
-                                      Lex_ident_with_element($1));
-            if (unlikely($$ == NULL))
+            LEX_CSTRING *name=
+              (LEX_CSTRING *) thd->memdup(&$1, sizeof(LEX_CSTRING));
+            $$= new (thd->mem_root) With_element_head(name);
+            if (unlikely(name == NULL || $$ == NULL))
               MYSQL_YYABORT;
             $$->tables_pos.set_start_pos(Lex->query_tables_last);
           }
@@ -16252,6 +15431,7 @@ select_sublist_qualified_asterisk:
 order_ident:
           expr { $$=$1; }
         ;
+
 
 simple_ident:
           ident_cli
@@ -16316,16 +15496,19 @@ field_ident:
         | ident '.' ident '.' ident
           {
             TABLE_LIST *table= Select->table_list.first;
-            if (unlikely(!table->db.streq($1)))
+            if (unlikely(my_strcasecmp(table_alias_charset, $1.str,
+                                       table->db.str)))
               my_yyabort_error((ER_WRONG_DB_NAME, MYF(0), $1.str));
-            if (unlikely(!table->table_name.streq($3)))
+            if (unlikely(my_strcasecmp(table_alias_charset, $3.str,
+                                       table->table_name.str)))
               my_yyabort_error((ER_WRONG_TABLE_NAME, MYF(0), $3.str));
             $$=$5;
           }
         | ident '.' ident
           {
             TABLE_LIST *table= Select->table_list.first;
-            if (unlikely(!table->alias.streq($1)))
+            if (unlikely(my_strcasecmp(table_alias_charset, $1.str,
+                         table->alias.str)))
               my_yyabort_error((ER_WRONG_TABLE_NAME, MYF(0), $1.str));
             $$=$3;
           }
@@ -16404,6 +15587,15 @@ ident_cli_func:
         | keyword_func_sp_var_and_label  { $$= $1; }
         | keyword_func_sp_var_not_label  { $$= $1; }
         ;
+
+ident_func:
+          ident_cli_func
+          {
+            if (unlikely(thd->to_ident_sys_alloc(&$$, &$1)))
+              MYSQL_YYABORT;
+          }
+        ;
+
 
 TEXT_STRING_sys:
           TEXT_STRING
@@ -16485,7 +15677,7 @@ ident_or_text:
 user_maybe_role:
           ident_or_text
           {
-            if (unlikely(!($$= thd->calloc<LEX_USER>(1))))
+            if (unlikely(!($$=(LEX_USER*) thd->calloc(sizeof(LEX_USER)))))
               MYSQL_YYABORT;
             $$->user = $1;
 
@@ -16494,32 +15686,42 @@ user_maybe_role:
                                                   system_charset_info, 0)))
               MYSQL_YYABORT;
           }
-        | user_name { $$= $1; }
+        | ident_or_text '@' ident_or_text
+          {
+            if (unlikely(!($$=(LEX_USER*) thd->calloc(sizeof(LEX_USER)))))
+              MYSQL_YYABORT;
+            $$->user = $1; $$->host=$3;
+
+            if (unlikely(check_string_char_length(&$$->user, ER_USERNAME,
+                                                  username_char_length,
+                                                 system_charset_info, 0)) ||
+                unlikely(check_host_name(&$$->host)))
+              MYSQL_YYABORT;
+            if ($$->host.str[0])
+            {
+              /*
+                Convert hostname part of username to lowercase.
+                It's OK to use in-place lowercase as long as
+                the character set is utf8.
+              */
+              my_casedn_str(system_charset_info, (char*) $$->host.str);
+            }
+            else
+            {
+              /*
+                fix historical undocumented convention that empty host is the
+                same as '%'
+              */
+              $$->host= host_not_specified;
+            }
+          }
         | CURRENT_USER optional_braces
           {
-            if (unlikely(!($$= thd->calloc<LEX_USER>(1))))
+            if (unlikely(!($$=(LEX_USER*)thd->calloc(sizeof(LEX_USER)))))
               MYSQL_YYABORT;
             $$->user= current_user;
           }
         ;
-
-user_name:
-          ident_or_text '@' ident_or_text
-          {
-            if (!($$= thd->calloc<LEX_USER>(1)))
-              MYSQL_YYABORT;
-            $$->user = $1;
-            $$->host=$3;
-
-            if (check_string_char_length(&$$->user, ER_USERNAME,
-                  username_char_length, system_charset_info, 0) ||
-                check_host_name(&$$->host))
-              MYSQL_YYABORT;
-            if ($$->host.str[0])
-              $$->host= thd->make_ident_casedn($$->host);
-            else
-              $$->host= host_not_specified;
-          }
 
 user_or_role: user_maybe_role | current_role;
 
@@ -16562,9 +15764,6 @@ keyword_ident:
         | WINDOW_SYM
         | EXCEPTION_ORACLE_SYM
         | IGNORED_SYM
-%ifdef ORACLE
-        | TYPE_SYM
-%endif
         ;
 
 keyword_sysvar_name:
@@ -16642,10 +15841,12 @@ keyword_sp_var_not_label:
         | FOLLOWING_SYM
         | GET_SYM
         | HELP_SYM
+        | HOST_SYM
         | INSTALL_SYM
         | OPTION
         | OPTIONS_SYM
         | OTHERS_MARIADB_SYM
+        | OWNER_SYM
         | PARSER_SYM
         | PERIOD_SYM
         | PORT_SYM
@@ -16653,8 +15854,10 @@ keyword_sp_var_not_label:
         | PREPARE_SYM
         | REMOVE_SYM
         | RESET_SYM
+        | RESTORE_SYM
         | SECURITY_SYM
         | SERVER_SYM
+        | SOCKET_SYM
         | SLAVE
         | SLAVES
         | SONAME_SYM
@@ -16697,7 +15900,7 @@ keyword_sp_var_not_label:
   In case if heavy grammar conflicts are found in the future,
   we'll possibly need to make them reserved for sql_mode=ORACLE.
 
-  TODO: Allow these variables as SP labels when sql_mode=ORACLE.
+  TODO: Allow these variables as SP lables when sql_mode=ORACLE.
   TODO: Allow assigning of "SP characteristics" marked variables
         inside compound blocks.
   TODO: Allow "follows" and "precedes" as variables in compound blocks:
@@ -16739,10 +15942,8 @@ keyword_verb_clause:
 
 keyword_set_special_case:
           NAMES_SYM
-        | AUTHORIZATION_SYM
         | ROLE_SYM
         | PASSWORD_SYM
-        | PATH_SYM
         ;
 
 keyword_sysvar_type:
@@ -16800,12 +16001,11 @@ keyword_func_sp_var_and_label:
         | AGGREGATE_SYM
         | ALGORITHM_SYM
         | ALWAYS_SYM
-        | ARRAY_SYM
         | AT_SYM
         | ATOMIC_SYM
         | AUTHORS_SYM
         | AUTO_INC
-        | AUTO_SYM
+        | AUTOEXTEND_SIZE_SYM
         | AVG_ROW_LENGTH
         | BLOCK_SYM
         | BODY_MARIADB_SYM
@@ -16813,7 +16013,6 @@ keyword_func_sp_var_and_label:
         | CASCADED
         | CATALOG_NAME_SYM
         | CHAIN_SYM
-        | CHANNEL_SYM
         | CHANGED
         | CIPHER_SYM
         | CLIENT_SYM
@@ -16845,6 +16044,7 @@ keyword_func_sp_var_and_label:
         | CYCLE_SYM
         | DATA_SYM
         | DATABASE
+        | DATAFILE_SYM
         | DEFINER_SYM
         | DELAY_KEY_WRITE_SYM
         | DES_KEY_FILE
@@ -16898,6 +16098,7 @@ keyword_func_sp_var_and_label:
         | INVOKER_SYM
         | IMPORT
         | INDEXES
+        | INITIAL_SIZE_SYM
         | IO_SYM
         | IPC_SYM
         | ISOLATION
@@ -16914,7 +16115,7 @@ keyword_func_sp_var_and_label:
         | LIST_SYM
         | LOCKED_SYM
         | LOCKS_SYM
-        | LOG_SYM
+        | LOGFILE_SYM
         | LOGS_SYM
         | MAX_ROWS
         | MASTER_SYM
@@ -16930,7 +16131,6 @@ keyword_func_sp_var_and_label:
         | MASTER_SERVER_ID_SYM
         | MASTER_CONNECT_RETRY_SYM
         | MASTER_DELAY_SYM
-        | MASTER_RETRY_COUNT_SYM
         | MASTER_SSL_SYM
         | MASTER_SSL_CA_SYM
         | MASTER_SSL_CAPATH_SYM
@@ -16939,9 +16139,9 @@ keyword_func_sp_var_and_label:
         | MASTER_SSL_CRL_SYM
         | MASTER_SSL_CRLPATH_SYM
         | MASTER_SSL_KEY_SYM
-        | MASTER_SSL_VERIFY_SERVER_CERT_SYM
         | MAX_CONNECTIONS_PER_HOUR
         | MAX_QUERIES_PER_HOUR
+        | MAX_SIZE_SYM
         | MAX_STATEMENT_TIME_SYM
         | MAX_UPDATES_PER_HOUR
         | MAX_USER_CONNECTIONS_SYM
@@ -16969,24 +16169,24 @@ keyword_func_sp_var_and_label:
         | NOCYCLE_SYM
         | NOMINVALUE_SYM
         | NOMAXVALUE_SYM
-        | NOCOPY_SYM
+        | NO_WAIT_SYM
         | NOWAIT_SYM
         | NODEGROUP_SYM
         | NONE_SYM
         | NOTFOUND_SYM
-        | OBJECT_SYM
         | OF_SYM
         | OLD_PASSWORD_SYM
         | ONE_SYM
         | ONLINE_SYM
         | ONLY_SYM
         | ORDINALITY_SYM
-        | PACKAGE_MARIADB_SYM %prec PREC_BELOW_CONTRACTION_TOKEN2
+        | PACKAGE_MARIADB_SYM
         | PACK_KEYS_SYM
         | PAGE_SYM
         | PARTIAL
         | PARTITIONING_SYM
         | PARTITIONS_SYM
+        | PATH_SYM
         | PERSISTENT_SYM
         | PHASE_SYM
         | PLUGIN_SYM
@@ -17007,6 +16207,8 @@ keyword_func_sp_var_and_label:
         | READ_ONLY_SYM
         | REBUILD_SYM
         | RECOVER_SYM
+        | REDO_BUFFER_SIZE_SYM
+        | REDOFILE_SYM
         | REDUNDANT_SYM
         | RELAY
         | RELAY_LOG_FILE_SYM
@@ -17032,7 +16234,6 @@ keyword_func_sp_var_and_label:
         | ROWTYPE_MARIADB_SYM
         | ROW_FORMAT_SYM
         | RTREE_SYM
-        | SCALAR_SYM
         | SCHEDULE_SYM
         | SCHEMA_NAME_SYM
         | SEQUENCE_SYM
@@ -17076,11 +16277,12 @@ keyword_func_sp_var_and_label:
         | TRANSACTIONAL_SYM
         | THREADS_SYM
         | TRIGGERS_SYM
-%ifdef MARIADB
-        | TYPE_SYM           %prec PREC_BELOW_CONTRACTION_TOKEN2
-%endif
+        | TYPE_SYM
+        | UDF_RETURNS_SYM
         | UNCOMMITTED_SYM
         | UNDEFINED_SYM
+        | UNDO_BUFFER_SIZE_SYM
+        | UNDOFILE_SYM
         | UNKNOWN_SYM
         | UNTIL_SYM
         | USE_FRM
@@ -17089,7 +16291,6 @@ keyword_func_sp_var_and_label:
         | VIEW_SYM
         | VIRTUAL_SYM
         | VISIBLE_SYM
-        | VALIDATION_SYM
         | WARNINGS
         | WAIT_SYM
         | WITHOUT
@@ -17123,7 +16324,6 @@ keyword_sp_var_and_label:
         | MONTH_SYM
         | NEXTVAL_SYM
         | OVERLAPS_SYM
-        | RECORD_SYM
 %ifdef MARIADB
         | ROWNUM_SYM
 %endif
@@ -17140,12 +16340,12 @@ keyword_sp_var_and_label:
         | USER_SYM           %prec PREC_BELOW_CONTRACTION_TOKEN2
         | VALUE_SYM
         | WEIGHT_STRING_SYM
-        | SESSION_USER_SYM
         ;
 
 
 reserved_keyword_udt_not_param_type:
-          ADD
+          ACCESSIBLE_SYM
+        | ADD
         | ALL
         | ALTER
         | ANALYZE_SYM
@@ -17177,7 +16377,6 @@ reserved_keyword_udt_not_param_type:
         | CROSS
         | CUME_DIST_SYM
         | CURDATE
-        | CURRENT_PATH
         | CURRENT_USER
         | CURRENT_ROLE
         | CURTIME
@@ -17257,6 +16456,7 @@ reserved_keyword_udt_not_param_type:
         | LOCK_SYM
         | LOOP_SYM
         | LOW_PRIORITY
+        | MASTER_SSL_VERIFY_SERVER_CERT_SYM
         | MATCH
         | MAX_SYM
         | MAXVALUE_SYM
@@ -17328,6 +16528,7 @@ reserved_keyword_udt_not_param_type:
         | SELECT_SYM
         | SENSITIVE_SYM
         | SEPARATOR_SYM
+        | SERVER_OPTIONS
         | SHOW
         | SIGNAL_SYM
         | SPATIAL_SYM
@@ -17348,6 +16549,7 @@ reserved_keyword_udt_not_param_type:
         | STRAIGHT_JOIN
         | SUBSTRING
         | SUM_SYM
+        | TABLE_REF_PRIORITY
         | TABLE_SYM
         | TERMINATED
         | THEN_SYM
@@ -17373,7 +16575,6 @@ reserved_keyword_udt_not_param_type:
         | VARIANCE_SYM
         | VARYING
         | VAR_SAMP_SYM
-        | VECTOR_SYM
         | WHEN_SYM
         | WHERE
         | WHILE_SYM
@@ -17417,20 +16618,6 @@ set_param:
             if (unlikely(sp_create_assignment_instr(thd, yychar == YYEMPTY)))
               MYSQL_YYABORT;
           }
-        | SESSION_SYM AUTHORIZATION_SYM user_name
-          {
-            if (Lex->sphead)
-            {
-              my_error(ER_SP_BADSTATEMENT, MYF(0), "SET SESSION AUTHORIZATION");
-              MYSQL_YYABORT;
-            }
-            if (sp_create_assignment_lex(thd, $1.pos()))
-              MYSQL_YYABORT;
-            auto var= new (thd->mem_root) set_var_authorization($3);
-            if (var == NULL || Lex->var_list.push_back(var, thd->mem_root) ||
-                sp_create_assignment_instr(thd, yychar == YYEMPTY))
-              MYSQL_YYABORT;
-          }
         | option_type
           {
             Lex->option_type= $1;
@@ -17448,25 +16635,6 @@ set_param:
               MYSQL_YYABORT;
           }
           FOR_SYM directly_executable_statement
-        | PATH_SYM
-          {
-            if (Lex->is_in_sf_or_trg())
-            {
-              my_error(ER_VARIABLE_NOT_SETTABLE_IN_SF_OR_TRG, MYF(0), "PATH");
-              MYSQL_YYABORT;
-            }
-            if (sp_create_assignment_lex(thd, $1.pos()))
-              MYSQL_YYABORT;
-          }
-          set_expr_or_default
-          {
-            Lex_ident_sys tmp(thd, &$1);
-
-            if (unlikely(!tmp.str) ||
-                unlikely(Lex->set_variable(&tmp, $3.expr, $3.expr_str)) ||
-                unlikely(sp_create_assignment_instr(thd, yychar == YYEMPTY)))
-              MYSQL_YYABORT;
-          }
         ;
 
 set_stmt_option_list:
@@ -17545,8 +16713,7 @@ set_stmt_option:
           {
             Lex_ident_sys tmp(thd, &$1);
             if (unlikely(!tmp.str) ||
-                unlikely(Lex->set_system_variable(Lex->option_type, &tmp,
-                                                  $4.expr)))
+                unlikely(Lex->set_system_variable(Lex->option_type, &tmp, $4)))
               MYSQL_YYABORT;
             Lex->pop_select(); //min select
           }
@@ -17560,7 +16727,7 @@ set_stmt_option:
             Lex_ident_sys tmp(thd, &$1);
             if (unlikely(!tmp.str) ||
                 unlikely(Lex->set_system_variable(thd, Lex->option_type,
-                         &tmp, &$3, $6.expr)))
+                         &tmp, &$3, $6)))
               MYSQL_YYABORT;
             Lex->pop_select(); //min select
           }
@@ -17572,7 +16739,7 @@ set_stmt_option:
           set_expr_or_default
           {
             if (unlikely(Lex->set_default_system_variable(Lex->option_type,
-                                                          &$3, $6.expr)))
+                                                          &$3, $6)))
               MYSQL_YYABORT;
             Lex->pop_select(); //min select
           }
@@ -17590,8 +16757,7 @@ option_value_following_option_type:
           {
             Lex_ident_sys tmp(thd, &$1);
             if (unlikely(!tmp.str) ||
-                unlikely(Lex->set_system_variable(Lex->option_type, &tmp,
-                                                  $4.expr)) ||
+                unlikely(Lex->set_system_variable(Lex->option_type, &tmp, $4)) ||
                 unlikely(sp_create_assignment_instr(thd, yychar == YYEMPTY)))
               MYSQL_YYABORT;
           }
@@ -17604,8 +16770,7 @@ option_value_following_option_type:
           {
             Lex_ident_sys tmp(thd, &$1);
             if (unlikely(!tmp.str) ||
-                unlikely(Lex->set_system_variable(thd, Lex->option_type, &tmp,
-                                                  &$3, $6.expr)) ||
+                unlikely(Lex->set_system_variable(thd, Lex->option_type, &tmp, &$3, $6)) ||
                 unlikely(sp_create_assignment_instr(thd, yychar == YYEMPTY)))
               MYSQL_YYABORT;
           }
@@ -17616,8 +16781,7 @@ option_value_following_option_type:
           }
           set_expr_or_default
           {
-            if (unlikely(Lex->set_default_system_variable(Lex->option_type,
-                                                          &$3, $6.expr)) ||
+            if (unlikely(Lex->set_default_system_variable(Lex->option_type, &$3, $6)) ||
                 unlikely(sp_create_assignment_instr(thd, yychar == YYEMPTY)))
               MYSQL_YYABORT;
           }
@@ -17633,9 +16797,8 @@ option_value_no_option_type:
           set_expr_or_default
           {
             Lex_ident_sys tmp(thd, &$1);
-
             if (unlikely(!tmp.str) ||
-                unlikely(Lex->set_variable(&tmp, $4.expr, $4.expr_str)) ||
+                unlikely(Lex->set_variable(&tmp, $4)) ||
                 unlikely(sp_create_assignment_instr(thd, yychar == YYEMPTY)))
               MYSQL_YYABORT;
           }
@@ -17647,9 +16810,8 @@ option_value_no_option_type:
           set_expr_or_default
           {
             Lex_ident_sys tmp(thd, &$1);
-
             if (unlikely(!tmp.str) ||
-                unlikely(Lex->set_variable(&tmp, &$3, $6.expr, $6.expr_str)) ||
+                unlikely(Lex->set_variable(&tmp, &$3, $6)) ||
                 unlikely(sp_create_assignment_instr(thd, yychar == YYEMPTY)))
               MYSQL_YYABORT;
           }
@@ -17660,34 +16822,19 @@ option_value_no_option_type:
           }
           set_expr_or_default
           {
-            if (unlikely(Lex->set_default_system_variable(Lex->option_type,
-                                                          &$3, $6.expr)))
+            if (unlikely(Lex->set_default_system_variable(Lex->option_type, &$3, $6)))
               MYSQL_YYABORT;
             if (unlikely(sp_create_assignment_instr(thd, yychar == YYEMPTY)))
               MYSQL_YYABORT;
           }
         | '@' ident_or_text equal
           {
-            if (!$2.length)
-            {
-              thd->parse_error();
-              MYSQL_YYABORT;
-            }
-
             if (sp_create_assignment_lex(thd, $1.str))
               MYSQL_YYABORT;
           }
-          remember_cpp_ptr expr remember_end
+          expr
           {
-            LEX_CSTRING expr_str= empty_clex_str;
-
-            if (Lex->is_metadata_used())
-            {
-              expr_str= make_string(thd, $5, $7);
-              if (expr_str.str == nullptr)
-                MYSQL_YYABORT;
-            }
-            if (unlikely(Lex->set_user_variable(thd, &$2, $6)) ||
+            if (unlikely(Lex->set_user_variable(thd, &$2, $5)) ||
                 unlikely(sp_create_assignment_instr(thd, yychar == YYEMPTY)))
               MYSQL_YYABORT;
           }
@@ -17698,7 +16845,7 @@ option_value_no_option_type:
           }
           set_expr_or_default
           {
-            if (unlikely(Lex->set_system_variable($3, &$4, $7.expr)) ||
+            if (unlikely(Lex->set_system_variable($3, &$4, $7)) ||
                 unlikely(sp_create_assignment_instr(thd, yychar == YYEMPTY)))
               MYSQL_YYABORT;
           }
@@ -17709,8 +16856,7 @@ option_value_no_option_type:
           }
           set_expr_or_default
           {
-            if (unlikely(Lex->set_system_variable(thd, $3, &$4, &$6,
-                                                  $9.expr)) ||
+            if (unlikely(Lex->set_system_variable(thd, $3, &$4, &$6, $9)) ||
                 unlikely(sp_create_assignment_instr(thd, yychar == YYEMPTY)))
               MYSQL_YYABORT;
           }
@@ -17721,7 +16867,7 @@ option_value_no_option_type:
           }
           set_expr_or_default
           {
-            if (unlikely(Lex->set_default_system_variable($3, &$6, $9.expr)) ||
+            if (unlikely(Lex->set_default_system_variable($3, &$6, $9)) ||
                 unlikely(sp_create_assignment_instr(thd, yychar == YYEMPTY)))
               MYSQL_YYABORT;
           }
@@ -17754,17 +16900,26 @@ option_value_no_option_type:
               thd->parse_error();
             MYSQL_YYABORT;
           }
-        | NAMES_SYM charset_name_or_default
+        | NAMES_SYM charset_name_or_default opt_collate
           {
-            if (Lex->set_names($1.pos(), $2,
-                               Lex_extended_collation_st::collate_default(),
-                               yychar == YYEMPTY))
+            if (sp_create_assignment_lex(thd, $1.pos()))
               MYSQL_YYABORT;
-          }
-        | NAMES_SYM charset_name_or_default
-                    COLLATE_SYM collation_name_or_default
-          {
-            if (Lex->set_names($1.pos(), $2, $4, yychar == YYEMPTY))
+            LEX *lex= Lex;
+            CHARSET_INFO *cs2;
+            CHARSET_INFO *cs3;
+            cs2= $2 ? $2 : global_system_variables.character_set_client;
+            cs3= $3 ? $3 : cs2;
+            if (unlikely(!my_charset_same(cs2, cs3)))
+            {
+              my_error(ER_COLLATION_CHARSET_MISMATCH, MYF(0),
+                       cs3->coll_name.str, cs2->cs_name.str);
+              MYSQL_YYABORT;
+            }
+            set_var_collation_client *var;
+            var= new (thd->mem_root) set_var_collation_client(cs3, cs3, cs3);
+            if (unlikely(var == NULL) ||
+                unlikely(lex->var_list.push_back(var, thd->mem_root)) ||
+                unlikely(sp_create_assignment_instr(thd, yychar == YYEMPTY)))
               MYSQL_YYABORT;
           }
         | DEFAULT ROLE_SYM grant_role
@@ -17773,7 +16928,7 @@ option_value_no_option_type:
               MYSQL_YYABORT;
             LEX *lex = Lex;
             LEX_USER *user;
-            if (unlikely(!(user= thd->calloc<LEX_USER>(1))))
+            if (unlikely(!(user=(LEX_USER *) thd->calloc(sizeof(LEX_USER)))))
               MYSQL_YYABORT;
             user->user= current_user;
             set_var_default_role *var= (new (thd->mem_root)
@@ -17805,12 +16960,12 @@ option_value_no_option_type:
             if (unlikely(sp_create_assignment_instr(thd, yychar == YYEMPTY)))
               MYSQL_YYABORT;
           }
-        | ROLE_SYM role_name
+        | ROLE_SYM ident_or_text
           {
             if (sp_create_assignment_lex(thd, $1.pos()))
               MYSQL_YYABORT;
             LEX *lex = Lex;
-            set_var_role *var= new (thd->mem_root) set_var_role($2->user);
+            set_var_role *var= new (thd->mem_root) set_var_role($2);
             if (unlikely(var == NULL) ||
                 unlikely(lex->var_list.push_back(var, thd->mem_root)) ||
                 unlikely(sp_create_assignment_instr(thd, yychar == YYEMPTY)))
@@ -17824,9 +16979,8 @@ option_value_no_option_type:
           set_expr_or_default
           {
             Lex_ident_sys tmp(thd, &$1);
-
             if (unlikely(!tmp.str) ||
-                unlikely(Lex->set_variable(&tmp, $4.expr, $4.expr_str)) ||
+                unlikely(Lex->set_variable(&tmp, $4)) ||
                 unlikely(sp_create_assignment_instr(thd, yychar == YYEMPTY)))
               MYSQL_YYABORT;
           }
@@ -17870,7 +17024,7 @@ transaction_access_mode:
               MYSQL_YYABORT;
             set_var *var= (new (thd->mem_root)
                            set_var(thd, lex->option_type,
-                                   find_sys_var(thd, "transaction_read_only"),
+                                   find_sys_var(thd, "tx_read_only"),
                                    &null_clex_str,
                                    item));
             if (unlikely(var == NULL))
@@ -17889,7 +17043,7 @@ isolation_level:
               MYSQL_YYABORT;
             set_var *var= (new (thd->mem_root)
                            set_var(thd, lex->option_type,
-                                   find_sys_var(thd, "transaction_isolation"),
+                                   find_sys_var(thd, "tx_isolation"),
                                    &null_clex_str,
                                    item));
             if (unlikely(var == NULL) ||
@@ -17933,35 +17087,26 @@ text_or_password:
         ;
 
 set_expr_or_default:
-          remember_cpp_ptr expr remember_end
+          expr { $$=$1; }
+        | DEFAULT { $$=0; }
+        | ON
           {
-	      LEX_CSTRING expr_str= empty_clex_str;
-
-              if (Lex->is_metadata_used())
-              {
-                expr_str= make_string(thd, $1, $3);
-                if (expr_str.str == nullptr)
-                  MYSQL_YYABORT;
-              }
-
-              $$= { $2, expr_str };
-          }
-        | remember_cpp_ptr set_expr_misc remember_end
-          {
-            if (unlikely($2 == nullptr))
+            $$=new (thd->mem_root) Item_string_sys(thd, "ON",  2);
+            if (unlikely($$ == NULL))
               MYSQL_YYABORT;
-            $$= {$2, empty_clex_str};
           }
-        | remember_cpp_ptr DEFAULT remember_end
+        | ALL
           {
-            $$= { nullptr, empty_clex_str };
+            $$=new (thd->mem_root) Item_string_sys(thd, "ALL", 3);
+            if (unlikely($$ == NULL))
+              MYSQL_YYABORT;
           }
-        ;
-
-set_expr_misc:
-          ON     { $$= new (thd->mem_root) Item_string_sys(thd, "ON",  2); }
-        | ALL    { $$= new (thd->mem_root) Item_string_sys(thd, "ALL", 3); }
-        | BINARY { $$= new (thd->mem_root) Item_string_sys(thd, "binary", 6); }
+        | BINARY
+          {
+            $$=new (thd->mem_root) Item_string_sys(thd, "binary", 6);
+            if (unlikely($$ == NULL))
+              MYSQL_YYABORT;
+          }
         ;
 
 /* Lock function */
@@ -18264,38 +17409,38 @@ role_list:
 current_role:
           CURRENT_ROLE optional_braces
           {
-            if (unlikely(!($$= thd->calloc<LEX_USER>(1))))
+            if (unlikely(!($$=(LEX_USER*) thd->calloc(sizeof(LEX_USER)))))
               MYSQL_YYABORT;
             $$->user= current_role;
+            $$->auth= NULL;
           }
           ;
 
+grant_role:
+          ident_or_text
+          {
+            CHARSET_INFO *cs= system_charset_info;
+            /* trim end spaces (as they'll be lost in mysql.user anyway) */
+            $1.length= cs->lengthsp($1.str, $1.length);
+            ((char*) $1.str)[$1.length] = '\0';
+            if (unlikely($1.length == 0))
+              my_yyabort_error((ER_INVALID_ROLE, MYF(0), ""));
+            if (unlikely(!($$=(LEX_USER*) thd->alloc(sizeof(LEX_USER)))))
+              MYSQL_YYABORT;
+            $$->user= $1;
+            $$->host= empty_clex_str;
+            $$->auth= NULL;
 
-role_name: ident_or_text
-           {
-             CHARSET_INFO *cs= system_charset_info;
-             /* trim end spaces (as they'll be lost in mysql.user anyway) */
-             $1.length= cs->lengthsp($1.str, $1.length);
-             ((char*) $1.str)[$1.length] = '\0';
-             if (unlikely($1.length == 0))
-               my_yyabort_error((ER_INVALID_ROLE, MYF(0), ""));
-             if (unlikely(!($$= thd->calloc<LEX_USER>(1))))
-               MYSQL_YYABORT;
-             if (lex_string_eq(&$1, &none))
-               $$->user= none;
-             else if (lex_string_eq(&$1, &public_name))
-               $$->user= public_name;
-             else if (check_string_char_length(&($$->user= $1), ER_USERNAME,
-                                               username_char_length, cs, 0))
-               MYSQL_YYABORT;
-             $$->host= empty_clex_str;
-           }
-           ;
-
-grant_role: role_name | current_role ;
+            if (unlikely(check_string_char_length(&$$->user, ER_USERNAME,
+                                                  username_char_length,
+                                                  cs, 0)))
+              MYSQL_YYABORT;
+          }
+        | current_role
+        ;
 
 opt_table:
-          /* Empty */        %prec PREC_BELOW_SP_OBJECT_TYPE
+          /* Empty */
         | TABLE_SYM
         ;
 
@@ -18395,7 +17540,6 @@ object_privilege:
         | REPLICATION MASTER_SYM ADMIN_SYM { $$= REPL_MASTER_ADMIN_ACL; }
         | REPLICATION SLAVE ADMIN_SYM      { $$= REPL_SLAVE_ADMIN_ACL; }
         | SLAVE MONITOR_SYM                { $$= SLAVE_MONITOR_ACL; }
-        | SHOW CREATE ROUTINE_SYM          { $$= SHOW_CREATE_ROUTINE_ACL; }
         ;
 
 opt_and:
@@ -18552,18 +17696,18 @@ auth_token:
 opt_auth_str:
         /* empty */
         {
-          if (!($$=thd->calloc<USER_AUTH>(1)))
+          if (!($$=(USER_AUTH*) thd->calloc(sizeof(USER_AUTH))))
             MYSQL_YYABORT;
         }
       | using_or_as TEXT_STRING_sys
         {
-          if (!($$=thd->calloc<USER_AUTH>(1)))
+          if (!($$=(USER_AUTH*) thd->calloc(sizeof(USER_AUTH))))
             MYSQL_YYABORT;
           $$->auth_str= $2;
         }
       | using_or_as PASSWORD_SYM '(' TEXT_STRING ')'
         {
-          if (!($$=thd->calloc<USER_AUTH>(1)))
+          if (!($$=(USER_AUTH*) thd->calloc(sizeof(USER_AUTH))))
             MYSQL_YYABORT;
           $$->pwtext= $4;
         }
@@ -18898,7 +18042,8 @@ trigger_follows_precedes_clause:
             /* empty */
             {
               $$.ordering_clause= TRG_ORDER_NONE;
-              $$.anchor_trigger_name= null_clex_str;
+              $$.anchor_trigger_name.str= NULL;
+              $$.anchor_trigger_name.length= 0;
             }
           |
             trigger_action_order ident_or_text
@@ -18907,52 +18052,6 @@ trigger_follows_precedes_clause:
               $$.anchor_trigger_name= $2;
             }
           ;
-
-opt_on_update_cols:
-            /* empty */
-            {
-              Lex->trg_chistics.on_update_col_names= NULL;
-            }
-          | OF_SYM on_update_cols
-            {
-              if (!is_trg_event_on(Lex->trg_chistics.events, TRG_EVENT_UPDATE))
-              {
-                thd->parse_error(ER_SYNTAX_ERROR, $1.pos());
-                MYSQL_YYABORT;
-              }
-	    }
-          ;
-
-on_update_cols:
-          ident
-          {
-            List<LEX_CSTRING> *col_names_list;
-            LEX_CSTRING *col_name;
-
-            col_names_list=
-              new (thd->mem_root) List<LEX_CSTRING>;
-
-            col_name= (LEX_CSTRING *) thd->memdup(&$1, sizeof(LEX_CSTRING));
-
-            if (unlikely(col_names_list == NULL) ||
-                unlikely(col_name == NULL) ||
-                unlikely(col_names_list->push_back(col_name, thd->mem_root)))
-              MYSQL_YYABORT;
-
-            Lex->trg_chistics.on_update_col_names= col_names_list;
-          }
-        | on_update_cols ',' ident
-          {
-            LEX_CSTRING *col_name;
-
-            col_name= (LEX_CSTRING *) thd->memdup(&$3, sizeof(LEX_CSTRING));
-
-            if (unlikely(col_name == NULL) ||
-                unlikely(Lex->trg_chistics.on_update_col_names->push_back
-                  (col_name, thd->mem_root)))
-              MYSQL_YYABORT;
-          }
-	;
 
 trigger_tail:
           remember_name
@@ -18963,17 +18062,16 @@ trigger_tail:
           }
           sp_name
           trg_action_time
-          trg_events
-          opt_on_update_cols
+          trg_event
           ON
-          remember_name /* $9 */
-          { /* $10 */
+          remember_name /* $8 */
+          { /* $9 */
             Lex->raw_trg_on_table_name_begin= YYLIP->get_tok_start();
           }
-          table_ident /* $11 */
+          table_ident /* $10 */
           FOR_SYM
-          remember_name /* $13 */
-          { /* $14 */
+          remember_name /* $12 */
+          { /* $13 */
             Lex->raw_trg_on_table_name_end= YYLIP->get_tok_start();
           }
           EACH_SYM
@@ -18981,8 +18079,8 @@ trigger_tail:
           {
             Lex->trg_chistics.ordering_clause_begin= YYLIP->get_cpp_ptr();
           }
-          trigger_follows_precedes_clause /* $18 */
-          { /* $19 */
+          trigger_follows_precedes_clause /* $17 */
+          { /* $18 */
             LEX *lex= thd->lex;
             Lex_input_stream *lip= YYLIP;
 
@@ -18990,10 +18088,10 @@ trigger_tail:
               my_yyabort_error((ER_SP_NO_RECURSIVE_CREATE, MYF(0), "TRIGGER"));
 
             lex->stmt_definition_begin= $1;
-            lex->ident.str= $9;
-            lex->ident.length= $13 - $9;
+            lex->ident.str= $8;
+            lex->ident.length= $12 - $8;
             lex->spname= $4;
-            (*static_cast<st_trg_execution_order*>(&lex->trg_chistics))= ($18);
+            (*static_cast<st_trg_execution_order*>(&lex->trg_chistics))= ($17);
             lex->trg_chistics.ordering_clause_end= lip->get_cpp_ptr();
 
             if (unlikely(!lex->make_sp_head(thd, $4, &sp_handler_trigger,
@@ -19002,8 +18100,8 @@ trigger_tail:
 
             lex->sphead->set_body_start(thd, lip->get_cpp_tok_start());
           }
-          sp_proc_stmt /* $20 */ force_lookahead /* $21 */
-          { /* $22 */
+          sp_proc_stmt /* $19 */ force_lookahead /* $20 */
+          { /* $21 */
             LEX *lex= Lex;
 
             lex->sql_command= SQLCOM_CREATE_TRIGGER;
@@ -19016,7 +18114,7 @@ trigger_tail:
               lex->query_tables can be wiped out.
             */
             if (!lex->first_select_lex()->
-                 add_table_to_list(thd, $11, (LEX_CSTRING*) 0,
+                 add_table_to_list(thd, $10, (LEX_CSTRING*) 0,
                                    TL_OPTION_UPDATING, TL_READ_NO_INSERT,
                                    MDL_SHARED_NO_WRITE))
               MYSQL_YYABORT;
@@ -19030,26 +18128,18 @@ trigger_tail:
 **************************************************************************/
 
 
-create_package_chistic:
-          COMMENT_SYM TEXT_STRING_sys
-          { Lex->sp_chistics.comment= $2; }
-        | sp_suid
-          { Lex->sp_chistics.suid= $1; }
-        ;
-
-create_package_chistics:
-          create_package_chistic {}
-        | create_package_chistics create_package_chistic { }
-        ;
-
-opt_create_package_chistics:
-          /*empty*/ { }
-        | create_package_chistics { }
-        ;
-
-opt_create_package_chistics_init:
-          { Lex->sp_chistics.init(); }
-          opt_create_package_chistics
+sf_return_type:
+          {
+            LEX *lex= Lex;
+            lex->init_last_field(&lex->sphead->m_return_field_def,
+                                 &empty_clex_str,
+                                 thd->variables.collation_database);
+          }
+          field_type
+          {
+            if (unlikely(Lex->sf_return_fill_definition($2)))
+              MYSQL_YYABORT;
+          }
         ;
 
 /*************************************************************************/
@@ -19103,14 +18193,14 @@ xid:
           text_string
           {
             MYSQL_YYABORT_UNLESS($1->length() <= MAXGTRIDSIZE);
-            if (unlikely(!(Lex->xid= thd->alloc<XID>(1))))
+            if (unlikely(!(Lex->xid=(XID *)thd->alloc(sizeof(XID)))))
               MYSQL_YYABORT;
             Lex->xid->set(1L, $1->ptr(), $1->length(), 0, 0);
           }
           | text_string ',' text_string
           {
             MYSQL_YYABORT_UNLESS($1->length() <= MAXGTRIDSIZE && $3->length() <= MAXBQUALSIZE);
-            if (unlikely(!(Lex->xid= thd->alloc<XID>(1))))
+            if (unlikely(!(Lex->xid=(XID *)thd->alloc(sizeof(XID)))))
               MYSQL_YYABORT;
             Lex->xid->set(1L, $1->ptr(), $1->length(), $3->ptr(), $3->length());
           }
@@ -19120,7 +18210,7 @@ xid:
                                  $3->length() <= MAXBQUALSIZE &&
                                  $5 <= static_cast<ulong>(
                                          std::numeric_limits<int32_t>::max()));
-            if (unlikely(!(Lex->xid= thd->alloc<XID>(1))))
+            if (unlikely(!(Lex->xid=(XID *)thd->alloc(sizeof(XID)))))
               MYSQL_YYABORT;
             Lex->xid->set($5, $1->ptr(), $1->length(), $3->ptr(), $3->length());
           }
@@ -19211,108 +18301,6 @@ sp_if_then_statements:
 sp_case_then_statements:
           sp_proc_stmts1
         ;
-
-sp_tail_is:
-          /*empty*/ { }
-        ;
-
-sp_package_function_body:
-          sp_proc_stmt_in_returns_clause
-        ;
-
-sp_package_procedure_body:
-          sp_proc_stmt
-        ;
-
-opt_trailing_sp_name:
-          /*empty*/ { $$= NULL; }
-        ;
-
-opt_package_routine_end_name:
-          /*empty*/       { $$= null_clex_str; }
-        | FORCE_LOOKAHEAD { $$= null_clex_str; }
-        ;
-
-sf_parameters:
-          sp_parenthesized_fdparam_list
-        ;
-
-sp_parameters:
-          sp_parenthesized_pdparam_list
-        ;
-
-sf_returned_type_clause:
-          RETURNS_SYM
-          {
-            Lex->init_last_field(&Lex->sphead->m_return_field_def,
-                                 &empty_clex_str);
-          }
-          sf_return_type
-        ;
-
-sf_return_type:
-          field_type
-          {
-            if (unlikely(Lex->sf_return_fill_definition($1)))
-              MYSQL_YYABORT;
-          }
-        | ROW_SYM row_type_body
-          {
-            if (Lex->sf_return_fill_definition_row($2))
-              MYSQL_YYABORT;
-          }
-        | ROW_SYM TYPE_SYM OF_SYM ident
-          {
-            if (Lex->sf_return_fill_definition_rowtype_of(
-                       Qualified_column_ident(&$4)))
-              MYSQL_YYABORT;
-          }
-        | ROW_SYM TYPE_SYM OF_SYM ident '.' ident
-          {
-            if (Lex->sf_return_fill_definition_rowtype_of(
-                       Qualified_column_ident(&$4, &$6)))
-              MYSQL_YYABORT;
-          }
-        | TYPE_SYM OF_SYM ident '.' ident
-          {
-            if (Lex->sf_return_fill_definition_type_of(
-                       Qualified_column_ident(&$3, &$5)))
-              MYSQL_YYABORT;
-          }
-        | TYPE_SYM OF_SYM ident '.' ident '.' ident
-          {
-            if (Lex->sf_return_fill_definition_type_of(
-                       Qualified_column_ident(thd, &$3, &$5, &$7)))
-              MYSQL_YYABORT;
-          }
-        ;
-
-package_implementation_item_declaration:
-          DECLARE_MARIADB_SYM sp_decl_variable_list ';' { $$= $2; }
-        ;
-
-//  Inside CREATE PACKAGE BODY, package-wide items (e.g. variables)
-//  must be declared before routine definitions.
-
-package_implementation_declare_section_list:
-          package_implementation_declare_section_list1 %prec PREC_BELOW_SP_OBJECT_TYPE
-        | package_implementation_declare_section_list2 %prec PREC_BELOW_SP_OBJECT_TYPE
-        | package_implementation_declare_section_list1
-          package_implementation_declare_section_list2 %prec PREC_BELOW_SP_OBJECT_TYPE
-          { $$.join($1, $2); }
-        ;
-
-package_implementation_declare_section:
-          package_implementation_declare_section_list
-        ;
-
-package_implementation_executable_section:
-          sp_proc_stmts END
-          {
-            $$.init(0);
-          }
-        ;
-
 
 reserved_keyword_udt_param_type:
           INOUT_SYM
@@ -19411,20 +18399,13 @@ sp_block_label:
         ;
 
 sp_opt_default:
-          _empty       { $$= { nullptr, empty_clex_str}; }
-        | DEFAULT remember_cpp_ptr expr remember_end
-          {
-            LEX_CSTRING expr_str= empty_clex_str;
+          _empty       { $$ = NULL; }
+        | DEFAULT expr { $$ = $2; }
+        ;
 
-            if (Lex->is_metadata_used())
-            {
-              expr_str= make_string(thd, $2, $4);
-              if (expr_str.str == nullptr)
-                MYSQL_YYABORT;
-            }
-
-            $$= { $3, expr_str };
-          }
+sp_pdparam:
+          sp_parameter_type sp_param_name_and_type { $2->mode=$1; }
+        | sp_param_name_and_type { $1->mode= sp_variable::MODE_IN; }
         ;
 
 sp_decl_variable_list_anchored:
@@ -19432,8 +18413,7 @@ sp_decl_variable_list_anchored:
           TYPE_SYM OF_SYM optionally_qualified_column_ident
           sp_opt_default
           {
-            if (unlikely(Lex->sp_variable_declarations_with_ref_finalize(
-                           thd, $1, $4, $5.expr, $5.expr_str)))
+            if (unlikely(Lex->sp_variable_declarations_with_ref_finalize(thd, $1, $4, $5)))
               MYSQL_YYABORT;
             $$.init_using_vars($1);
           }
@@ -19441,56 +18421,32 @@ sp_decl_variable_list_anchored:
           ROW_SYM TYPE_SYM OF_SYM optionally_qualified_column_ident
           sp_opt_default
           {
-            if (unlikely(Lex->sp_variable_declarations_rowtype_finalize(
-                           thd, $1, $5, $6.expr, $6.expr_str)))
+            if (unlikely(Lex->sp_variable_declarations_rowtype_finalize(thd, $1, $5, $6)))
               MYSQL_YYABORT;
             $$.init_using_vars($1);
           }
         ;
 
-sp_param_name_and_mode:
-          sp_parameter_type sp_param_name
-          {
-            $2->mode= $1;
-            $$= $2;
-          }
-        | sp_param_name
-        ;
-
-sp_param_init_vars:
-          sp_param_name_and_mode_init_vars field_type
-          {
-            if (unlikely(Lex->sp_param_fill_definition($$= $1, $2)))
-              MYSQL_YYABORT;
-          }
-        | sp_param_name_and_mode_init_vars ROW_SYM row_type_body
-          {
-            if (unlikely(Lex->sphead->spvar_fill_row(thd, $$= $1, $3)))
-              MYSQL_YYABORT;
-          }
-        | sp_param_anchored
-        ;
-
-sp_param_anchored:
-          sp_param_name_and_mode_init_vars TYPE_SYM OF_SYM ident '.' ident
+sp_param_name_and_type_anchored:
+          sp_param_name TYPE_SYM OF_SYM ident '.' ident
           {
             if (unlikely(Lex->sphead->spvar_fill_type_reference(thd,
                                                                 $$= $1, $4,
                                                                 $6)))
               MYSQL_YYABORT;
           }
-        | sp_param_name_and_mode_init_vars TYPE_SYM OF_SYM ident '.' ident '.' ident
+        | sp_param_name TYPE_SYM OF_SYM ident '.' ident '.' ident
           {
             if (unlikely(Lex->sphead->spvar_fill_type_reference(thd, $$= $1,
                                                                 $4, $6, $8)))
               MYSQL_YYABORT;
           }
-        | sp_param_name_and_mode_init_vars ROW_SYM TYPE_SYM OF_SYM ident
+        | sp_param_name ROW_SYM TYPE_SYM OF_SYM ident
           {
             if (unlikely(Lex->sphead->spvar_fill_table_rowtype_reference(thd, $$= $1, $5)))
               MYSQL_YYABORT;
           }
-        | sp_param_name_and_mode_init_vars ROW_SYM TYPE_SYM OF_SYM ident '.' ident
+        | sp_param_name ROW_SYM TYPE_SYM OF_SYM ident '.' ident
           {
             if (unlikely(Lex->sphead->spvar_fill_table_rowtype_reference(thd, $$= $1, $5, $7)))
               MYSQL_YYABORT;
@@ -19501,8 +18457,9 @@ sp_param_anchored:
 sf_c_chistics_and_body_standalone:
           sp_c_chistics
           {
-            Lex->sphead->set_c_chistics(Lex->sp_chistics);
-            Lex->sphead->set_body_start(thd, YYLIP->get_cpp_tok_start());
+            LEX *lex= thd->lex;
+            lex->sphead->set_c_chistics(lex->sp_chistics);
+            lex->sphead->set_body_start(thd, YYLIP->get_cpp_tok_start());
           }
           sp_proc_stmt_in_returns_clause force_lookahead
           {
@@ -19528,6 +18485,68 @@ sp_tail_standalone:
           sp_proc_stmt force_lookahead
           {
             if (unlikely(Lex->sp_body_finalize_procedure(thd)))
+              MYSQL_YYABORT;
+          }
+        ;
+
+drop_routine:
+          DROP FUNCTION_SYM opt_if_exists ident '.' ident
+          {
+            if (Lex->stmt_drop_function($3, $4, $6))
+              MYSQL_YYABORT;
+          }
+        | DROP FUNCTION_SYM opt_if_exists ident
+          {
+            if (Lex->stmt_drop_function($3, $4))
+              MYSQL_YYABORT;
+          }
+        | DROP PROCEDURE_SYM opt_if_exists sp_name
+          {
+            if (Lex->stmt_drop_procedure($3, $4))
+              MYSQL_YYABORT;
+          }
+        ;
+
+
+create_routine:
+          create_or_replace definer_opt PROCEDURE_SYM opt_if_not_exists
+          {
+            if (Lex->stmt_create_procedure_start($1 | $4))
+              MYSQL_YYABORT;
+          }
+          sp_tail_standalone
+          {
+            Lex->stmt_create_routine_finalize();
+          }
+        | create_or_replace definer opt_aggregate FUNCTION_SYM opt_if_not_exists
+          sp_name
+          {
+            if (Lex->stmt_create_stored_function_start($1 | $5, $3, $6))
+              MYSQL_YYABORT;
+          }
+          sp_parenthesized_fdparam_list
+          RETURNS_SYM sf_return_type
+          sf_c_chistics_and_body_standalone
+          {
+            Lex->stmt_create_routine_finalize();
+          }
+        | create_or_replace no_definer opt_aggregate FUNCTION_SYM opt_if_not_exists
+          sp_name
+          {
+            if (Lex->stmt_create_stored_function_start($1 | $5, $3, $6))
+              MYSQL_YYABORT;
+          }
+          sp_parenthesized_fdparam_list
+          RETURNS_SYM sf_return_type
+          sf_c_chistics_and_body_standalone
+          {
+            Lex->stmt_create_routine_finalize();
+          }
+        | create_or_replace no_definer opt_aggregate FUNCTION_SYM opt_if_not_exists
+          ident RETURNS_SYM udf_type SONAME_SYM TEXT_STRING_sys
+          {
+            if (Lex->stmt_create_udf_function($1 | $5, $3, $6,
+                                              (Item_result) $8, $10))
               MYSQL_YYABORT;
           }
         ;
@@ -19558,9 +18577,7 @@ sp_decl_body:
           sp_decl_variable_list
         | sp_decl_ident CONDITION_SYM FOR_SYM sp_cond
           {
-            if (unlikely(Lex->spcont->declare_condition(thd,
-                                                        Lex_ident_column($1),
-                                                        $4)))
+            if (unlikely(Lex->spcont->declare_condition(thd, &$1, $4)))
               MYSQL_YYABORT;
             $$.vars= $$.hndlrs= $$.curs= 0;
             $$.conds= 1;
@@ -19675,51 +18692,46 @@ sp_unlabeled_block_not_atomic:
 statement:
           verb_clause
         | set_assign
-        | set_assign_lvalue_function
-        ;
-
-direct_call_or_lvalue_assign:
-          optionally_qualified_directly_assignable
-          {
-            if (Lex->call_statement_start_or_lvalue_assign(thd, $$= $1))
-              MYSQL_YYABORT;
-          }
-        ;
-
-direct_call_statement:
-          direct_call_or_lvalue_assign opt_parenthesized_opt_sp_cparams
-          {
-            if (Lex->direct_call(thd, $1, $2) ||
-                Lex->check_cte_dependencies_and_resolve_references())
-              MYSQL_YYABORT;
-          }
-        ;
-
-set_assign_lvalue_function:
-          direct_call_or_lvalue_assign parenthesized_opt_sp_cparams
-          opt_object_member_access SET_VAR
-          {
-            if (unlikely(Lex->assoc_assign_start(thd, $1)))
-              MYSQL_YYABORT;
-          }
-          set_expr_or_default
-          {
-            const Lex_ident_sys member= $3.str ? Lex_ident_sys(thd, &$3) :
-                                                 Lex_ident_sys();
-            if (unlikely($3.str && member.is_null()) ||
-                unlikely(Lex->sp_set_assign_lvalue_function(thd, $1, $2,
-                                                            member,
-                                                            $6.expr,
-                                                            $6.expr_str)) ||
-                unlikely(sp_create_assignment_instr(thd, yychar == YYEMPTY,
-                                                    false)))
-              MYSQL_YYABORT;
-          }
         ;
 
 sp_statement:
           statement
-        | direct_call_statement
+        | ident_cli_directly_assignable
+          {
+            // Direct procedure call (without the CALL keyword)
+            Lex_ident_sys tmp(thd, &$1);
+            if (unlikely(!tmp.str) ||
+                unlikely(Lex->call_statement_start(thd, &tmp)))
+              MYSQL_YYABORT;
+          }
+          opt_sp_cparam_list
+          {
+            if (Lex->check_cte_dependencies_and_resolve_references())
+              MYSQL_YYABORT;
+          }
+        | ident_cli_directly_assignable '.' ident
+          {
+            Lex_ident_sys tmp(thd, &$1);
+            if (unlikely(!tmp.str) ||
+                unlikely(Lex->call_statement_start(thd, &tmp, &$3)))
+              MYSQL_YYABORT;
+          }
+          opt_sp_cparam_list
+          {
+            if (Lex->check_cte_dependencies_and_resolve_references())
+              MYSQL_YYABORT;
+          }
+        | ident_cli_directly_assignable '.' ident '.' ident
+          {
+            Lex_ident_sys tmp(thd, &$1);
+            if (unlikely(Lex->call_statement_start(thd, &tmp, &$3, &$5)))
+              MYSQL_YYABORT;
+          }
+          opt_sp_cparam_list
+          {
+            if (Lex->check_cte_dependencies_and_resolve_references())
+              MYSQL_YYABORT;
+          }
         ;
 
 sp_if_then_statements:
@@ -19728,75 +18740,6 @@ sp_if_then_statements:
 
 sp_case_then_statements:
           sp_proc_stmts1_implicit_block { }
-        ;
-
-sp_parameters:
-          opt_sp_parenthesized_pdparam_list
-        ;
-
-sf_parameters:
-          opt_sp_parenthesized_fdparam_list
-        ;
-
-sf_returned_type_clause:
-          RETURN_ORACLE_SYM
-          {
-            LEX *lex= Lex;
-            lex->init_last_field(&lex->sphead->m_return_field_def,
-                                 &empty_clex_str);
-          }
-          sf_return_type
-        ;
-
-sf_return_type:
-          field_type
-          {
-            if (unlikely(Lex->sf_return_fill_definition($1)))
-              MYSQL_YYABORT;
-          }
-        | ROW_SYM row_type_body
-          {
-            if (Lex->sf_return_fill_definition_row($2))
-              MYSQL_YYABORT;
-          }
-        | sp_decl_ident PERCENT_ORACLE_SYM ROWTYPE_ORACLE_SYM
-          {
-            if (Lex->sf_return_fill_definition_rowtype_of(
-                       Qualified_column_ident(&$1)))
-              MYSQL_YYABORT;
-          }
-        | sp_decl_ident '.' ident PERCENT_ORACLE_SYM ROWTYPE_ORACLE_SYM
-          {
-            if (Lex->sf_return_fill_definition_rowtype_of(
-                       Qualified_column_ident(&$1, &$3)))
-              MYSQL_YYABORT;
-          }
-        | sp_decl_ident '.' ident PERCENT_ORACLE_SYM TYPE_SYM
-          {
-            if (Lex->sf_return_fill_definition_type_of(
-                       Qualified_column_ident(&$1, &$3)))
-              MYSQL_YYABORT;
-          }
-        | sp_decl_ident '.' ident '.' ident PERCENT_ORACLE_SYM TYPE_SYM
-          {
-            if (Lex->sf_return_fill_definition_type_of(
-                       Qualified_column_ident(thd, &$1, &$3, &$5)))
-              MYSQL_YYABORT;
-          }
-        ;
-
-
-package_implementation_item_declaration:
-          sp_decl_variable_list ';'
-        | sp_decl_type ';'
-        ;
-
-sp_package_function_body:
-          sp_body { }
-        ;
-
-sp_package_procedure_body:
-          sp_body { }
         ;
 
 reserved_keyword_udt:
@@ -19885,39 +18828,19 @@ sp_block_label:
         ;
 
 
-sp_opt_default:
-          _empty       { $$= { nullptr, empty_clex_str}; }
-        | DEFAULT remember_cpp_ptr expr remember_end
+remember_end_opt:
           {
-            LEX_CSTRING expr_str= empty_clex_str;
-
-            if (Lex->is_metadata_used())
-            {
-              expr_str= make_string(thd, $2, $4);
-              if (expr_str.str == nullptr)
-                MYSQL_YYABORT;
-            }
-
-            $$= { $3, expr_str };
-          }
-        | SET_VAR remember_cpp_ptr expr remember_end
-          {
-            LEX_CSTRING expr_str= empty_clex_str;
-
-            if (Lex->is_metadata_used())
-            {
-              expr_str= make_string(thd, $2, $4 );
-              if (expr_str.str == nullptr)
-                MYSQL_YYABORT;
-            }
-
-            $$= { $3, expr_str };
+            if (yychar == YYEMPTY)
+              $$= (char*) YYLIP->get_cpp_ptr_rtrim();
+            else
+              $$= (char*) YYLIP->get_cpp_tok_end_rtrim();
           }
         ;
 
-sp_opt_nocopy:
-          _empty
-        | NOCOPY_SYM
+sp_opt_default:
+          _empty       { $$ = NULL; }
+        | DEFAULT expr { $$ = $2; }
+        | SET_VAR expr { $$ = $2; }
         ;
 
 sp_opt_inout:
@@ -19925,6 +18848,46 @@ sp_opt_inout:
         | sp_parameter_type
         | IN_SYM OUT_SYM { $$= sp_variable::MODE_INOUT; }
         ;
+
+sp_pdparam:
+          sp_param_name sp_opt_inout field_type
+          {
+            $1->mode= $2;
+            if (unlikely(Lex->sp_param_fill_definition($1, $3)))
+              MYSQL_YYABORT;
+          }
+        | sp_param_name sp_opt_inout sp_decl_ident '.' ident PERCENT_ORACLE_SYM TYPE_SYM
+          {
+            $1->mode= $2;
+            if (unlikely(Lex->sphead->spvar_fill_type_reference(thd, $1, $3, $5)))
+              MYSQL_YYABORT;
+          }
+        | sp_param_name sp_opt_inout sp_decl_ident '.' ident '.' ident PERCENT_ORACLE_SYM TYPE_SYM
+          {
+            $1->mode= $2;
+            if (unlikely(Lex->sphead->spvar_fill_type_reference(thd, $1, $3, $5, $7)))
+              MYSQL_YYABORT;
+          }
+        | sp_param_name sp_opt_inout sp_decl_ident PERCENT_ORACLE_SYM ROWTYPE_ORACLE_SYM
+          {
+            $1->mode= $2;
+            if (unlikely(Lex->sphead->spvar_fill_table_rowtype_reference(thd, $1, $3)))
+              MYSQL_YYABORT;
+          }
+        | sp_param_name sp_opt_inout sp_decl_ident '.' ident PERCENT_ORACLE_SYM ROWTYPE_ORACLE_SYM
+          {
+            $1->mode= $2;
+            if (unlikely(Lex->sphead->spvar_fill_table_rowtype_reference(thd, $1, $3, $5)))
+              MYSQL_YYABORT;
+          }
+        | sp_param_name sp_opt_inout ROW_SYM row_type_body
+          {
+            $1->mode= $2;
+            if (unlikely(Lex->sphead->spvar_fill_row(thd, $1, $4)))
+              MYSQL_YYABORT;
+          }
+        ;
+
 
 sp_proc_stmts1_implicit_block:
           {
@@ -19937,6 +18900,12 @@ sp_proc_stmts1_implicit_block:
           }
         ;
 
+
+remember_lex:
+          {
+            $$= thd->lex;
+          }
+        ;
 
 keyword_directly_assignable:
           keyword_data_type
@@ -19964,41 +18933,37 @@ ident_cli_directly_assignable:
         ;
 
 
-optionally_qualified_directly_assignable:
-          ident_cli_directly_assignable
-          {
-            if (unlikely(!($$= new (thd->mem_root) Qualified_ident(thd, $1)) ||
-                         !$$->is_sane()))
-              MYSQL_YYABORT;
-          }
-        | ident_cli_directly_assignable '.' ident_cli
-          {
-            if (unlikely(!($$= new (thd->mem_root) Qualified_ident(thd, $1,
-                                                                   $3)) ||
-                         !$$->is_sane()))
-              MYSQL_YYABORT;
-          }
-        | ident_cli_directly_assignable '.' ident_cli '.' ident_cli
-          {
-            if (unlikely(!($$= new (thd->mem_root) Qualified_ident(thd, $1,
-                                                                   $3, $5)) ||
-                         !$$->is_sane()))
-              MYSQL_YYABORT;
-          }
-        ;
-
-
 set_assign:
-          optionally_qualified_directly_assignable SET_VAR
+          ident_cli_directly_assignable SET_VAR
           {
             LEX *lex=Lex;
             lex->set_stmt_init();
-            if (sp_create_assignment_lex(thd, $1->pos().str))
+            if (sp_create_assignment_lex(thd, $1.pos()))
               MYSQL_YYABORT;
           }
           set_expr_or_default
           {
-            if (unlikely(Lex->set_variable($1, $4.expr, $4.expr_str)) ||
+            Lex_ident_sys tmp(thd, &$1);
+            if (unlikely(!tmp.str) ||
+                unlikely(Lex->set_variable(&tmp, $4)) ||
+                unlikely(sp_create_assignment_instr(thd, yychar == YYEMPTY,
+                                                    false)))
+              MYSQL_YYABORT;
+          }
+        | ident_cli_directly_assignable '.' ident SET_VAR
+          {
+            LEX *lex=Lex;
+            lex->set_stmt_init();
+            if (sp_create_assignment_lex(thd, $1.pos()))
+              MYSQL_YYABORT;
+          }
+          set_expr_or_default
+          {
+            LEX *lex= Lex;
+            DBUG_ASSERT(lex->var_list.is_empty());
+            Lex_ident_sys tmp(thd, &$1);
+            if (unlikely(!tmp.str) ||
+                unlikely(lex->set_variable(&tmp, &$3, $6)) ||
                 unlikely(sp_create_assignment_instr(thd, yychar == YYEMPTY,
                                                     false)))
               MYSQL_YYABORT;
@@ -20018,8 +18983,7 @@ set_assign:
           set_expr_or_default
           {
             LEX_CSTRING tmp= { $2.str, $2.length };
-            if (unlikely(Lex->set_trigger_field(&tmp, &$4, $7.expr,
-                                                $7.expr_str)) ||
+            if (unlikely(Lex->set_trigger_field(&tmp, &$4, $7)) ||
                 unlikely(sp_create_assignment_instr(thd, yychar == YYEMPTY,
                                                     false)))
               MYSQL_YYABORT;
@@ -20085,7 +19049,7 @@ opt_sp_parenthesized_pdparam_list:
         ;
 
 
-opt_trailing_sp_name:
+opt_sp_name:
           _empty      { $$= NULL; }
         | sp_name     { $$= $1; }
         ;
@@ -20124,38 +19088,32 @@ sp_body:
           END
         ;
 
-//  Inside CREATE PACKAGE BODY, package-wide items (e.g. variables)
-//  must be declared before routine definitions.
-
-package_implementation_declare_section_list:
-          package_implementation_declare_section_list1
-        | package_implementation_declare_section_list2
-        | package_implementation_declare_section_list1
-          package_implementation_declare_section_list2
-          { $$.join($1, $2); }
+create_package_chistic:
+          COMMENT_SYM TEXT_STRING_sys
+          { Lex->sp_chistics.comment= $2; }
+        | sp_suid
+          { Lex->sp_chistics.suid= $1; }
         ;
 
-package_implementation_declare_section:
-          package_implementation_declare_section_list
-          {
-            /*
-              Add a jump "end of declarations -> start of exceptions"
-              (over the executable section).
-            */
-            if (Lex->sp_block_with_exceptions_finalize_declarations(thd))
-              MYSQL_YYABORT;
-          }
+create_package_chistics:
+          create_package_chistic {}
+        | create_package_chistics create_package_chistic { }
         ;
+
+opt_create_package_chistics:
+          _empty
+        | create_package_chistics { }
+        ;
+
+opt_create_package_chistics_init:
+          { Lex->sp_chistics.init(); }
+          opt_create_package_chistics
+        ;
+
 
 package_implementation_executable_section:
           END
           {
-            /*
-              Backpatch the jump generated in
-              package_implementation_declare_section
-              and generate a backward jump:
-              "end of exceptions -> start of the executable section".
-            */
             if (unlikely(Lex->sp_block_with_exceptions_add_empty(thd)))
               MYSQL_YYABORT;
             $$.init(0);
@@ -20163,42 +19121,17 @@ package_implementation_executable_section:
         | BEGIN_ORACLE_SYM sp_block_statements_and_exceptions END { $$= $2; }
         ;
 
-named_expr_list:
-          remember_name named_expr remember_end
-          {
-            if (unlikely(!($$= new (thd->mem_root) List<Item>) ||
-                         $$->push_back($2, thd->mem_root)))
-              MYSQL_YYABORT;
-          }
-        | named_expr_list ',' remember_name named_expr remember_end
-          {
-            if (($$= $1)->push_back($4, thd->mem_root))
-              MYSQL_YYABORT;
-          }
+
+//  Inside CREATE PACKAGE BODY, package-wide items (e.g. variables)
+//  must be declared before routine definitions.
+
+package_implementation_declare_section:
+          package_implementation_declare_section_list1
+        | package_implementation_declare_section_list2
+        | package_implementation_declare_section_list1
+          package_implementation_declare_section_list2
+          { $$.join($1, $2); }
         ;
-
-assoc_name:
-          TEXT_STRING_sys
-        | LONG_NUM
-        | ULONGLONG_NUM
-        | DECIMAL_NUM
-        | NUM
-        ;
-
-named_expr:
-          assoc_name ARROW_SYM expr
-          {
-            if ($1.str)
-            {
-              $3->base_flags|= item_base_t::IS_EXPLICIT_NAME;
-              $3->set_name(thd, $1);
-            }
-            $$= $3;
-          }
-        ;
-
-%endif ORACLE
-
 
 package_implementation_declare_section_list1:
           package_implementation_item_declaration
@@ -20214,43 +19147,65 @@ package_implementation_declare_section_list2:
           { $$.join($1, $2); }
         ;
 
+package_routine_lex:
+          {
+            if (unlikely(!($$= new (thd->mem_root)
+                           sp_lex_local(thd, thd->lex))))
+              MYSQL_YYABORT;
+            thd->m_parser_state->m_yacc.reset_before_substatement();
+          }
+        ;
+
 
 package_specification_function:
-          remember_lex ident
+          remember_lex package_routine_lex ident
           {
-            LEX *lex= thd->lex->package_routine_start(thd,
-                                   &sp_handler_package_function, $2);
-            if (!lex)
+            DBUG_ASSERT($1->sphead->get_package());
+            $2->sql_command= SQLCOM_CREATE_FUNCTION;
+            sp_name *spname= $1->make_sp_name_package_routine(thd, &$3);
+            if (unlikely(!spname))
               MYSQL_YYABORT;
-            thd->lex= lex;
+            thd->lex= $2;
+            if (unlikely(!$2->make_sp_head_no_recursive(thd, spname,
+                                                        &sp_handler_package_function,
+                                                        NOT_AGGREGATE)))
+              MYSQL_YYABORT;
+            $1->sphead->get_package()->m_current_routine= $2;
+            (void) is_native_function_with_warn(thd, &$3);
           }
-          sf_parameters
-          sf_returned_type_clause
+          opt_sp_parenthesized_fdparam_list
+          RETURN_ORACLE_SYM sf_return_type
           sp_c_chistics
           {
-            $$= thd->lex;
             sp_head *sp= thd->lex->sphead;
             sp->restore_thd_mem_root(thd);
             thd->lex= $1;
+            $$= $2;
           }
         ;
 
 package_specification_procedure:
-          remember_lex ident
+          remember_lex package_routine_lex ident
           {
-            LEX *lex= thd->lex->package_routine_start(thd,
-                                   &sp_handler_package_procedure, $2);
-            if (!lex)
+            DBUG_ASSERT($1->sphead->get_package());
+            $2->sql_command= SQLCOM_CREATE_PROCEDURE;
+            sp_name *spname= $1->make_sp_name_package_routine(thd, &$3);
+            if (unlikely(!spname))
               MYSQL_YYABORT;
-            thd->lex= lex;
+            thd->lex= $2;
+            if (unlikely(!$2->make_sp_head_no_recursive(thd, spname,
+                                                        &sp_handler_package_procedure,
+                                                        DEFAULT_AGGREGATE)))
+              MYSQL_YYABORT;
+            $1->sphead->get_package()->m_current_routine= $2;
           }
-          sp_parameters
+          opt_sp_parenthesized_pdparam_list
           sp_c_chistics
           {
-            $$= thd->lex;
             sp_head *sp= thd->lex->sphead;
             sp->restore_thd_mem_root(thd);
             thd->lex= $1;
+            $$= $2;
           }
         ;
 
@@ -20288,7 +19243,7 @@ package_implementation_function_body:
             sp->set_c_chistics(thd->lex->sp_chistics);
             sp->set_body_start(thd, YYLIP->get_cpp_tok_start());
           }
-          sp_package_function_body opt_package_routine_end_name
+          sp_body opt_package_routine_end_name
           {
             if (unlikely(thd->lex->sp_body_finalize_function(thd) ||
                          thd->lex->sphead->check_package_routine_end_name($5)))
@@ -20307,7 +19262,7 @@ package_implementation_procedure_body:
             sp->set_c_chistics(thd->lex->sp_chistics);
             sp->set_body_start(thd, YYLIP->get_cpp_tok_start());
           }
-          sp_package_procedure_body opt_package_routine_end_name
+          sp_body opt_package_routine_end_name
           {
             if (unlikely(thd->lex->sp_body_finalize_procedure(thd) ||
                          thd->lex->sphead->check_package_routine_end_name($5)))
@@ -20316,6 +19271,10 @@ package_implementation_procedure_body:
           }
         ;
 
+
+package_implementation_item_declaration:
+          sp_decl_variable_list ';'
+        ;
 
 opt_package_specification_element_list:
           _empty
@@ -20344,16 +19303,12 @@ package_specification_element:
           }
         ;
 
-
-%ifdef ORACLE
-
 sp_decl_variable_list_anchored:
           sp_decl_idents_init_vars
           optionally_qualified_column_ident PERCENT_ORACLE_SYM TYPE_SYM
           sp_opt_default
           {
-            if (unlikely(Lex->sp_variable_declarations_with_ref_finalize(thd, $1, $2,
-                           $5.expr, $5.expr_str)))
+            if (unlikely(Lex->sp_variable_declarations_with_ref_finalize(thd, $1, $2, $5)))
               MYSQL_YYABORT;
             $$.init_using_vars($1);
           }
@@ -20361,52 +19316,29 @@ sp_decl_variable_list_anchored:
           optionally_qualified_column_ident PERCENT_ORACLE_SYM ROWTYPE_ORACLE_SYM
           sp_opt_default
           {
-            if (unlikely(Lex->sp_variable_declarations_rowtype_finalize(thd, $1,
-			   $2, $5.expr, $5.expr_str)))
+            if (unlikely(Lex->sp_variable_declarations_rowtype_finalize(thd, $1, $2, $5)))
               MYSQL_YYABORT;
             $$.init_using_vars($1);
           }
         ;
 
-sp_param_name_and_mode:
-          sp_param_name sp_opt_inout sp_opt_nocopy
-          {
-             $1->mode= $2;
-             $$= $1;
-          }
-        ;
-
-sp_param_init_vars:
-          sp_param_name_and_mode_init_vars field_type
-          {
-            if (unlikely(Lex->sp_param_fill_definition($$= $1, $2)))
-              MYSQL_YYABORT;
-          }
-        | sp_param_name_and_mode_init_vars ROW_SYM row_type_body
-          {
-            if (unlikely(Lex->sphead->spvar_fill_row(thd, $$= $1, $3)))
-              MYSQL_YYABORT;
-          }
-        | sp_param_anchored
-        ;
-
-sp_param_anchored:
-          sp_param_name_and_mode_init_vars sp_decl_ident '.' ident PERCENT_ORACLE_SYM TYPE_SYM
+sp_param_name_and_type_anchored:
+          sp_param_name sp_decl_ident '.' ident PERCENT_ORACLE_SYM TYPE_SYM
           {
             if (unlikely(Lex->sphead->spvar_fill_type_reference(thd, $$= $1, $2, $4)))
               MYSQL_YYABORT;
           }
-        | sp_param_name_and_mode_init_vars sp_decl_ident '.' ident '.' ident PERCENT_ORACLE_SYM TYPE_SYM
+        | sp_param_name sp_decl_ident '.' ident '.' ident PERCENT_ORACLE_SYM TYPE_SYM
           {
             if (unlikely(Lex->sphead->spvar_fill_type_reference(thd, $$= $1, $2, $4, $6)))
               MYSQL_YYABORT;
           }
-        | sp_param_name_and_mode_init_vars sp_decl_ident PERCENT_ORACLE_SYM ROWTYPE_ORACLE_SYM
+        | sp_param_name sp_decl_ident PERCENT_ORACLE_SYM ROWTYPE_ORACLE_SYM
           {
             if (unlikely(Lex->sphead->spvar_fill_table_rowtype_reference(thd, $$= $1, $2)))
               MYSQL_YYABORT;
           }
-        | sp_param_name_and_mode_init_vars sp_decl_ident '.' ident PERCENT_ORACLE_SYM ROWTYPE_ORACLE_SYM
+        | sp_param_name sp_decl_ident '.' ident PERCENT_ORACLE_SYM ROWTYPE_ORACLE_SYM
           {
             if (unlikely(Lex->sphead->spvar_fill_table_rowtype_reference(thd, $$= $1, $2, $4)))
               MYSQL_YYABORT;
@@ -20444,14 +19376,46 @@ sp_tail_standalone:
           }
           sp_tail_is
           sp_body
-          opt_trailing_sp_name
+          opt_sp_name
           {
             if (unlikely(Lex->sp_body_finalize_procedure_standalone(thd, $8)))
               MYSQL_YYABORT;
           }
         ;
 
-%endif ORACLE
+drop_routine:
+          DROP FUNCTION_SYM opt_if_exists ident '.' ident
+          {
+            if (Lex->stmt_drop_function($3, $4, $6))
+              MYSQL_YYABORT;
+          }
+        | DROP FUNCTION_SYM opt_if_exists ident
+          {
+            if (Lex->stmt_drop_function($3, $4))
+              MYSQL_YYABORT;
+          }
+        | DROP PROCEDURE_SYM opt_if_exists sp_name
+          {
+            if (Lex->stmt_drop_procedure($3, $4))
+              MYSQL_YYABORT;
+          }
+        | DROP PACKAGE_ORACLE_SYM opt_if_exists sp_name
+          {
+            LEX *lex= Lex;
+            lex->set_command(SQLCOM_DROP_PACKAGE, $3);
+            if (unlikely(lex->sphead))
+              my_yyabort_error((ER_SP_NO_DROP_SP, MYF(0), "PACKAGE"));
+            lex->spname= $4;
+          }
+        | DROP PACKAGE_ORACLE_SYM BODY_ORACLE_SYM opt_if_exists sp_name
+          {
+            LEX *lex= Lex;
+            lex->set_command(SQLCOM_DROP_PACKAGE_BODY, $4);
+            if (unlikely(lex->sphead))
+              my_yyabort_error((ER_SP_NO_DROP_SP, MYF(0), "PACKAGE BODY"));
+            lex->spname= $5;
+          }
+        ;
 
 
 create_routine:
@@ -20470,12 +19434,12 @@ create_routine:
             if (Lex->stmt_create_stored_function_start($1 | $5, $3, $6))
               MYSQL_YYABORT;
           }
-          sf_parameters
-          sf_returned_type_clause
+          opt_sp_parenthesized_fdparam_list
+          RETURN_ORACLE_SYM sf_return_type
           sf_c_chistics_and_body_standalone
-          opt_trailing_sp_name
+          opt_sp_name
           {
-            if (Lex->stmt_create_stored_function_finalize_standalone($11))
+            if (Lex->stmt_create_stored_function_finalize_standalone($12))
               MYSQL_YYABORT;
           }
         | create_or_replace no_definer opt_aggregate FUNCTION_SYM opt_if_not_exists
@@ -20484,12 +19448,12 @@ create_routine:
             if (Lex->stmt_create_stored_function_start($1 | $5, $3, $6))
               MYSQL_YYABORT;
           }
-          sf_parameters
-          sf_returned_type_clause
+          opt_sp_parenthesized_fdparam_list
+          RETURN_ORACLE_SYM sf_return_type
           sf_c_chistics_and_body_standalone
-          opt_trailing_sp_name
+          opt_sp_name
           {
-            if (Lex->stmt_create_stored_function_finalize_standalone($11))
+            if (Lex->stmt_create_stored_function_finalize_standalone($12))
               MYSQL_YYABORT;
           }
         | create_or_replace no_definer opt_aggregate FUNCTION_SYM opt_if_not_exists
@@ -20499,53 +19463,58 @@ create_routine:
                                               (Item_result) $8, $10))
               MYSQL_YYABORT;
           }
-        | create_or_replace definer_opt sp_handler_package_spec
+        | create_or_replace definer_opt PACKAGE_ORACLE_SYM
           opt_if_not_exists sp_name opt_create_package_chistics_init
           {
             sp_package *pkg;
             if (unlikely(!(pkg= Lex->
-                           create_package_start(thd, &sp_handler_package_spec,
-                                                $5, $1 | $4,
-                                                Lex->sp_chistics))))
+                           create_package_start(thd,
+                                                SQLCOM_CREATE_PACKAGE,
+                                                &sp_handler_package_spec,
+                                                $5, $1 | $4))))
               MYSQL_YYABORT;
+            pkg->set_c_chistics(Lex->sp_chistics);
             Lex->sphead->set_body_start(thd, YYLIP->get_cpp_tok_start());
           }
           sp_tail_is
           opt_package_specification_element_list END
-          remember_end_opt opt_trailing_sp_name
+          remember_end_opt opt_sp_name
           {
             if (unlikely(Lex->create_package_finalize(thd, $5, $12, $11)))
               MYSQL_YYABORT;
           }
-        | create_or_replace definer_opt sp_handler_package_body
+        | create_or_replace definer_opt PACKAGE_ORACLE_SYM BODY_ORACLE_SYM
           opt_if_not_exists sp_name opt_create_package_chistics_init
           {
             sp_package *pkg;
             if (unlikely(!(pkg= Lex->
-                           create_package_start(thd, &sp_handler_package_body,
-                                                $5, $1 | $4,
-                                                Lex->sp_chistics))))
+                           create_package_start(thd,
+                                                SQLCOM_CREATE_PACKAGE_BODY,
+                                                &sp_handler_package_body,
+                                                $6, $1 | $5))))
               MYSQL_YYABORT;
+            pkg->set_c_chistics(Lex->sp_chistics);
             Lex->sphead->set_body_start(thd, YYLIP->get_cpp_tok_start());
-            Lex->sp_block_init_package_body(thd);
+            Lex->sp_block_init(thd);
           }
           sp_tail_is
           package_implementation_declare_section
-          package_implementation_executable_section
           {
-            $9.hndlrs+= $10.hndlrs;
-            if (unlikely(Lex->sp_block_finalize(thd, $9)))
+            if (unlikely(Lex->sp_block_with_exceptions_finalize_declarations(thd)))
               MYSQL_YYABORT;
           }
-          remember_end_opt opt_trailing_sp_name
+          package_implementation_executable_section
           {
-            if (unlikely(Lex->create_package_finalize(thd, $5, $13, $12)))
+            $10.hndlrs+= $12.hndlrs;
+            if (unlikely(Lex->sp_block_finalize(thd, $10)))
+              MYSQL_YYABORT;
+          }
+          remember_end_opt opt_sp_name
+          {
+            if (unlikely(Lex->create_package_finalize(thd, $6, $15, $14)))
               MYSQL_YYABORT;
           }
         ;
-
-
-%ifdef ORACLE
 
 opt_sp_decl_body_list:
           _empty
@@ -20589,61 +19558,11 @@ opt_sp_decl_handler_list:
         | sp_decl_handler_list
         ;
 
-typed_ident:
-          TYPE_SYM ident_directly_assignable
-          {
-            if (unlikely(!Lex->init_spvar_definition(thd, ($$= $2))))
-              MYSQL_YYABORT;
-          }
-        ;
-
-assoc_array_table_types:
-          field_type_all_with_typedefs
-          {
-            if (Lex->last_field->set_attributes(thd, $1,
-                                              COLUMN_DEFINITION_ROUTINE_LOCAL))
-              MYSQL_YYABORT;
-            $$= static_cast<Spvar_definition*>(Lex->last_field);
-          }
-        | sp_decl_ident '.' ident PERCENT_ORACLE_SYM TYPE_SYM
-          {
-            $$= static_cast<Spvar_definition*>(Lex->last_field);
-            if (unlikely(Lex->sphead->spvar_def_fill_type_reference(thd, $$,
-                                                                    $1, $3)))
-              MYSQL_YYABORT;
-          }
-        | sp_decl_ident '.' ident '.' ident PERCENT_ORACLE_SYM TYPE_SYM
-          {
-            $$= static_cast<Spvar_definition*>(Lex->last_field);
-            if (unlikely(Lex->sphead->spvar_def_fill_type_reference(thd, $$,
-                                                                    $1, $3,
-                                                                    $5)))
-              MYSQL_YYABORT;
-          }
-        | ident PERCENT_ORACLE_SYM ROWTYPE_ORACLE_SYM
-          {
-            $$= static_cast<Spvar_definition*>(Lex->last_field);
-            if (unlikely(Lex->sphead->spvar_def_fill_rowtype_reference(thd, $$,
-                                                                       $1)))
-              MYSQL_YYABORT;
-          }
-        | sp_decl_ident '.' ident PERCENT_ORACLE_SYM ROWTYPE_ORACLE_SYM
-          {
-            $$= static_cast<Spvar_definition*>(Lex->last_field);
-            if (unlikely(Lex->sphead->spvar_def_fill_rowtype_reference(thd,
-                                                                       $$,
-                                                                       $1, $3)))
-              MYSQL_YYABORT;
-          }
-        ;
-
 sp_decl_non_handler:
           sp_decl_variable_list
         | ident_directly_assignable CONDITION_SYM FOR_SYM sp_cond
           {
-            if (unlikely(Lex->spcont->declare_condition(thd,
-                                                        Lex_ident_column($1),
-                                                        $4)))
+            if (unlikely(Lex->spcont->declare_condition(thd, &$1, $4)))
               MYSQL_YYABORT;
             $$.vars= $$.hndlrs= $$.curs= 0;
             $$.conds= 1;
@@ -20653,9 +19572,7 @@ sp_decl_non_handler:
             sp_condition_value *spcond= new (thd->mem_root)
                                         sp_condition_value_user_defined();
             if (unlikely(!spcond) ||
-                unlikely(Lex->spcont->declare_condition(thd,
-                                                        Lex_ident_column($1),
-                                                        spcond)))
+                unlikely(Lex->spcont->declare_condition(thd, &$1, spcond)))
               MYSQL_YYABORT;
             $$.vars= $$.hndlrs= $$.curs= 0;
             $$.conds= 1;
@@ -20674,31 +19591,6 @@ sp_decl_non_handler:
               MYSQL_YYABORT;
             $$.vars= $$.conds= $$.hndlrs= 0;
             $$.curs= 1;
-          }
-        | sp_decl_type
-        ;
-
-sp_decl_type:
-          typed_ident IS RECORD_SYM rec_type_body
-          {
-            if (unlikely(Lex->declare_type_record(thd, $1, $4)))
-              MYSQL_YYABORT;
-            $$.vars= $$.conds= $$.hndlrs= $$.curs= 0;
-          }
-        | typed_ident IS TABLE_SYM OF_SYM assoc_array_table_types
-          {
-            Lex->init_last_field(new (thd->mem_root) Spvar_definition(),
-                                 &empty_clex_str);
-          }
-          INDEX_SYM BY field_type
-          {
-            if (Lex->last_field->set_attributes(thd, $9,
-                                              COLUMN_DEFINITION_ROUTINE_LOCAL))
-              MYSQL_YYABORT;
-            auto def= static_cast<Spvar_definition*>(Lex->last_field);
-            if (unlikely(Lex->declare_type_assoc_array(thd, $1, def, $5)))
-              MYSQL_YYABORT;
-            $$.vars= $$.conds= $$.hndlrs= $$.curs= 0;
           }
         ;
 

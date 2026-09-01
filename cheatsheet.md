@@ -137,9 +137,12 @@ last source in use loses lines first. The file lands in `TRIAL_SQL_DIR`.
 `REVGEN_YACC` picks the grammar revgen walks, so it tracks the version under test. Beside it sit two
 more files it reads: `<version>_lex.h`, the keyword table copied from the server's `sql/lex.h`, and
 `<version>_coldefs.txt`, the column definitions revgen builds its tables from. Install a matched
-grammar and keyword table with `revgen/refresh_grammar.sh <source tree>`, which checks both files
-before it copies them; `yacc/harvest_coldefs.sh` writes the column definitions per version from that
-version's own test suite. `sql/sql_lex.h` is a different file from `sql/lex.h` and holds no keywords,
+grammar and keyword table with `revgen/refresh_grammars.sh`, which pulls both from the MariaDB server
+repository on GitHub and checks each file before it installs it. With no arguments it does that for
+every version `/test/gendirs.sh` reports, so the set follows the builds under test. The column
+definitions come from a running server, so where a version has none the same script brings up a copy
+of that version's build and calls `revgen/harvest_coldefs.sh` against it. Both scripts are also
+reachable from `yacc/`. `sql/sql_lex.h` is a different file from `sql/lex.h` and holds no keywords,
 so revgen and `pquery-run.sh` both refuse to run when the keyword table has none.
 
 | Applied to the per-trial SQL | What it does |
