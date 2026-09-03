@@ -255,6 +255,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+!block->n_pointers|SIGABRT|btr_search_drop_page_hash_index|btr_search_drop_page_hash_index|btr_page_empty|btr_cur_optimistic_delete                                            ## MDEV-41016
 SIGSEGV|i_s_dict_fill_sys_tables|i_s_sys_tables_fill_table|get_schema_tables_result|JOIN::exec_inner                                                                           ## MDEV-38942
 pos < table->n_def|SIGABRT|dict_table_get_nth_col|dict_table_get_col_name|row_merge_create_index|prepare_inplace_alter_table_dict                                              ## MDEV-19173
 SIGSEGV|ha_mroonga::storage_index_first|ha_mroonga::index_first|handler::ha_index_first|collect_statistics_for_index                                                           ## MDEV-40962
