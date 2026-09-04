@@ -195,6 +195,7 @@ INNODB_ERROR|Operating system error number 36 in a file operation ## MDEV-19849
 INNODB_ERROR|Unable to import tablespace X because it already exists.  Please DISCARD the tablespace before IMPORT  ## Presumed non-issue (import of a tablespace which already exists)
 INNODB_ERROR|Cannot add field in table because after adding it, the row size is greater than the maximum allowed size for a record on index leaf page ## SPECIAL-46
 INNODB_ERROR|Transaction was aborted due to Record changed     ## MDEV-38278
+#INNODB_ERROR|Requested lock  on record    RECORD   LOCK_X      ## MDEV-41012 (filtered; too generic; may mask other bugs)
 ERROR. Can.t open and lock privilege tables: Cannot load from mysql.host. The table is probably corrupted ## SPECIAL-48 (non-issue)
 ERROR. mysql_ha_read: Got error 146 when reading table .t1                                               ## MDEV-37523
 MUTEX_ERROR|safe_mutex: Trying to lock uninitialized mutex at storage/spider/spd_conn.cc                 ## MDEV-35375
@@ -255,6 +256,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+err == DB_SUCCESS || err == DB_LOCK_WAIT || err == DB_DEADLOCK || err == DB_LOCK_WAIT_TIMEOUT|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step            ## MDEV-41010
 pos < table->n_def|SIGABRT|dict_table_get_nth_col|dict_table_get_col_name|row_merge_create_index|prepare_inplace_alter_table_dict                                              ## MDEV-19173
 SIGSEGV|ha_mroonga::storage_index_first|ha_mroonga::index_first|handler::ha_index_first|collect_statistics_for_index                                                           ## MDEV-40962
 SIGSEGV|ha_mroonga::storage_index_first|handler::ha_index_first|collect_statistics_for_index|collect_statistics_for_table                                                      ## MDEV-40962

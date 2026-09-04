@@ -151,7 +151,7 @@ run_one() {
     elif [ -n "${FAIL}" ]; then
       VERDICT="Yes (line ${LINENO_FAIL})"
     else
-      VERDICT='Yes (run did not complete)'
+      VERDICT='TBD'
     fi
   fi
 
@@ -162,7 +162,7 @@ run_one() {
   ) | sed 's|[[:space:]]*$||' >> "${WORK}/matrix"
   # A real UniqueID (crash, assert, sanitizer) earns a representative stack in the report.
   case "${VERDICT}" in
-    'No'|'No ('*|'Yes'|'Yes ('*) ;;
+    'No'|'No ('*|'Yes'|'Yes ('*|'TBD') ;;
     *) printf '%s\t%s\n' "${VERDICT}" "${MTRDIR}" >> "${WORK}/crash" ;;
   esac
   echo "DONE ${LINE} -> ${VERDICT}"

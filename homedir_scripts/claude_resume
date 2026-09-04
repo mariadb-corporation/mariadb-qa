@@ -26,11 +26,49 @@ fi
 ARG="${1:-}"
 
 SELECTION="$(python3 - "$PROJECTS_DIR" "$LIMIT" "$ARG" <<'PYEOF'
-import json, os, sys, time
+import datetime, json, os, sys, time
 
 projects_dir = sys.argv[1]
 limit = int(sys.argv[2])
 arg = sys.argv[3] if len(sys.argv) > 3 else ""
+
+def last_activity(path, mtime, window=262144):
+    """Newest timestamp inside the transcript, read from its tail.
+
+    A live but idle session keeps rewriting its own transcript, so the file
+    mtime says the process is up, not when the session was last used.
+    """
+    try:
+        size = os.path.getsize(path)
+    except OSError:
+        return mtime
+    while True:
+        start = max(0, size - window)
+        try:
+            with open(path, "rb") as fh:
+                fh.seek(start)
+                chunk = fh.read()
+        except OSError:
+            return mtime
+        lines = chunk.split(b"\n")
+        if start:
+            lines = lines[1:]  # the first line of a tail read is a fragment
+        for line in reversed(lines):
+            if b'"timestamp"' not in line:
+                continue
+            try:
+                stamp = json.loads(line).get("timestamp")
+            except Exception:
+                continue
+            if not stamp:
+                continue
+            try:
+                return datetime.datetime.fromisoformat(stamp.replace("Z", "+00:00")).timestamp()
+            except ValueError:
+                continue
+        if start == 0:
+            return mtime
+        window *= 4
 
 sessions = []
 for dirpath, _, files in os.walk(projects_dir):
@@ -45,7 +83,7 @@ for dirpath, _, files in os.walk(projects_dir):
         except OSError:
             continue
         sid = f[:-6]
-        sessions.append((mtime, sid, path))
+        sessions.append((last_activity(path, mtime), sid, path))
 
 sessions.sort(reverse=True)
 
@@ -222,9 +260,9 @@ if arg:
 sessions = sessions[:limit]
 
 rows = []
-for mtime, sid, path in sessions:
+for used, sid, path in sessions:
     fc, prompt, _ = scan(path)
-    ts = time.strftime("%d/%m %H:%M", time.localtime(mtime))
+    ts = time.strftime("%d/%m %H:%M", time.localtime(used))
     cwd_short = fc.replace(os.path.expanduser("~"), "~") if fc else "?"
     prompt_line = " ".join(prompt.split())[:200] if prompt else "(no user prompt)"
     rows.append((sid, path, ts, cwd_short, NAMEBYSID.get(sid, ""), prompt_line,

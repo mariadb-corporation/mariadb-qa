@@ -302,3 +302,4 @@ Warning.*BINLOG_BASE64_EVENT: Table structure for binlog event is not compatible
 #wrong.*mutex.*LOCK_global_system_variables.*LOCK_log  MDEV-29744, Fixed
 #ERROR. InnoDB indexes are inconsistent with what def  MDEV-34951, Fixed
 Warning..WSREP: Illegal character in variable          SPECIAL-56 (expected, non-issue)
+Warning. WSREP: Could not open state file for reading  Non-issue (no grastate.dat yet on a fresh datadir)
