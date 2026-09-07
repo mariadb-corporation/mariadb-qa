@@ -39,6 +39,8 @@ float-cast-overflow:Field_enum::store
 float-cast-overflow:test_if_cheaper_ordering
 ## MDEV-35555 [MTR, main.partition_explicit_prune]
 pointer-overflow:sel_trees_must_be_ored
+
+# BUILDBOT CI MARKER FOR 10.11
 #--- BELOW ARE FIXED FOR 10.11+, so still affecting 10.6 Enterprise
 
 ## MDEV-36451 [MTR, main.blackhole]
