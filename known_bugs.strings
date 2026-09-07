@@ -256,6 +256,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|ha_mroonga::storage_enable_indexes|alter_table_manage_keys|simple_rename_or_index_change|mysql_alter_table                                                             ## MDEV-41033
+SIGSEGV|ha_mroonga::storage_enable_indexes|ha_mroonga::enable_indexes|handler::ha_enable_indexes|alter_table_manage_keys                                                       ## MDEV-41033
 err == DB_SUCCESS || err == DB_LOCK_WAIT || err == DB_DEADLOCK || err == DB_LOCK_WAIT_TIMEOUT|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step            ## MDEV-41010
 SIGSEGV|row_upd_set_vcol_data|row_upd_replace_vcol|row_undo_mod_parse_undo_rec|row_undo_mod                                                                                    ## MDEV-41025
 fts_id_index->fields[1].col->vers_sys_end()|SIGABRT|fts_add_doc_by_id|fts_add|fts_commit_table|fts_commit                                                                      ## MDEV-41025
