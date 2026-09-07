@@ -4,6 +4,9 @@
 # https://releases.llvm.org/3.8.0/tools/clang/docs/AddressSanitizer.html#issue-suppression
 # Supported ASAN supressions: interceptor_name, interceptor_via_fun, interceptor_via_lib, odr_violation
 
+# BUILDBOT CI MARKER FOR 10.11
+#--- BELOW ARE FIXED FOR 10.11+, so still affecting 10.6
+
 # MDEV-35738 [During compilation]
 interceptor_via_lib:comp_sql.c
 interceptor_via_fun:process_option
