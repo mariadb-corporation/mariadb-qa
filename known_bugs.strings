@@ -256,6 +256,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGABRT|ut_dbg_assertion_failed|rw_trx_hash_t::validate_element|rw_trx_hash_t::insert|trx_sys_t::register_rw                                                                   ## MDEV-41042
+trx->lock.table_locks.empty()|SIGABRT|ut_dbg_assertion_failed|trx_start_low|row_sel_step|que_thr_step                                                                          ## MDEV-41042
 SIGSEGV|ha_mroonga::storage_enable_indexes|alter_table_manage_keys|simple_rename_or_index_change|mysql_alter_table                                                             ## MDEV-41033
 SIGSEGV|ha_mroonga::storage_enable_indexes|ha_mroonga::enable_indexes|handler::ha_enable_indexes|alter_table_manage_keys                                                       ## MDEV-41033
 err == DB_SUCCESS || err == DB_LOCK_WAIT || err == DB_DEADLOCK || err == DB_LOCK_WAIT_TIMEOUT|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step            ## MDEV-41010
