@@ -256,6 +256,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|__memset_evex_unaligned_erms|my_free|ignore_db_dirs_append|myrocks::rocksdb_init_func                                                                                  ## MDEV-41076
+SIGSEGV|arena_for_chunk|arena_for_chunk|__GI___libc_free|ignore_db_dirs_append                                                                                                 ## MDEV-41076
+SIGABRT|__libc_message_impl|malloc_printerr|munmap_chunk|__GI___libc_free                                                                                                      ## MDEV-41076  
+SIGABRT|__libc_message_impl|malloc_printerr|_int_free|__GI___libc_free                                                                                                         ## MDEV-41076
 SIGSEGV|Item::delete_self|Query_arena::free_items|closefrm|intern_close_table                                                                                                  ## MDEV-41065
 SIGSEGV|Aggregator_simple::add|Item_sum::aggregator_add|update_sum_func|end_send_group                                                                                         ## MDEV-41059
 SIGSEGV|closefrm|intern_close_table|tc_purge|purge_tables                                                                                                                      ## MDEV-41053
