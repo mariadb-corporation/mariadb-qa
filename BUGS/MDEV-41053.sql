@@ -1,0 +1,5 @@
+INSTALL SONAME 'type_test';
+CREATE TABLE t1 (i test_int8);
+SELECT * FROM t1;
+UNINSTALL SONAME 'type_test';
+FLUSH TABLES;

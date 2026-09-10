@@ -256,6 +256,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|Item::delete_self|Query_arena::free_items|closefrm|intern_close_table                                                                                                  ## MDEV-41065
+SIGSEGV|Aggregator_simple::add|Item_sum::aggregator_add|update_sum_func|end_send_group                                                                                         ## MDEV-41059
+SIGSEGV|closefrm|intern_close_table|tc_purge|purge_tables                                                                                                                      ## MDEV-41053
 n_fields == ulint(index->n_fields) + 1|SIGABRT|rec_get_converted_size_comp_prefix_low<true, false>|rec_get_converted_size_comp|rec_get_converted_size|btr_cur_pessimistic_update  ## MDEV-37467
 low_match < dtuple_get_n_fields_cmp(tuple)|SIGABRT|Row_sel_get_clust_rec_for_mysql::operatorrow0sel.cc|row_search_mvcc<InnoDBPolicy<true, true> >|ha_innobase::general_fetch|ha_innobase::index_next_same  ## MDEV-41052
 low_match < dtuple_get_n_fields_cmp(tuple)|SIGABRT|Row_sel_get_clust_rec_for_mysql::operatorrow0sel.cc|row_search_mvcc|ha_innobase::general_fetch|ha_innobase::index_next_same ## MDEV-41052
