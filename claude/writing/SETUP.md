@@ -14,6 +14,8 @@ Ask these questions in one message and wait for the answers. Do not install befo
 6. How to refer to the user in the voice profile: first name, handle, or "the user".
 7. Anything Claude must never do in text sent as the user.
 
+All seven answers are needed before the install, but they can be short, and a negative one counts: "no", "none", "no Jira token". When some are missing, ask again for those numbers in one short message and wait. More than one round of asking is fine. A default is not a substitute for an answer.
+
 The role and the AI line are the two install switches. The other answers shape the profile only.
 
 ## 2. Install the files
