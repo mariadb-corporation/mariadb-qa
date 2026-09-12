@@ -26,6 +26,8 @@ command -v python3 >/dev/null || { echo "python3 is required" >&2; exit 2; }
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
+echo 'Fetching files (~2 minutes)...'
+
 fetch "$API" "$TMP/tree.json"
 python3 - "$TMP/tree.json" "$KIT_PATH" > "$TMP/files" <<'PY'
 import json, sys
