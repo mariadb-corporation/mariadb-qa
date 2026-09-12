@@ -49,7 +49,7 @@ A version sweep on the plain builds already gives the affected-version list. A s
 - Reverse-gated: it fails while the bug is present and passes once the bug is fixed. Without that every row reads `No`. Ref the `mtr_testcase` skill.
 - Named for the bug, for example `MDEV-12345.test`, so MTR selects one test only.
 - A `.result` beside it is copied to the suite's `r/` directory, and a `.cnf` beside it is copied next to the testcase.
-- Set `WSREP_PROVIDER` before a galera-suite run.
+- `export WSREP_PROVIDER=<provider .so>` on its own line before a galera-suite run. An inline prefix wraps when pasted and is then a plain shell assignment the run does not inherit; the row comes back `No` off a `[ skipped ]  No wsrep provider library`.
 
 ## Reading the matrix
 

@@ -68,14 +68,19 @@ Detection signals (per screen, from a `hardcopy -h` dump):
 1. **Enumerate in-scope sessions** (full `PID.name` form needed for `screen -S`):
 
    ```
-   screen -ls | grep -oE '[0-9]+\.s[0-9]+'      # adjust regex per <families>
+   mkdir -p /tmp/scdump; rm -f /tmp/scdump/*
+   screen -ls | grep -oE '[0-9]+\.s[0-9]+' > /tmp/scdump/sessions.list   # adjust regex per <families>
    ```
+
+   This list is the only source of session names for the rest of the run. `~/sr`, `sru`, `srua` and
+   `pg` start new `s<N>` screens at any moment, and a fresh reducer shows `[]` for its first minutes,
+   so a second `screen -ls` at quit time would take it for END and kill a healthy run. Never
+   re-enumerate; read `sessions.list`.
 
 2. **Hardcopy every session's scrollback** to a scratch dir:
 
    ```
-   mkdir -p /tmp/scdump; rm -f /tmp/scdump/*.txt
-   for SES in $(screen -ls | grep -oE '[0-9]+\.s[0-9]+'); do
+   for SES in $(cat /tmp/scdump/sessions.list); do
      screen -S "$SES" -X hardcopy -h /tmp/scdump/"$SES".txt
    done; sleep 0.5
    ```
@@ -129,7 +134,7 @@ Detection signals (per screen, from a `hardcopy -h` dump):
 
    ```
    MYPID=$$
-   # 1. quit every END screen, then confirm no main reducer survived
+   # 1. quit every END screen - only names from the classified table, never a fresh `screen -ls`
    screen -S "$SES" -X quit
    sleep 3
    # 2. pass 1: kill that trial's procs (skip PRESERVE epochs and own PID)
@@ -193,7 +198,7 @@ sed -i -E 's/^FORCE_SKIPV=0/FORCE_SKIPV=1/;        # skip verify -> straight to 
            s/^MULTI_THREADS=3\b/MULTI_THREADS=6/;   # more parallel reproduction attempts
            s/^MULTI_THREADS_MAX=9\b/MULTI_THREADS_MAX=12/' reducer<N>.sh
 rm -f <workdir>/<N>/17* <workdir>/<N>/*_out*       # pre-sr cleanup; KEEPS the original *thread-0.sql trace
-~/sr <N>                                            # relaunches as a detached screen s<N>, churning on the ORIGINAL trace
+env -u STY -u WINDOW ~/sr <N>                       # relaunches as a detached screen s<N>, churning on the ORIGINAL trace
 ```
 
 `reducer<N>.sh`'s `INPUTFILE` already selects the original `default.node.tld_thread-0.sql` (it excludes `failing`/`prev`/`backup`), so the relaunch replays the full recorded trace, not the collapsed `_out`. Keep total concurrent subreducers in check: ~6 threads x N reducers; watch `uptime` load and `df -h /dev/shm` (raising `MULTI_THREADS` to 25-40 can overload the box / fill shm).
@@ -231,3 +236,5 @@ When the relaunched reducer reproduces, it auto-minimises to a short testcase. W
 - `~/ka` (mass kill plus a `/dev/shm` wipe) is user-only; this skill is the surgical, scoped alternative.
 - To stop a live-attached reducer by hand: `Ctrl+C x 3` then `depge`.
 - Before a `~/sr` relaunch, clear the trial dir: `rm 17* *_out*`.
+- Run `~/sr` as `env -u STY -u WINDOW ~/sr <N>`. This session lives inside a screen, and a new `SCREEN -admS`
+  inherits `STY`, so `~/s` lists the reducer as a child of the Claude screen. Check `~/s` after a launch.

@@ -1,6 +1,6 @@
 ---
 name: jira-ticket
-description: Turn a reduced pquery trial under /data/<workdir>/<trial> into a filed public MariaDB bug. Pick the most-reduced testcase, hand-reduce it further and prettify with ~/tcp against the version where it reproduces, dedup-check EARLY against jira.mariadb.org (and present a decision menu if a duplicate is found), generate the bug report via ~/b (and ~/bs / ~/br as warranted), splice any SAN stacks/Setup/matrix into the body, build and verify an MTR testcase (CLI/MTR compatible note, or dual CLI+MTR blocks), derive Affects+Fix versions / components / labels / priority, write a paste-ready overview to log_jira_ticket.txt for approval, file the MDEV ticket via ~/jira, then register it (eb testcase + kb/kba UniqueIDs) and clean matching workdirs (ca). Public generic crash / assert / UB / ASAN bugs only.
+description: Turn a reduced pquery trial under /data/<workdir>/<trial> into a filed public MariaDB bug. Pick the most-reduced testcase, hand-reduce it further and prettify with ~/tcp against the version where it reproduces, dedup-check EARLY against jira.mariadb.org (and present a decision menu if a duplicate is found), generate the bug report via ~/b (and ~/bs / ~/br as warranted), splice any SAN stacks/Setup/matrix into the body, build and verify an MTR testcase (CLI/MTR compatible note, or dual CLI+MTR blocks), derive Affects+Fix versions / components / labels / priority, write a paste-ready overview to log_jira_ticket.txt for approval, file the MDEV ticket via ~/jira, then register it (eb testcase + kb/kba UniqueIDs) and clean matching workdirs (ca). Public generic crash / assert / UB / ASAN bugs only. The four original/fixed/diff/base gates run only on request - "deliver fix", "1/2/3", "1/2/3/4", "gate 1/2/3", "gate 1/2/3/4", "gate fix/pass/diff/base" or similar.
 claude: please note - this skill exists in a public repo and should only be updated with specific written signoff by the updater. Keep skills/README.md (the skills index) in sync when any skill is added, renamed, removed, or its description changes.
 ---
 
@@ -11,6 +11,9 @@ Files one public MariaDB server bug (project MDEV) from a reduced pquery trial. 
 ## Inputs
 
 - `<trial-dir>` - a pquery trial dir, e.g. `/data/someworkdir/sometrial`.
+- Or any other pointer to the work: a handoff file, a finding directory, an error log, a testcase.
+
+**Invoked with nothing? Ask.** When the skill is called with no argument and the conversation carries no bug to file, STOP and ask one short question - what needs logging, and where is it. Do NOT go looking: no listing of `/data`, no reading `results.list`, no scan for reduced testcases. Roel knows which bug he wants filed, and a search picks the wrong one while spending tokens.
 
 ## Pre-flight - Jira PAT
 
@@ -31,6 +34,7 @@ Verify with `~/jira --whoami`.
 ## Hard rules (read first)
 
 - NEVER submit before explicit user approval of `log_jira_ticket.txt` (step 8). The user said so directly.
+- **Never run MTR in a `/test` basedir.** An MTR run drops and recreates `mariadb-test/var/` in the basedir it runs in, so it destroys the cores and error logs an earlier run left there, the ones this report is built from included. Copy the basedir to `/tmp` and run there, from the first run onwards - see step 6 for the copy commands.
 - **Never hand-roll. Use the framework tool for every step.** This skill is a sequence of framework tool calls, not a place to write new tooling. Concretely: the repro cycle is `./all_no_cl` + `./test` + `~/t` (and `./multirun_loop` when a loop is needed) - no wrapper, driver, or batch script around them, and no reading the error log as a stand-in for a UniqueID; the stack is `~/stack` (it also runs inside `mariadb-test`/`mysql-test` dirs); the report body is `~/b` (`~/bs`/`~/br`/`~/bm`/`~/bt`); the prettified testcase is `~/tcp`; the UniqueID and dedup URLs are `~/t`/`~/tt`; filing, commenting, linking and version edits are `~/jira`. Take each tool's output as emitted: never trim, re-indent, re-title, retype, or reassemble a stack or report block by hand, and never reconstruct one from memory. If a step seems to need something the tools do not provide, say so and ask - do not build it. There is NO exception for the sanitizer block: `~/stack` emits the assert block plus exactly ONE stack, each already wrapped in its own `{noformat:title=<version banner>}`. **A *SAN or Valgrind report wins over the core backtrace** - on a sanitizer build you get the sanitizer block and no gdb output, because that backtrace usually shows only the abort path and not the offending code. Never post two stacks for one bug. So never hand-assemble a stack or a sanitizer block out of `log/master.err`, and never build a `{noformat:title=...}` line yourself from `~/myver`. `~/stack` needs no core for the sanitizer block - a UBSAN runtime error that does not abort is still emitted. It covers UBSAN, ASAN, MSAN, TSAN and Valgrind. Version coverage is stated ONLY by the Bug Detection Matrix block(s), verbatim - in the report body AND in any comment. Never write a version list as prose ("Reproduces on CS x.y, ... / ES x.y, ...") in place of, or alongside, the matrix.
 - **A CLOSED ticket is NEVER reopened.** If a closed/fixed bug still reproduces - an incomplete fix, a missed variant, a regression - that is a NEW bug: file it in the standard format (full `~/b` body, testcase, stacks, matrix, derived fields) and link it to the old one as `Relates` (step 10). Do NOT comment asking for a reopen, do NOT add Affects/Fix versions to the closed ticket, and do NOT treat "the fix is incomplete" as a reason to keep the discussion on the old ticket. Reference the old key in the new ticket's description AND create the actual Jira issue link - both are required, the description mention alone is not enough: `~/jira --link MDEV-<new> --relates MDEV-<closed>` (step 10), verified afterwards via `GET /issue/MDEV-<new>?fields=issuelinks`. Commenting on the closed ticket is only for a pure cross-reference once the new key exists.
 - Dedup EARLY (step 3, before `~/b`/MTR), because it decides WHICH deliverable you build - a new ticket, or a comment plus a version-field edit on the existing one. It does not decide WHETHER you build one. A duplicate still needs the reduced testcase, the verified MTR and the matrix, because the comment and the Affects edit are both read off them.
@@ -38,10 +42,12 @@ Verify with `~/jira --whoami`.
 - Dedup uses `~/tt`'s emitted Search URLs **verbatim**: extract the `?jql=` from `tt`'s actual output and run that exact string. NEVER hand-build, re-frame, re-quote, or add/drop terms - `tt` owns frame selection and exact-phrase quoting; improvising the query is a defect. Run `~/tt` in the SAME basedir whose stack you will report (UniqueID frames are build-dependent). This no-improvisation rule applies to every framework tool: use its real output, do not reconstruct it from memory.
 - **Follow the procedure; do not curate it.** The block order, the block set and the wording are already decided here. Do not decide which blocks are "worth" including, do not drop a block because the ticket already has something similar, and do not explain your reasoning for including or omitting one. Never write a passage like "notes on what I chose to include and why" - that is not a deliverable, it costs tokens, and it replaces the procedure with a judgement call. If the procedure genuinely does not cover the case, say so in one line and ask.
 - **NEVER use a Jira `||` header table anywhere in a body or a comment.** Not for versions, not for results, not for an optimizer-switch comparison, not for anything. Every tabular block is a `{noformat:title=<name>}` block with space-aligned columns, exactly as `~/b` emits them. A `||` table is the single clearest tell that a block was hand-written instead of taken from a tool.
+- **NEVER paste CLI output, MTR output or an error-log line in a bare `{noformat}` block.** Every such block carries the version banner of the build it came from: `{noformat:title=<CS/ES> <version> <full sha> (<build type>, <compiler>) Build <DD/MM/YYYY>}`. `~/stack`, `~/b` and `~/tt` already emit that line, so take it from the tool output. For a run the tools did not produce, read the banner in that basedir with `source ~/mariadb-qa/version_chk_helper.source` and build the title from `${SVR} ${SERVER_VERSION} ${SOURCE_CODE_REV}${BUILD_TYPE} ${BUILD_DATE}`. A renamed basedir breaks that parse, so check the title before the block goes in. Without the banner the reader cannot tell which build produced the output.
 - **Never invent a matrix row, a flavour tag, or a version.** Every row states a build that was actually run, and its cells come from that build: the vendor tag and build date from the basedir name, the commit from `~/myver`, the observation from the run. No row for a build you did not run, no rounded or guessed version, no flavour you did not test. If a build is missing from the matrix, run it or leave it out - never fill the gap.
 - **`~/b` is not core-only, and the matrix is mandatory for every bug class.** Plain `b` looks for crashes and asserts in the error logs as well as for core files. `bs`/`bm`/`bt`/`bv` take a search string as their argument, so a sanitizer or Valgrind text works. `bug_report.sh` itself honours `export TEXT='<string>'` for any other error-log text. Try these before deciding the tool does not fit - see "When `~/b` cannot run" below. Never fall back to prose or a `||` table.
 - **`Please also test any fixes with this testcase.` belongs to a comment on a PRE-EXISTING bug, and nowhere else.** It goes at the end of a comment that adds our testcase to a bug somebody already filed, where it asks the dev to cover this extra variant as well. It never goes in a new ticket's description, and never in a comment on a ticket filed in this session - there the testcase already IS the bug, so the line says nothing.
 - Scope = public generic bugs (crash / assert / UB / ASAN) in project **MDEV**.
+- **The project follows the code, and that is not a question to ask.** A defect in code that only the Enterprise Server tree carries is a **MENT** bug. MDEV is for a defect present in Community Server, and its `--es-version` field then carries the ES coverage as well. Read the code on both sides before naming the project.
 - The Jira body IS the `~/b` report block, near-verbatim. Do not re-prose it. Match the existing house style - it is already encoded in `b`/`bs`/`br`.
 - Every testcase SQL statement stays on ONE unbroken line - in `log_jira_ticket.body`, the eb file, the `.test`, AND in any chat display. Wrapping/splitting a line breaks pquery/reducer/MTR replay. When presenting CLI + MTR testcases, stack them as separate full-width blocks; never side-by-side (it wraps lines).
 - NEVER post a comment (`~/jira --comment`) on the user's behalf without BOTH (a) the user's explicit instruction to comment AND (b) the user's review and approval of the EXACT, literal comment text. Comments are outward-facing - draft it, show the verbatim text, wait for sign-off; never auto-post.
@@ -246,7 +252,183 @@ Every report needs an MTR testcase alongside the CLI one. If the exact CLI SQL r
 - Server options: a `# mysqld options required for replay: <opt>` header becomes inline `SET` where possible (`--sql_mode=` -> `SET sql_mode='';`), else a `<name>.opt`/`.cnf`, `--mysqld=--<opt>`, or `$restart_parameters`.
 - One SQL statement per line. Plain `test` db is fine for a functional crash repro.
 
-Reproduce the SAME failure as the CLI testcase (fail / inverse gate): a crash kills the server; an error-message bug is gated with `--error`. Do NOT `--record` buggy output. Verify in place (no /tmp copy): drop `<name>.test` into the reproducing dbg basedir's `mariadb-test/main/` and run `./mtr <name>` there. **`~/tt` works INSIDE `mariadb-test/`**: after the run, `cd mariadb-test && ~/tt` and confirm the UniqueID equals the original - a different UniqueID means the MTR test hits a DIFFERENT bug (fix the test, do not ship it).
+Reproduce the SAME failure as the CLI testcase (fail / inverse gate): a crash kills the server; an error-message bug is gated with `--error`. Do NOT `--record` buggy output. Drop `<name>.test` into the reproducing dbg basedir's `mariadb-test/main/` and run `./mtr <name>` there.
+
+#### The four gates
+
+On request only - "deliver fix", "1/2/3", "1/2/3/4", "gate 1/2/3", "gate 1/2/3/4", "gate
+fix/pass/diff/base" or similar. A bare "1/2/3" or "1/2/3/4" is a fix request. Not part of a
+normal filing.
+
+Put every testcase in one MTR test, name it `test_claude`, copy the `.test` into both
+basedirs, and run all four gates in this order. The test that goes in the report is the one
+that went through the gates, byte for byte.
+
+1. Original must fail. The test on the affected build has to fail there, on the symptom the
+   report describes: the stack, the error, the wrong result, the hang. A pass here means the
+   test does not detect the bug.
+2. Fixed must pass. The same test on the unaffected build, with the MTR summary read to the
+   end. `Completed: All 1 tests were successful` can sit right below a failed post-test
+   check, so the last line alone is not the verdict.
+3. Same test on both sides. Diff the `.test` between the two basedirs; it must be empty.
+   Without this a silent copy failure reads as a pass, and a block showing a test other than
+   the one that ran proves nothing.
+4. Same base on both sides. Where a fix was asked for and gate 2 runs on a build you
+   patched, both builds must come from the same source, differing only by `fix.diff`. The
+   version string alone does not settle it: two basedirs can both say `11.8.9-6` and be
+   weeks apart, so a bug fixed upstream in between reads as your patch working. The version
+   and the exact revision must be identical on both sides, so read this before you read any
+   other gate result:
+
+```bash
+( cd <affected basedir> \
+  && source ~/mariadb-qa/version_chk_helper.source \
+  && echo "${SERVER_VERSION} ${SOURCE_CODE_REV}" )
+( cd <unaffected basedir> \
+  && source ~/mariadb-qa/version_chk_helper.source \
+  && echo "${SERVER_VERSION} ${SOURCE_CODE_REV}" )
+```
+
+   Two different lines means gates 1 and 2 compare apples with oranges and prove nothing.
+   Build the baseline from the SAME source copy the patch came from, unpatched, and re-run
+   gate 1 there. An older basedir lying around in `/tmp` or `/test` is not a baseline; it is
+   a different tree.
+
+   Where no fix was asked for, gate 2 runs on an unaffected version of the same product, so
+   the two bases differ by design. Print both readings anyway and say in one line that gate
+   4 does not apply on this run, so nobody reads the version difference as a fix.
+
+   Never pair an Enterprise Server build with a Community Server build across gates 1 and
+   2. They are two different products, so the pass side proves nothing about the fail side.
+   Where the bug sits in Enterprise Server code, both sides are Enterprise Server builds;
+   where it sits in Community Server code, both sides are Community Server builds. The same
+   holds for any other cross-product pair, MySQL among them.
+
+   A build that never carried the affected code is not a gate 2 side either. Its pass is
+   settled before the run, so it shows nothing.
+
+All four have to hold before there is a result. One that does not sends the work back to the
+testcase, never on to the report. A later gate is unreachable once an earlier one dies, so
+prove each `--die` fires: flip its expected value once on the passing build, confirm the die
+text appears and reads well, then restore it.
+
+The commands go in ONE paste-ready fenced `bash` block, split by these four headers, which
+render green:
+
+    # Original (gate 1, must fail):
+    # Fixed (gate 2, must pass):
+    # Diff (gate 3, must be empty):
+    # Base (gate 4, must be identical):
+
+Full absolute paths, no placeholders. All four parts go in the one block; a diff quoted only
+in the prose above it is not the block.
+
+**Never split a command line without a trailing `\`.** Each command is one line, or every
+line that continues ends with a backslash. Wrap without it and the second half runs as its
+own command, so the paste fails.
+
+The terminal wraps any line past its width on its own, and that wrap carries no backslash,
+so a line the reader copies off the screen is already broken. Keep every line in the block
+at 80 characters or under, and split anything longer yourself with a trailing `\`, indenting
+the continuation two spaces. Gate 3 `diff` and gate 4 both need this: the `diff` has two long
+paths, and each gate 4 line holds a path, a `source` and an `echo`. Gate 4 splits before each
+`&&`, so the `cd`, the `source` and the `echo` sit on their own lines inside the subshell.
+Count the characters on every line of the block before you post it.
+
+**Each gate stands on its own.** Any variable a gate uses is assigned under that gate's own
+header, so one header plus the lines below it can be copied and run by itself. A gate
+assigns at most ONE variable, its own: gate 1 sets `S`, gate 2 sets `F`, and gates 3 and 4
+use neither, they write both paths out in full. Never open the block with a shared `S=`/`F=`
+preamble above the headers: that makes the reader copy two pieces to run one gate, and they
+have said so.
+
+```bash
+# Original (gate 1, must fail):
+S=<affected basedir>
+cd $S/mariadb-test && ./mtr main.test_claude
+
+# Fixed (gate 2, must pass):
+F=<unaffected basedir>
+cd $F/mariadb-test && ./mtr main.test_claude
+
+# Diff (gate 3, must be empty):
+diff <affected basedir>/mariadb-test/main/test_claude.test \
+     <unaffected basedir>/mariadb-test/main/test_claude.test
+
+# Base (gate 4, must be identical):
+( cd <affected basedir> \
+  && source ~/mariadb-qa/version_chk_helper.source \
+  && echo "${SERVER_VERSION} ${SOURCE_CODE_REV}" )
+( cd <unaffected basedir> \
+  && source ~/mariadb-qa/version_chk_helper.source \
+  && echo "${SERVER_VERSION} ${SOURCE_CODE_REV}" )
+```
+
+The test directory is `mariadb-test` on 11.4 and newer and `mysql-test` on 10.11, so use the
+one the basedir has.
+
+Where you need the history between two revisions - to see whether the asserting file changed
+at all - remember the `/test/<ver>` trees are shallow, so `git log <old>..<new>` there fails
+with an invalid revision range. `/test/git-bisect/<ver>` holds a full clone for the CS
+branches. For a branch with no full clone, an ES branch among them, take a deep clone of that
+branch and read the history there.
+
+A new bug has no fixed build, so the gate 2 pass side is a build where the behaviour is
+correct: an unaffected version of the same product from the matrix, never the other
+product's build. When the matrix shows every build of that product affected, BUILD one -
+apply the narrow fix in a `/tmp` source copy through the `build-fix-diff` skill and run
+gate 2 against that basedir. Do not ask whether to build
+it; building it is part of the job. Never edit the test to make something pass, and never
+present a removed precondition as gate 2 - that a precondition is load-bearing is separate
+evidence.
+
+A sporadic bug needs the repeat form above at BOTH gate 1 and gate 2, not one run each. A
+single failing run does not establish gate 1 and a single clean run does not establish gate
+2. Report the hit rate you saw on each side, and size the run so a clean result means
+something at that rate.
+
+For a suite test the path is `mariadb-test/suite/<suite>/t/<test>.test`. A galera test needs
+`WSREP_PROVIDER` set, and in a command block handed to the user it goes on its own line, with
+`export`, never as an inline prefix on the `./mtr` line:
+
+```bash
+cd <basedir>/mariadb-test
+export WSREP_PROVIDER=<provider .so>
+./mtr galera.<test>
+```
+
+A long inline-prefix line wraps in the terminal, and the pasted second line then reads as a
+plain shell assignment, which `./mtr` does not inherit. The run reports
+`[ skipped ]  No wsrep provider library`, and a skip reads as a clean pass. Check the run said
+`[ fail ]` or `[ pass ]` and not `[ skipped ]`.
+
+Once given, the four-gate block goes in every later reply about the same run, unchanged and
+complete, so the reader can re-run all four gates from the reply in front of them.
+
+Never a `.result` file: do not record one, do not gate on one, do not deliver one.
+
+**Run on your own copy of the basedir, never on one another session may be using.** An MTR run wipes and rebuilds `mariadb-test/var/`, and a server run wipes `data/`, so two sessions in one basedir clobber each other's datadirs and logs. Take a fresh copy before the first run:
+
+```bash
+B=/tmp/<short-name>
+rsync -a --exclude=data --exclude=tmp --exclude=log /test/<basedir>/ "$B"/
+cd "$B" && ~/st          # re-bake the path-baked helpers; without this every path still points at /test
+```
+
+Then work in `$B`. The same holds for a pre-existing `/tmp` basedir left by earlier work - it belongs to that session, so copy it rather than run in it. The `~/b` matrix sweep and `claude_mtr_matrix.sh` are the exception: they read the `/test` basedirs by design and start their own servers there.
+
+**A sporadic issue needs many runs, not one.** A sporadic issue, like a race, reproduces on some runs and not others, so a single green run proves nothing. Run the test many times:
+
+```bash
+./mtr --force --repeat=200 <test_name>
+```
+
+`--repeat=200` runs the test that many times. Check the count in the summary line: on a
+current mtr, repeating ONE name gives one test on one worker, so `--parallel` does not spread
+it and the `<name>{,,,}` brace form collapses back to a single test instead of multiplying
+it. Copy the test to distinct names when you do want several workers. Watch what the failure is. For a wrong result or an error-message bug, add `--force` or mtr stops at the first failure and the set reports 1 of 1. For a CRASH this form cannot count hits at all: mtr aborts the whole run with `Server [mysqld.1 ...] failed during test run`, and `--force`, `--retry=0` and `--max-test-fail=0` make no difference - so run one invocation per attempt there, and keep `--repeat` for the side that is expected to pass. Use the same form for a Galera test (with `WSREP_PROVIDER` set). Where you do run galera tests in parallel, keep the count low - each worker starts a whole cluster, and a high count gives port conflicts. Report the hit rate you saw, for example "3 of 2000 runs", and treat a testcase as not reproducing only after a run of this size comes back clean.
+
+**`~/tt` works INSIDE `mariadb-test/`**: after the run, `cd mariadb-test && ~/tt` and confirm the UniqueID equals the original - a different UniqueID means the MTR test hits a DIFFERENT bug (fix the test, do not ship it).
 
 Fold into the body's testcase section, replacing the single `{code:sql}` block:
 
@@ -265,7 +447,20 @@ Fold into the body's testcase section, replacing the single `{code:sql}` block:
   {code}
   ```
 
-**Gate:** the MTR testcase reproduces AND `~/tt` (run in `mariadb-test/`) returns the SAME UniqueID as the original; folded into the body.
+**A sporadic testcase says so in the body, and carries the label.** Where the testcase does
+not reproduce on every run, close the prose with this line, Jira bold, and add the `sporadic`
+label (step 7):
+
+```
+*The testcase remains lightly sporadic.*
+```
+
+Say what makes it more reliable in the same paragraph, in plain words - for example that
+`max_statement_time` interrupts the query at the right point, which makes the issue less
+sporadic and avoids the need for `debug_sync`. Do not write round it with a phrase like "it
+still does not fire on every run".
+
+**Gate:** the MTR testcase reproduces AND `~/tt` (run in `mariadb-test/`) returns the SAME UniqueID as the original; a sporadic testcase carries the line and the label; folded into the body. Where the four gates were asked for, they are run and their block written.
 
 ## Step 7 - Derive the Jira fields
 
@@ -282,8 +477,8 @@ Fold into the body's testcase section, replacing the single `{code:sql}` block:
   - **Fix Version/s** (`--fix-version`) = the CS-affected set minus the single newest branch (highest `X.Y`, currently `13.1`) - it lands by up-merge. Real Jira names only.
   - Surface all three in the overview for adjustment.
   - A clean (`No bug found`) cell can mean *already fixed in that build*, not *unaffected* (step 4 up-merge gate); a crashing older-dated cell can be *stale* (predates an up-merged fix). Reconcile each Affects/Fix entry against the fix-commit status; never set them from build version strings/dates alone.
-- **Components** (1-3) - infer from the crashing subsystem/frames + SQL: `Optimizer`, `Optimizer - Window functions`, `Storage Engine - InnoDB`, `Replication`, `Parser`, `Server`, `GIS`, `Character Sets`, `Partitioning`, `Data Definition - Temporary`, `Data Manipulation - Insert`, `Stored routines`, `Triggers`, `Views`, `Virtual Columns`, `Storage Engine - <Engine>`. Component names are case- and spelling-EXACT - `~/jira` create 400s on a bad one (`Component name '<X>' is not valid`). Common traps: `Stored routines` (lowercase r), DML is split into separate `Data Manipulation - Insert` / `- Update` / `- Delete` / `- Subquery` (no combined name). Validate every `-c` against the live list before filing: `curl -sS -H "Authorization: Bearer $(< ~/.config/mariadb-qa/jira.pat)" 'https://jira.mariadb.org/rest/api/2/project/MDEV/components' | jq -r '.[].name'`. Add an engine component (`Storage Engine - InnoDB`, `Partitioning`, `Storage Engine - <X>`) ONLY when that engine is load-bearing for the repro (per the step-2 engine test) - not merely because the reduced testcase happens to use it. If InnoDB is NOT load-bearing, drop `ENGINE=InnoDB` from the testcase instead (no `have_innodb.inc` needed).
-- **Labels** - pick from in-use labels, validate each via `https://jira.mariadb.org/rest/api/1.0/labels/suggest?query=<label>`; never invent one. **NEVER post `crash` or `assertion`** as labels - they exist in Jira but are not used as tags (the crash/assert nature is already clear from the title and the body stack/assert message). Use specific class/context labels instead: `regression` + `regression-X.Y` (e.g. `regression-10.6`), `ASAN`/`UBSAN`/`MSAN` (the tool), the SAN class, `debug` (debug-only - opt shows "No bug found"), `optimizer_trace`, `affects-tests` (when it genuinely affects testing). A plain crash with no regression/SAN/feature angle may carry NO labels.
+- **Components** (1-3) - infer from the crashing subsystem/frames + SQL: `Optimizer`, `Optimizer - Window functions`, `Storage Engine - InnoDB`, `Replication`, `Parser`, `Server`, `GIS`, `Character Sets`, `Partitioning`, `Data Definition - Temporary`, `Data Manipulation - Insert`, `Stored routines`, `Triggers`, `Views`, `Virtual Columns`, `Storage Engine - <Engine>`. Component names are case- and spelling-EXACT - `~/jira` create 400s on a bad one (`Component name '<X>' is not valid`). Common traps: `Stored routines` (lowercase r), DML is split into separate `Data Manipulation - Insert` / `- Update` / `- Delete` / `- Subquery` (no combined name). Validate every `-c` against the live list before filing: `curl -sS -H "Authorization: Bearer $(< ~/.config/mariadb-qa/jira.pat)" 'https://jira.mariadb.org/rest/api/2/project/MDEV/components' | jq -r '.[].name'`. Add an engine component (`Storage Engine - InnoDB`, `Partitioning`, `Storage Engine - <X>`) ONLY when that engine is load-bearing for the repro (per the step-2 engine test) - not merely because the reduced testcase happens to use it. If InnoDB is NOT load-bearing, drop `ENGINE=InnoDB` from the testcase instead (no `have_innodb.inc` needed). **`wsrep` and `Galera` are two different components, and the project says so: `Galera` is "the galera library (libgalera_smm.so)" and `wsrep` is "wsrep-patch in the server".** A bug in server code under `#ifdef WITH_WSREP` is `wsrep`. `Galera` is for the library itself. Take both only when both are genuinely implicated. Reading a neighbouring ticket's components is not a guide here - the two are mixed up in practice.
+- **Labels** - pick from in-use labels, validate each via `https://jira.mariadb.org/rest/api/1.0/labels/suggest?query=<label>`; never invent one. **NEVER post `crash` or `assertion`** as labels - they exist in Jira but are not used as tags (the crash/assert nature is already clear from the title and the body stack/assert message). Use specific class/context labels instead: `regression` + `regression-X.Y` (e.g. `regression-10.6`), `ASAN`/`UBSAN`/`MSAN` (the tool), the SAN class, `debug` (debug-only - opt shows "No bug found"), `optimizer_trace`, `affects-tests` (when it genuinely affects testing), `sporadic` (the testcase does not reproduce on every run). A plain crash with no regression/SAN/feature angle may carry NO labels.
 
   For an ASAN/UBSAN/MSAN bug, derive the SAN class label from the `SUMMARY:` line of the SAN log - `SUMMARY: <AddressSanitizer|UndefinedBehaviorSanitizer|MemorySanitizer>: <class> <file>:<line>` - take the `<class>` token (e.g. `null-pointer-use`, `heap-use-after-free`, `heap-buffer-overflow`, `stack-buffer-overflow`, `dynamic-stack-buffer-overflow`, `use-after-poison`, `use-of-uninitialized-value`). The SAME bug often emits DIFFERENT wording across builds at the SAME `file:line` (e.g. dbg `load of null pointer` vs opt `member access within null pointer`; both are null-pointer-use). EVERY such applicable variant the matrix sweep produced for this bug IS part of the bug - capture ALL of them for the kb/kba registration (step 11), and use the primary class as the label. (Only a SUMMARY at a genuinely DIFFERENT `file:line` belongs to a different bug.) Validate the label token before use.
 - **Priority** - `Major` for a typical crash/assert; `Critical` for a high-impact bug or a regression present for some time; `Blocker` for a recent regression. Never below `Major`.
@@ -332,13 +527,15 @@ Write two files into `<trial-dir>`:
   <full body>
   ```
 
-Present the overview to the user in this canonical layout (keep identical across sessions): a fields table (Title | Project/Type/Priority | Affects | Fix Version | Components | Labels), then the CLI and MTR testcases as separate full-width blocks (never side-by-side - it wraps lines), then `[assert]` / `[stack]` / `[bug_matrix]` / `[san_stack]` / `[san_setup]` / `[san_matrix]` placeholders in body order for the tool-emitted blocks, then the dedup verdict and the related-issues-to-signoff, then the two decisions: "approve to file?" and "which related links?". Render every referenced MDEV/MENT key (dedup hits, related candidates) as a full clickable `https://jira.mariadb.org/browse/<KEY>` URL, not a bare key, so the approver can click through. The Assignee line is presented as `Display Name / username (reason)` - the reason in parentheses is the owning subsystem OR the precedent (e.g. "fixed the identical MDEV-NNNNN"; prefer the latter when dedup found a truly-same-path issue, as its assignee/owner is the strongest signal). Never `(none)`, `suggest`, or a `signoff` qualifier; the signoff is the overall approval, not a per-line hedge. After filing, show the new ticket's URL the same way. Ask for approval. If ANYTHING changes after a presentation (further reduction, a version/label/component/assignee fix, a testcase or body edit), RE-PRESENT THE FULL overview from scratch - the complete fields table + both testcases + dedup + body summary - never just the delta or the fixed line. The approver must always see the entire current report in one place before approving.
+Present the overview to the user in this canonical layout (keep identical across sessions): a fields table (Title | Project/Type/Priority | Affects | Fix Version | Components | Labels), then the CLI and MTR testcases as separate full-width blocks (never side-by-side - it wraps lines), then the four-gate `bash` block from step 6, then `[assert]` / `[stack]` / `[bug_matrix]` / `[san_stack]` / `[san_setup]` / `[san_matrix]` placeholders in body order for the tool-emitted blocks, then the dedup verdict and the related-issues-to-signoff, then the two decisions: "approve to file?" and "which related links?". Render every referenced MDEV/MENT key (dedup hits, related candidates) as a full clickable `https://jira.mariadb.org/browse/<KEY>` URL, not a bare key, so the approver can click through. The Assignee line is presented as `Display Name / username (reason)` - the reason in parentheses is the owning subsystem OR the precedent (e.g. "fixed the identical MDEV-NNNNN"; prefer the latter when dedup found a truly-same-path issue, as its assignee/owner is the strongest signal). Never `(none)`, `suggest`, or a `signoff` qualifier; the signoff is the overall approval, not a per-line hedge. After filing, show the new ticket's URL the same way. Ask for approval. If ANYTHING changes after a presentation (further reduction, a version/label/component/assignee fix, a testcase or body edit), RE-PRESENT THE FULL overview from scratch - the complete fields table + both testcases + dedup + body summary - never just the delta or the fixed line. The approver must always see the entire current report in one place before approving.
 
 **Gate:** explicit user approval.
 
 ### Step 8a - Markup lint, before you present (mandatory, mechanical)
 
 Prose rules do not catch themselves. Run this over `log_jira_ticket.body` (and any comment file) and fix every hit BEFORE presenting for approval. A clean run is a gate, not a formality.
+
+Try deleting before rewording. When a sentence reads wrong, cut it and read the paragraph without it. Very often nothing is lost, because the sentence was a lead-in, a framing line or a restatement, and the paragraph is better starting on the fact. Reword only what survives the cut.
 
 ```bash
 F=<dir>/log_jira_ticket.body
@@ -348,9 +545,11 @@ grep -nP '\x{2014}' "$F"                     # em-dash: never allowed
 grep -nE '^h[1-6]\.' "$F"                    # Jira header: drop it
 grep -nE '^#' "$F"                            # line opening with #: numbered-list collision
 grep -n 'Please also test any fixes' "$F"    # body only: the line belongs to a comment on a pre-existing bug
+grep -nwE 'uuid|varchar|char|int|bigint|timestamp|datetime|date|time|blob|text|binary|varbinary|decimal|inet4|inet6|select|insert|update|delete|create|alter|drop|table|index|foreign key|primary key|unique' "$F"
+                                             # SQL keyword or data type in lowercase: uppercase it
 ```
 
-Every one of these must return nothing, except the `\-` line, where every hit must sit inside a `{{..}}` monospace span. That is the one rule for the hyphen escape: `\-` only inside `{{..}}`, and only for an issue key (`{{MDEV\-12345}}`) or a leading `--` option (`{{\--ssl-crl}}`). Ordinary prose takes the plain hyphen - `non-default`, `follow-up`, `10.6 - 13.1`, `{{a}} -> {{b}}` - and a bare `MDEV-39615` in prose stays unescaped so Jira links it. See `~/mariadb-qa/skills/_shared/jira_markup.md`.
+Every one of these must return nothing, except two lines. On the `\-` line every hit must sit inside a `{{..}}` monospace span. On the lowercase-SQL line, uppercase every hit that is prose, a `{{..}}` span or SQL you wrote; leave a hit that sits inside quoted server output, a stack, a source line or the customer's own DDL exactly as it came. That is the one rule for the hyphen escape: `\-` only inside `{{..}}`, and only for an issue key (`{{MDEV\-12345}}`) or a leading `--` option (`{{\--ssl-crl}}`). Ordinary prose takes the plain hyphen - `non-default`, `follow-up`, `10.6 - 13.1`, `{{a}} -> {{b}}` - and a bare `MDEV-39615` in prose stays unescaped so Jira links it. See `~/mariadb-qa/skills/_shared/jira_markup.md`.
 
 ## Step 9 - Submit
 
@@ -391,7 +590,22 @@ The dedup (step 3) usually surfaces same-family issues that are NOT strict dupli
 
 `--link-type` is one of `Blocks`, `Duplicate`, `Issue split`, `PartOf`, `Problem/Incident`, `Relates` (default); the script rejects anything else and prints the list. `Problem/Incident` is the caused-by type (inward "is caused by" / outward "causes"), used to point a regression at the ticket that introduced it. `--reverse` flips a link to the outward wording. A confirmed duplicate would have been actioned in step 3 (not filed), so here the type is almost always `Relates`.
 
-**Tracking-TODO link (do for every ticket filed in a session):** also link each filed ticket as **part of** the session's tracking TODO. ASK the user for the TODO key at the start of a filing session; do not assume it across sessions. Use `PartOf` (inward "is part of" / outward "includes"). DIRECTION (verified, counter-intuitive): the script sets `inwardIssue = --link key`, `outwardIssue = --relates`; the issue on `--relates` ends up "is part of" the issue on `--link`. So to get "MDEV is part of TODO" put the **TODO on `--link`** and the **MDEV on `--relates`** (NOT the reverse):
+**A related ticket sometimes needs a short comment, not only a link.** Two shapes come up, and
+both are drafted verbatim for signoff alongside the link (never posted on your own):
+
+- **Shared call site.** The new bug and the other ticket meet at one function or one lock.
+  Name that point, say what each ticket does there, and state plainly that they are separate
+  bugs. Three short paragraphs, no more.
+- **A fix in review that does not cover ours.** Where dedup found a ticket whose pending fix
+  a reader would assume closes the new bug too - the usual tell is an identical frame set -
+  test it: apply that fix to a build and run the new testcase against it. Report the result
+  in one paragraph, and say the fix is not expected to close the new bug. Do NOT post this
+  without having run it; an untested claim about somebody's fix is worse than silence.
+
+Both open with the AI line, per the comment rules above. Keep the ticket keys bare so Jira
+links them; `{{..}}` around a key breaks the link.
+
+**Tracking-TODO link (only where a tracking TODO is actually in play):** where the session is filing under a tracking TODO, link each filed ticket as **part of** it. The key comes from the conversation, and it does not carry across sessions. When nothing in the conversation names one, there is no TODO: skip this and do not ask. Use `PartOf` (inward "is part of" / outward "includes"). DIRECTION (verified, counter-intuitive): the script sets `inwardIssue = --link key`, `outwardIssue = --relates`; the issue on `--relates` ends up "is part of" the issue on `--link`. So to get "MDEV is part of TODO" put the **TODO on `--link`** and the **MDEV on `--relates`** (NOT the reverse):
 
 ```bash
 ~/jira --link TODO-NNNN --relates MDEV-xxxxx --link-type PartOf -y   # "MDEV-xxxxx is part of TODO-NNNN"
@@ -413,6 +627,7 @@ With the `MDEV-xxxxx` key, register so the framework recognises future occurrenc
    - Each testcase is self-contained: it carries its own setup, so it replays on its own in a fresh instance. Repeat the setup in every block, even when the block above already has it.
    - No remark above a testcase to say what it shows. The SQL is the record.
    - Drop every MTR requirement, even one that is genuinely required for MTR: no `--source include/*.inc`, no `--error`, no `--let`/`--replace_*`, no cleanup `DROP`. The file is a CLI replay file, so an engine guard belongs in the `.test`, never here.
+   - An **MTR-only** testcase - one that needs a cluster, or several connections - NEVER goes in as MTR. Strip it to the plain SQL and put one marker line at the top, worded for the real case: `# Requires MTR & Galera; ref bug report for MTR testcase`. The `.test` lives in the ticket, and this file stays SQL.
    - Two exceptions keep what they need: a **multi-threaded** testcase and a **complex replication** testcase stay as they are, because dropping their scaffolding breaks the replay.
    - A **simple replication** testcase needs one marker line at the top instead of the include - `# Requires m/s replication setup` or similar - then the plain SQL.
 
@@ -424,6 +639,10 @@ With the `MDEV-xxxxx` key, register so the framework recognises future occurrenc
    - **typed error-string** entries -> their own top section, NOT the Mac section: `GOT_ERROR|...` in the GOT_ERROR block, `INNODB_ERROR|...` in the INNODB_ERROR block, `MARIADB_ERROR_CODE|...` in the MARIADB_ERROR_CODE block, `GOT_FATAL_ERROR|...` by the GOT_FATAL line.
 
    One per line; `## MDEV-xxxxx` marker **column-aligned so `##` starts at char 176** (pad the UniqueID to width 175; if >=175 chars use a single space before `##`). No leading `#` (that marks a fixed/filtered entry); the parser keys on `## MDEV-`. (NB: `UID` is a readonly shell var - use another name.)
+
+   **Registering is not a question.** Do it without asking, for the UniqueID your own run produced, and do it even when that string is already in the file under another key. Each bug gets its own line, carrying its own key; never join two keys on one marker. Stay on the bug you are working on: registering is not a reason to touch another ticket's entries. Say what you added.
+
+   Anchor the insert on a line number you looked up, not on a `grep` pattern: some of these strings appear twice in the file, so a pattern anchor inserts twice and the count check then aborts the swap.
 
    `known_bugs.strings` / `.SAN` are load-bearing framework files - edit them with CARE and STABILITY: always back up, generate into a SEPARATE file, VERIFY, and swap only on pass. Never blind `>>` append, never edit in place. These files are git-tracked, so the definitive final check is **`git diff known_bugs.strings`** (or `.SAN`): confirm the diff is EXACTLY the intended change - only added (`+`) lines for an insert, or matched `-`/`+` lines at the old/new spots for a relocation - and nothing else moved or reformatted. If `git diff` shows anything unexpected, restore from the backup and retry.
 

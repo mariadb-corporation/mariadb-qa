@@ -3832,3 +3832,4 @@ SIGSEGV|Sql_path::from_text|Sys_var_path::from_item|Sys_var_path::do_check|sys_v
 # *start|SIGABRT|fts_decode_vlc|fts_optimize_node|fts_optimize_word|fts_optimize_compact                                                                              ## Fixed ## MDEV-40621
 # #SIGSEGV|__GI___nptl_deallocate_tsd|__GI___nptl_deallocate_tsd|start_thread|clone3                                                                                   ## Fixed ## MDEV-40651 (filtering ftm; may be a generic/dud DuckDB stack)
 # SIGSEGV|store_duckdb_field_in_mysql_format|ha_duckdb::rnd_next|handler::ha_rnd_next|rr_sequential                                                                   ## Fixed ## MDEV-40651
+SIGABRT|ut_dbg_assertion_failed|wsrep_assert_valid_bf_bf_wait|wsrep_BF_has_to_wait|lock_rec_has_to_wait_wsrep                                                                  ## MDEV-41028

@@ -18,7 +18,7 @@ task matches its description.
   wiki markup.
 - `jira-ticket` - file a reduced pquery trial as a public MariaDB bug: reduce further,
   dedup against Jira, generate the report, craft the MTR testcase, derive the fields, and
-  file after approval.
+  file after approval. The three original/fixed/diff gates run only on request.
 - `loop-screens-cleanup` - sweep the reducer screens and end the finished ones, reaping
   each ended trial's processes and its `/dev/shm` workdir; leave screens still reducing.
 - `mtr_matrix_claude` - run one `.test` against every build `gendirs.sh` lists (plain, `SAN`,
@@ -41,6 +41,7 @@ task matches its description.
   pushed. Run it by hand with `bash skills/_check/public_safety_scan.sh` (staged files) or
   pass paths. Private, box-specific patterns belong in
   `~/.config/mariadb-qa/public_safety_denylist` (seeded by `linkit`, never committed).
+- `../claude/writing/` - writing setup kit for colleagues: rules, voice profile, installer.
 
 ## Install
 

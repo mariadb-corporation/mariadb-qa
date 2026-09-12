@@ -21,7 +21,6 @@ SET innodb_lock_wait_timeout=1;
 SET SESSION pseudo_slave_mode=ON;
 CREATE TABLE t1 (c INT PRIMARY KEY) ENGINE=InnoDB;
 XA START 'a';
---error ER_DUP_ENTRY
 INSERT INTO t1 VALUES (1),(1);
 XA END 'a';
 SET foreign_key_checks=0,unique_checks=0;

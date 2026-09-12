@@ -1,0 +1,12 @@
+# Requires MTR & Galera; ref bug report for MTR testcase
+CREATE TABLE p (id UUID PRIMARY KEY, v INT) ENGINE=InnoDB;
+CREATE TABLE c (id INT AUTO_INCREMENT PRIMARY KEY, p_id UUID NOT NULL, KEY k (p_id), FOREIGN KEY (p_id) REFERENCES p (id)) ENGINE=InnoDB;
+CREATE TABLE f (id INT AUTO_INCREMENT PRIMARY KEY, pad CHAR(255)) ENGINE=InnoDB;
+INSERT INTO p VALUES ('c0a8016b-9e4d-4f7a-b3d2-6a1e8f9c0d1b', 0);
+SET GLOBAL wsrep_slave_threads = 2;
+BEGIN;
+INSERT INTO f (pad) SELECT REPEAT('x',255) FROM seq_1_to_2000;
+INSERT INTO c (p_id) VALUES ('c0a8016b-9e4d-4f7a-b3d2-6a1e8f9c0d1b');
+COMMIT;
+UPDATE p SET v = v + 1 WHERE id = 'c0a8016b-9e4d-4f7a-b3d2-6a1e8f9c0d1b';
+DROP TABLE c, p, f;
