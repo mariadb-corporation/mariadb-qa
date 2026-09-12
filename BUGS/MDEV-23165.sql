@@ -70,3 +70,7 @@ INSERT INTO t VALUES (1),(2),(3),(4),(5),(6),(7),(8);
 SET GLOBAL innodb_limit_optimistic_insert_debug=2;
 INSERT INTO t SELECT t.a FROM t t,t t2;
 INSERT INTO t SELECT t.a FROM t t,t t2;
+
+SET GLOBAL innodb_limit_optimistic_insert_debug=2;
+CREATE TABLE t (id INT AUTO_INCREMENT PRIMARY KEY, k INT, KEY(k)) ENGINE=InnoDB;
+INSERT INTO t (k) SELECT seq MOD 10 FROM seq_1_to_2000;
