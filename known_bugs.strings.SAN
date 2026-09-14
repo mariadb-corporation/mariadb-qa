@@ -22,6 +22,7 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|get_new_start_alter_info|Query_log_event::handle_split_alter_query_log_event                                               ## MDEV-37770 (needs testcase)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|member access within null pointer of type 'ROLE_GRANT_PAIR'|sql/sql_acl.cc|can_grant_role_callback|traverse_role_graph_impl|traverse_role_graph_down|can_grant_role      ## MDEV-41122
 UBSAN|member access within null pointer of type 'CHARSET_INFO' (aka 'const struct charset_info_st')|strings/json_lib.c|json_string_set_cs|json_find_path|Item_func_json_array_append::val_str|Item_str_func::val_real  ## MDEV-41121
 UBSAN|null pointer passed as argument 2, which is declared to never be null|sql/char_buffer.h|CharBuffer<793ul>::append|name_hash_search|routine_hash_search|check_grant_routine ## MDEV-41088
 UBSAN|addition of unsigned offset to X overflowed to Y|include/rem0rec.inl|rec_get_nth_field_offs|rec_get_nth_cfield|trx_undo_page_report_modify|trx_undo_report_row_operation ## MDEV-41025
