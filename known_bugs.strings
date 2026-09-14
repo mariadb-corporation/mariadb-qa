@@ -256,6 +256,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|show_role_grants|mysql_show_grants|mysql_execute_command|mysql_parse                                                                                                   ## MDEV-41123
+pair|SIGABRT|show_role_grants|mysql_show_grants|mysql_execute_command|mysql_parse                                                                                              ## MDEV-41123
 SIGSEGV|can_grant_role_callback|traverse_role_graph_impl|traverse_role_graph_down|can_grant_role                                                                               ## MDEV-41122
 SIGSEGV|json_string_set_cs|json_find_path|Item_func_json_array_append::val_str|Item_str_func::val_real                                                                         ## MDEV-41121
 SIGSEGV|init_fts_doc_id_for_ref|init_fts_doc_id_for_ref|init_fts_doc_id_for_ref|row_update_for_mysql                                                                           ## MDEV-37464
