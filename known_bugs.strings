@@ -498,6 +498,7 @@ old_n_core_fields == index->n_core_fields|SIGABRT|btr_pcur_t::restore_position|s
 b.is_valid_ident()|SIGABRT|Lex_ident<Compare_ident_ci>::streq|find_field_in_table|Item_trigger_field::setup_field|Table_triggers_list::create_triggersql_trigger.cc            ## MDEV-30434
 SIGSEGV|Protocol::valid_handler|Protocol_text::store_str|Protocol::store|Field::send                                                                                           ## MDEV-39399
 SIGSEGV|Protocol::valid_handler|Protocol_text::store_longlong|Field_longlong::send|Protocol_text::store                                                                        ## MDEV-39399
+SIGSEGV|Protocol::valid_handler|Protocol_text::store_long|Type_handler::Item_send_long|Type_handler_long::Item_send                                                            ## MDEV-39399
 0|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step                                                                                                        ## MDEV-39306
 cmp_rec_rec(rec, old_rec, offsets, old_offsets, m_index) > 0|SIGABRT|PageBulk::insertPage<btr0bulk.cc|PageBulk::insert|BtrBulk::insert|BtrBulk::insert                         ## MDEV-39299
 !(col->prtype & 256U)|SIGABRT|row_merge_buf_add|row_merge_read_clustered_index|row_merge_build_indexes|ha_innobase::inplace_alter_table                                        ## MDEV-39309
