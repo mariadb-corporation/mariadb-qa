@@ -256,6 +256,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+!is_set() || (m_status == DA_EOF_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_eof_status|my_eof|select_send::send_eof|Explain_query::send_explain                       ## MDEV-41165
+file < 0|SIGABRT|select_to_file::~select_to_file|select_export::~select_export|select_export::~select_export|THD::end_statement                                                ## MDEV-41164
 mdl_request->ticket == __null|SIGABRT|MDL_context::try_acquire_lock_impl|MDL_context::acquire_lock|sp_acquire_mdl|open_and_process_routine                                     ## MDEV-41124
 SIGSEGV|show_role_grants|mysql_show_grants|mysql_execute_command|mysql_parse                                                                                                   ## MDEV-41123
 pair|SIGABRT|show_role_grants|mysql_show_grants|mysql_execute_command|mysql_parse                                                                                              ## MDEV-41123
