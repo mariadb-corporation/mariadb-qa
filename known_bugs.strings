@@ -256,6 +256,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+((0x7 | 8U) & mode) == LOCK_S || ((0x7 | 8U) & mode) == LOCK_X|SIGABRT|lock_rec_lock|lock_clust_rec_read_check_and_lock|sel_set_rec_lock|row_search_mvcc                       ## MDEV-38275
+((0x7 | 8U) & mode) == LOCK_S || ((0x7 | 8U) & mode) == LOCK_X|SIGABRT|lock_rec_lock|lock_clust_rec_read_check_and_lock|sel_set_rec_lock|row_search_mvcc<InnoDBPolicy<true, true> >  ## MDEV-38275
+UT_LIST_GET_LEN(trx->lock.trx_locks) == 0|SIGABRT|ut_dbg_assertion_failed|TrxFactory::destroy|Pool<trx_t, TrxFactory, TrxPoolLock>::~Pool|ut_allocator<Pool<trx_t, TrxFactory, TrxPoolLock>, true>::destroy  ## MDEV-38275
 table->found_next_number_field && !altered_table->found_next_number_field|SIGABRT|ha_partition::commit_inplace_alter_table|handler::ha_commit_inplace_alter_table|mysql_inplace_alter_table|mysql_alter_table  ## MDEV-41173
 table->found_next_number_field && !altered_table->found_next_number_field|SIGABRT|ha_partition::commit_inplace_alter_table|mysql_inplace_alter_table|mysql_alter_table|Sql_cmd_alter_table::execute  ## MDEV-41173
 !trx->active_prepare|SIGABRT|innobase_register_trx|innobase_query_caching_of_table_permitted|Query_cache::send_result_to_client|mysql_parse                                    ## MDEV-30801
