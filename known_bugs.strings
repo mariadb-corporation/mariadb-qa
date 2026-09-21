@@ -256,6 +256,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+open_tables == 0 && temporary_tables == 0 && derived_tables == 0 && lock == 0 && locked_tables_mode == LTM_NONE && m_reprepare_observer == __null|SIGABRT|THD::restore_backup_open_tables_state|get_all_tables|get_schema_tables_result|JOIN::exec_inner ## MDEV-41241
+SIGSEGV|SQL_SELECT::cleanup|SQL_SELECT::~SQL_SELECT|st_join_table::cleanup|JOIN::cleanup                                                                                       ## MDEV-41240
 SIGSEGV|sec_part_shift|Field_time_hires::Field_time_hires|new_Field_time|Type_handler_time2::make_table_field                                                                  ## MDEV-41225
 dec <= 6|SIGABRT|Field_time_with_dec::Field_time_with_dec|Field_time_hires::Field_time_hires|new_Field_time|Type_handler_time2::make_table_field                               ## MDEV-41225
 SIGABRT|__cxa_throw|duckdb::DuckDBAssertInternal|duckdb::StringValue::Get[abi:cxx11]value.cpp|duckdb::Value::GetValueUnsafe<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >  ## MDEV-41208
