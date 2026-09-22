@@ -1,0 +1,10 @@
+# Statements to keep out of the stream on an engine matrix run:
+#   SQL_FILTER_FILE=corlogic.filter.engines
+# One case-insensitive extended regular expression per line. A statement that matches is
+# dropped before it reaches any side.
+#
+# REPLACE of a row that is already there is a delete plus an insert on one engine and one
+# update in place on another, so the affected row count is 2 against 1 by design. The
+# same holds for the row an ON DUPLICATE KEY clause rewrites.
+^[[:space:]]*replace[[:space:]]
+on[[:space:]]+duplicate[[:space:]]+key

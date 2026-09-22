@@ -1,0 +1,156 @@
+# corlogic generator class weights (generator --weights). One "<class> <weight>" per line.
+# 0 disables a class. Names are the generator's class registry; unknown names are ignored.
+# Every class is listed so the mix is fully pinned; corlogic's own statement filter drops
+# the remaining off-target output. The two non-CIT dispatch paths carry the reserved names
+# legacy and grammar, in per mille of all statements; both are set here to the generator
+# defaults, so lowering them shifts their share to the classes below.
+
+# non-CIT dispatch paths, per mille of all statements
+legacy 20
+grammar 40
+
+# core read path: joins, subqueries, CTEs, grouping, optimizer targets
+select 800
+ot_read 500
+ot_cmplx 500
+q_subq 700
+q_cte 500
+q_grp 500
+q_tval 150
+su_derived 400
+su_exists 400
+su_fromjoin 400
+su_inpred 400
+su_scalarlist 400
+su_unionderiv 400
+rg_ormerge 350
+rg_andrange 350
+rg_inlist 350
+rg_misc 350
+rg_cover 350
+rg_group 350
+rg_mixed 350
+ag_distinct 300
+ag_rollup 300
+ag_exotic 150
+
+# DML
+insert 500
+dml_insert 500
+dml_update 500
+update 400
+dml_delete 300
+delete 300
+dml_replace 250
+ot_dml 300
+dml_tx 150
+
+# DDL (tables and indexes only)
+create 300
+ddl_create 300
+ddl_alter 250
+ddl_index 250
+
+# partitioning
+pt_select 200
+pt_dml 200
+pt_create 150
+pt_alter 150
+
+# type edges and deterministic functions
+tydec 200
+tyint 200
+tycast 250
+tytemp 150
+tybit 100
+tybool 100
+fnstr 150
+fnnum 150
+fnctl 100
+fnmisc 100
+fndt 50
+
+# off: side effects, nondeterminism, vendor-specific, out of scope
+ag_frame 0
+ag_gconcat 0
+ag_namedwin 0
+cs_compare 0
+cs_intro 0
+cs_join 0
+cs_select 0
+cs_set 0
+dc_blobc3 0
+dc_expr 0
+dc_group 0
+dc_nest 0
+dc_order 0
+ddl_misc 0
+ddl_seq 0
+ddl_view 0
+deny 0
+dml_handler 0
+dml_lock 0
+dml_settx 0
+ec_cast 0
+ec_clause 0
+ec_dml 0
+ec_func 0
+ec_names 0
+ec_setsub 0
+ec_synmisc 0
+engines 0
+explain 0
+fngeo 0
+fnjson 0
+ft_alter 0
+ft_create 0
+ft_insert 0
+ft_multi 0
+ft_query 0
+is_columns 0
+is_engines 0
+is_join 0
+is_meta 0
+is_ps 0
+is_tables 0
+jsagg 0
+jsinsp 0
+jsjt 0
+jsmod 0
+jspred 0
+jsschema 0
+ld_ddl 0
+ld_dump 0
+ld_intovar 0
+ld_load 0
+ld_out 0
+ld_xml 0
+maint 0
+ot_analyze 0
+ot_explain 0
+ot_set 0
+plcall 0
+pldrop 0
+plfunc 0
+plproc 0
+plugin 0
+prepared 0
+privilege 0
+pt_exchange 0
+pt_ischema 0
+q_hint 0
+q_win 0
+rpflush 0
+rpfunc 0
+rpgtid 0
+rpset 0
+rpshow 0
+set 0
+setvariant 0
+show 0
+storedprog 0
+sv_alter 0
+sv_create 0
+sv_dml 0
+sv_portion 0
+sv_select 0

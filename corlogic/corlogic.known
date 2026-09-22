@@ -1,0 +1,61 @@
+# corlogic known-difference filter. One entry per line; a matching finding is muted.
+#
+# Two forms:
+#   CATEGORY|MECHANISM|CONSTRUCTS|STATEMENT   a UID pattern. A field of * matches
+#                                             anything, a field ending in * matches by
+#                                             prefix, and a field wrapped in * matches
+#                                             anywhere in the value, so one line mutes a
+#                                             family
+#   <12 hex>                                  one exact testcase, by its testcase id
+# A full "<id>//<UID>" line as printed in a report counts as both.
+#
+# CONSTRUCTS is a set of tokens, comma separated and sorted alphabetically. Match it with
+# the wrapped form, *CTE*, which finds the token wherever it sits. A prefix, CTE*, only
+# matches when that token happens to sort first, so it silently misses most statements.
+# The wrapped form is anchored on the commas there, so *IN* is the token IN and never the
+# IN inside INSERT.
+#
+# The UID of a finding is the "UID:" line of its bugN.report, and `pr` in the workdir
+# prints it as well.
+#
+# An entry that names one statement does not hide the same defect reached another way. A
+# finding that agrees with such an entry on the category and the mechanism, on a statement
+# the entry does not name, is still reported, and the report says which entry it sits
+# beside so it can go on that ticket instead of becoming a new bug. A comment above an
+# entry naming an MDEV or MENT number puts that number in the notice. The notice needs a
+# mechanism that names both sides, an error pair or an affected-count pair among them. A
+# mechanism naming neither side, content and coltype for example, is shared by too much to
+# say anything, so it gets no notice.
+#
+# corlogic.known.INFO carries the long form: one section per entry with the cause, the
+# code citations and the evidence, including the entries that live in a sibling known
+# file. Read it before adding an entry here.
+
+# ANALYZE TABLE reports its own progress differently per version; the statistics refresh
+# in the stream is compared on state alone, but a generated ANALYZE inside a testcase can
+# still land here.
+RESULT|content|*|ANALYZE TABLE*
+
+# A plan whose only difference is the access type on a table with no index is the
+# optimizer choosing between two equal-cost paths.
+PLAN|ALL>index|*|*
+
+# MDEV-37939, the logarithm domain error. As described in corlogic.known.INFO.
+ERROR|1365v3047|*|*
+
+# MDEV-40877, wrong result from NOT IN with a NULL in a materialized subquery. As
+# described in corlogic.known.INFO.
+4609a4ba3fe6//RESULT|rows0v26|IN,SUBQ|SELECT * FROM tX o WHERE o.cX NOT IN (SELECT cX FROM tX) LIMIT N
+
+# MDEV-36166, MULTIPOINT WKT with brackets is not read. As described in
+# corlogic.known.INFO.
+791a7ad99edf//RESULT|content|SPATIAL|SELECT ST_ASTEXT(ST_UNION(ST_GEOMFROMTEXT('X'), ST_GEOMFROMTEXT('Y')))
+
+# MDEV-27310, ONLY_FULL_GROUP_BY is not applied to the ORDER BY list. As described in
+# corlogic.known.INFO.
+ERROR|1055v0|*ORDERBY*|*
+ERROR|0v1140|*ORDERBY*|*
+
+# MDEV-11588, no functional-dependency detection for ONLY_FULL_GROUP_BY. As described in
+# corlogic.known.INFO.
+3962a83db959//ERROR|0v1140|AGG|SELECT COUNT(*),cX FROM tX WHERE cX=N AND cX IS NOT NULL

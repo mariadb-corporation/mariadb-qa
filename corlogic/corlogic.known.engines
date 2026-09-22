@@ -1,0 +1,17 @@
+# Known differences for an engine matrix run:
+#   KNOWN_FILE=corlogic.known.engines
+# The line forms are the ones corlogic.known documents.
+#
+# Only InnoDB indexes a virtual column, so MyISAM and Aria refuse the same CREATE or
+# ALTER with ER_KEY_BASED_ON_GENERATED_VIRTUAL_COLUMN.
+ERROR|0v1904|*|*
+ERROR|1904v0|*|*
+
+# How much a table may hold is the engine's own limit: MEMORY stops at
+# max_heap_table_size with ER_RECORD_FILE_FULL where a disk engine carries on.
+ERROR|0v1114|*|*
+ERROR|1114v0|*|*
+
+# MDEV-40874. An UPDATE that writes a column back to the value it already holds counts one
+# affected row on Aria and none on InnoDB. As described in corlogic.known.INFO.
+AFFECTED|0v1|UPDATE|UPDATE tX SET cX=DEFAULT

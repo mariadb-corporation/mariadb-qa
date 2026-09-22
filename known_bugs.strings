@@ -784,6 +784,7 @@ table_share->tmp_table != NO_TMP_TABLE || m_lock_type != 2|SIGABRT|handler::ha_r
 SIGSEGV|Item_field::Item_field|TR_table::query|Item_func_trt_id::get_by_commit_ts|Item_func_trt_id::val_int                                                                    ## MDEV-36119
 SIGSEGV|Sql_mode_save::Sql_mode_save|Sql_mode_instant_remove::Sql_mode_instant_remove|get_field|GRANT_NAME::GRANT_NAME                                                         ## MDEV-36119
 partial_join_cost >= 0.0|SIGABRT|recompute_join_cost_with_limit|join_limit_shortcut_finalize_plan|choose_plan|make_join_statistics                                             ## MDEV-36096
+partial_join_cost >= -2.2204460492503131e-16|SIGABRT|recompute_join_cost_with_limit|join_limit_shortcut_finalize_plan|choose_plan|make_join_statistics                         ## MDEV-41252
 order|SIGABRT|join_read_first|sub_select|do_select|JOIN::exec_inner                                                                                                            ## MDEV-35978
 last_pos == 0 || pos > last_pos|SIGABRT|fts_cache_node_add_positions|row_fts_insert_tuple|row_fts_merge_insert|fts_parallel_merge                                              ## MDEV-35967
 sym_node->table != NULL|SIGABRT|ut_dbg_assertion_failed|pars_retrieve_table_def|pars_retrieve_table_list_defs|pars_select_statement                                            ## MDEV-35937

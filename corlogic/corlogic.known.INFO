@@ -1,0 +1,437 @@
+corlogic.known - rationale and evidence
+=======================================
+
+Why each mute entry exists, with enough detail to judge it. One section per
+entry, headed by the entry and by the file it lives in when that is not
+corlogic.known.
+
+
+ERROR|1365v3047|*|*
+-------------------
+
+MDEV-37939, "Use correct error for invalid logarithm arguments". A logarithm
+given a non-positive argument reports differently:
+
+  12.3 and older   ERROR 1365: Division by 0
+  13.0 and newer   ERROR 3047: Invalid argument error: <arg> in function log2.
+
+13.x is the correct side. In /test/13.1/sql/item_func.cc the val_real methods
+of Item_func_ln, _log, _log2 and _log10 call signal_log_domain_error(), which
+raises ER_STD_INVALID_ARGUMENT; in /test/12.3 the same four call
+signal_divide_by_null(). The change is owned by
+/test/13.1/mysql-test/main/func_math_div_zero.test, present from 13.0.
+
+Only INSERT, UPDATE and REPLACE see it as an error. The condition is a warning
+and strict mode escalates it for those statements alone.
+
+Scale: run /data/8469494 (CS 12.3.3 against CS 13.1.0, 100k trials, 210.8M
+statements) gave 443 diffs and 308 reports. This one change is 315 of the diffs
+and 307 of the reports, differing only in which log function and which DML
+wrapped it. All 307 were checked one by one: nothing in any difference block but
+the 1365 to 3047 swap, the named argument always zero or negative, plans
+identical on both sides.
+
+
+RESULT|content|*|ANALYZE TABLE*
+-------------------------------
+
+ANALYZE TABLE reports its own progress differently per version. The in-stream
+statistics refresh is compared on state alone, but a generated ANALYZE inside a
+testcase can still land here.
+
+
+PLAN|ALL>index|*|*
+------------------
+
+A plan differing only in the access type on a table with no index. The optimizer
+is choosing between two equal-cost paths.
+
+
+RESULT|coltype|*CSINTRO*|*   in corlogic.known.mysql
+----------------------------------------------------
+
+The utf8 alias split. 13.1 dropped UTF8_IS_UTF8MB3 from the old_mode default
+(/test/13.1/sql/sys_vars.cc, old_mode_names[], "deprecated since 13.1"), so a
+bare _utf8 introducer means utf8mb4 there and utf8mb3 on 12.3 and older. This is
+not a CONCAT bug:
+
+  statement                              12.3                    13.1
+  -------------------------------------  ----------------------  ----------------------
+  CONCAT(_utf8 'h',' ',_binary 'w')      varbinary(3)            varchar(3) utf8mb4_bin
+  CONCAT(_utf8mb3 'h',' ',_binary 'w')   varbinary(3)            varbinary(3)
+  CONCAT(_utf8mb4 'h',' ',_binary 'w')   varchar(3) utf8mb4_bin  varchar(3) utf8mb4_bin
+
+Same aggregation rule on both sides, and @@old_mode reads UTF8_IS_UTF8MB3 on
+12.3 and empty on 13.1. Only the meaning of _utf8 moved.
+
+MariaDB sides are fixed in code, not muted: at pre-flight corlogic strips
+UTF8_IS_UTF8MB3 from each side's @@old_mode and, when every side then agrees,
+emits one SET SESSION old_mode. Verified 12.3.3 against 13.1.0, one candidate
+before and none after.
+
+MySQL has no old_mode, so a cross-vendor run cannot be aligned and is muted
+instead. Measured against 13.1.0: 5.5.62, 5.6.51 and 5.7.44 differ, 8.0.36 and
+9.1.0 agree, so utf8 moved somewhere in the 8.0 series. The live UID on 5.7.44:
+
+  RESULT|coltype|CSINTRO|SELECT CONCAT(_utf8 'X', 'Y', _binary 'Z')
+
+The CSINTRO token comes from constructs_of and also covers the latin1 and ucs2
+spellings, so every other column-type difference stays live. A mute beats a
+VERSION_GATED row here, because the statement still runs on both sides so a
+crash or a wrong row in it is still caught, where a gate drops the shape from
+the stream entirely.
+
+
+AFFECTED|0v1|UPDATE|UPDATE tX SET cX=DEFAULT   in corlogic.known.engines
+------------------------------------------------------------------------
+
+MDEV-40874, filed. An UPDATE writing a column back to the value it already holds
+counts one affected row on Aria and none on InnoDB.
+
+  CREATE TABLE t (c DECIMAL(8,3));
+  INSERT INTO t VALUES(NULL);
+  UPDATE t SET c=DEFAULT;
+
+  InnoDB   affected=0
+  Aria     affected=1
+
+Reproduces on all 20 MariaDB builds in the sweep, none clean. Across the engine
+axis RocksDB counts as Aria does, and MyISAM, MEMORY and ARCHIVE count as InnoDB
+does. The pattern carries the normalised tX and cX the current code emits, where
+the report predates that change and its own UID line reads t3 and c3.
+
+Only this statement shape is muted, so the same defect reached another way is
+reported again. That is wanted: a new data point on a filed bug, not a new bug.
+Such a report carries the near-match notice naming this entry and MDEV-40874,
+so it goes on that ticket. Measured on 13.1.0, InnoDB against Aria:
+
+  UPDATE t1 SET c1=DEFAULT   muted, no report
+  UPDATE t1 SET c1=c1        reported, notice names MDEV-40874
+
+
+Reading a report before adding an entry
+=======================================
+
+A wide Bug Detection Matrix is usually not a second bug. Older versions lack the
+function the testcase uses and answer "function does not exist", and the sweep
+records only that a diff was seen, not which one. In /data/8469494 every report
+flagging 26 of 30 builds used MONTHS_BETWEEN, which needs 12.3, and every report
+flagging 16 of 30 used CRC32C, which 10.6 does not have. Read the error text
+first.
+
+Dropped candidates are not mute material either, being timing and row-order
+effects. A server error whose cause is timing (1205, 1213, 1317, 1614, 1615,
+1969, 3024) is now a timing note and is not compared at all, so the 16 drops in
+/data/8469494 would be 5 today.
+
+4609a4ba3fe6//RESULT|rows0v26|IN,SUBQ|SELECT * FROM tX o WHERE o.cX NOT IN (SELECT cX FROM tX) LIMIT N
+-------------------------------------------------------------------------------------------------------
+
+MDEV-40877, "Wrong result from NOT IN with a NULL in a materialized subquery".
+MariaDB is the incorrect side. A NULL in the subquery result makes every
+comparison UNKNOWN, so NOT IN can never be TRUE and no row qualifies. MariaDB
+returns the rows whose value lies outside the range of the subquery column's
+type; MySQL 5.5 through 9.1 all return none.
+
+  CREATE TABLE t1 (c1 TINYINT);
+  INSERT INTO t1 VALUES(21),(NULL);
+  CREATE TABLE t2 (c1 INT);
+  INSERT INTO t2 VALUES(1),(2),(3),(9999);
+  SELECT * FROM t2 WHERE c1 NOT IN (SELECT c1 FROM t1);   -- returns 9999, expected no rows
+
+Three things have to line up. The subquery must contain a NULL: with a NULL-free
+subquery the same query is answered correctly, so the range check is only wrong
+in the presence of a NULL. The outer table needs four or more rows, which is
+what moves the plan from DEPENDENT SUBQUERY to MATERIALIZED; at three rows the
+answer is correct. And the returned value must be unrepresentable in the
+subquery column's type - 9999 against TINYINT reproduces, 127 does not.
+
+The defect sits in the partial-matching path for a materialized NOT IN. Setting
+materialization=off, or partial_match_rowid_merge=off with
+partial_match_table_scan=off, gives the correct answer under either switch.
+
+Both the single-column and the two-column row-constructor form are affected, so
+it reaches the code path MDEV-3509 and MDEV-3033 covered. Those two are closed
+and fixed, their own testcases give correct results on 13.1.0, and both went the
+other way (dropping rows that should have qualified), so this is not a
+re-emergence of either.
+
+Affects CS 10.11 through 13.1 and ES 10.6 through 12.3, opt and dbg, on every
+engine tested (InnoDB, MyISAM, Aria, MEMORY). Verified by a 30-build sweep of
+the reduced testcase; all 20 MariaDB builds differ and all 10 MySQL builds agree
+with the reference.
+
+The entry is the exact testcase id and UID from /data/3689720/bug324.report. The
+mechanism field carries the row counts of that one trial (rows0v26), so a
+different shape of the same defect reports as a finding that sits beside this
+entry rather than being muted outright - which is wanted, since a NOT IN
+wrong-result on another path still needs looking at.
+
+791a7ad99edf//RESULT|content|SPATIAL|SELECT ST_ASTEXT(ST_UNION(ST_GEOMFROMTEXT('X'), ST_GEOMFROMTEXT('Y')))
+----------------------------------------------------------------------------------------------------------
+
+MDEV-36166, "support for notation with brackets inside MULTIPOINT". MariaDB is
+the incorrect side. The OGC form of a MULTIPOINT puts each point in its own
+brackets. MariaDB reads only the bare form, and rejects the bracketed one:
+
+  SELECT ST_ASTEXT(ST_GEOMFROMTEXT('MULTIPOINT((1 1),(2 2))'));   -- NULL
+  SELECT ST_ASTEXT(ST_GEOMFROMTEXT('MULTIPOINT(1 1,2 2)'));       -- MULTIPOINT(1 1,2 2)
+
+The output side is what corlogic sees. ST_ASTEXT prints the bare form, so any
+statement building a MULTIPOINT differs from MySQL, which prints the bracketed
+one. ST_UNION of two POINTs is the shape the run turned up.
+
+The input side is the real defect. There is no error and no warning, so an
+INSERT of the bracketed form stores NULL and nothing is reported. MySQL gives
+ERROR 3037 when it cannot read the WKT.
+
+Wider than the ticket's description: ST_MPOINTFROMTEXT does not take the
+bracketed form either, and a MULTIPOINT nested in a GEOMETRYCOLLECTION returns
+NULL as well. MULTILINESTRING and MULTIPOLYGON both read their nested brackets
+correctly, so this is specific to MULTIPOINT.
+
+MySQL added the support in 5.7. MySQL 5.5 and 5.6 reject the bracketed form the
+same way MariaDB does, and 5.7, 8.0 and 9.1 all read it. A sweep of the 30
+gendirs.sh builds has all 20 MariaDB builds affected, both flavours, CS 10.11
+through 13.1 and ES 10.6 through 12.3.
+
+The entry is the exact testcase id and UID from /data/3689720/bug549.report.
+Muting the output difference is right because the ticket covers it, but note it
+mutes only this statement shape - another statement that builds a MULTIPOINT
+reports as a finding sitting beside this entry.
+
+RESULT|content|*|*CONV(*   and   RESULT|content|*|*x'*
+------------------------------------------------------
+(these live in corlogic.known.mysql)
+
+Hexadecimal and binary string literals. MariaDB is the correct side and this is not a
+defect. MariaDB separates the two syntaxes on purpose:
+
+  X'value' and x'value'   the SQL Standard binary string literal, a string in EVERY
+                          context, never a number
+  0xvalue                 the MySQL/MariaDB hex hybrid, a number in a numeric context
+
+MySQL treats both as numbers, so any statement mixing a literal with arithmetic, a
+bitwise operator, a comparison, CAST or CONV can differ. What the run turned up:
+
+  SELECT x'1F' ^ 0x10;            CS gives 16,       MS gives 15
+  SELECT CONV(0xFF,16,2);         CS gives 0,        MS gives 11111111
+  SELECT CAST(x'aa' AS UNSIGNED); CS gives 0,        MS gives 170
+
+MariaDB warns each time - "Truncated incorrect DOUBLE value: '\x1F'" - so nothing is
+silent. The two forms are byte-identical (HEX and LENGTH agree, and x'1F' = 0x1F is
+true), because that comparison is a string comparison; only the numeric conversion
+differs, which is the documented rule.
+
+The change was made in 5.5.31, intentionally, to fix MDEV-4489 and to follow the SQL
+standard. It is documented on the Hexadecimal Literals KB page and on the CAST page.
+Closed as expected behaviour three times: MDEV-6092 (Not a Bug), MDEV-10479 (the
+documentation was what got fixed) and MDEV-38434 (Not a Bug, 2025, on 11.8).
+
+On CONV specifically, MariaDB is the more coherent of the two. It stringifies the first
+argument and reads it in from_base, so CONV('FF',16,2) is 11111111 and CONV(255,16,2) is
+1001010101. MySQL returns 11111111 for CONV(0xFF,16,2) AND for CONV(0xFF,10,2), so it
+ignores from_base entirely once the argument is a hex literal.
+
+Muted on both patterns because the family reappears through any statement shape the
+generator builds around a literal. It cost 5 reports in one run.
+
+ERROR|1055v0|*ORDERBY*|*   and   ERROR|0v1140|*ORDERBY*|*
+---------------------------------------------------------
+
+MDEV-27310, "ONLY_FULL_GROUP_BY doesn't prevent ORDER BY from using a column
+missing in GROUP BY". Open, and it reproduces on every current version.
+
+MariaDB applies ONLY_FULL_GROUP_BY to the select list and to HAVING, but not to
+the ORDER BY list, so this is accepted where MySQL 5.6 and later refuse it:
+
+  SET sql_mode='ONLY_FULL_GROUP_BY';
+  CREATE TABLE t (a INT, b INT, c INT);
+  SELECT a, MIN(b) FROM t GROUP BY a ORDER BY c, a;
+
+The second pattern is the opposite case, an aggregate with no GROUP BY. There
+MariaDB refuses the ORDER BY and MySQL accepts it:
+
+  SELECT SUM(a) FROM t ORDER BY b;
+
+MariaDB gives ERROR 1140, whose text is about mixing group and non-group columns
+in the select list. The select list holds only the aggregate, and the text names
+neither ORDER BY nor the sql_mode. Both forms sit on the same ticket, because
+both come from the same check.
+
+Measured against MS 9.1.0: every MariaDB version accepts the first form, MySQL
+5.5 accepts it and MySQL 5.6 onwards refuses it. A same-vendor run never sees
+either form.
+
+f05f2e49fd1f//RESULT|content|PLAIN|SELECT GREATEST(cX,cX,N) AS r0 FROM tX WHERE ABS(cX) <N
+58b12e6fc964//RESULT|content|PLAIN|SELECT LEAST(cX,cX,N) AS r0 FROM t WHERE ABS(cX) <N
+-------------------------------------------------------------------------------------------
+(these live in corlogic.known.mysql)
+
+GREATEST and LEAST given both a string and a number. MariaDB compares the
+arguments as numbers, MySQL compares them as strings, so the two pick different
+arguments:
+
+  statement              CS 13.1.0   MS 9.1.0   PostgreSQL 17.11   Oracle 23ai
+  GREATEST('1000',295)   1000        295        1000 (integer)     295
+  LEAST('1000',295)      295         1000       295                1000
+  LEAST('d',295)         0           295        error              295
+
+PostgreSQL agrees with MariaDB and Oracle takes the type of its first argument,
+so there is no rule that makes the first two rows anything but the dialect.
+
+The two statements these entries name are the same shape twice, GREATEST and
+LEAST over an ENUM column beside an INT column and a number:
+
+  CREATE TABLE t (c1 INT, c2 ENUM('a','b','c','d'));
+  INSERT INTO t VALUES(4,'a'),(5,'b'),(6,'c');
+  SELECT LEAST(c1,c2,5) FROM t;
+
+  CS 13.1.0   1, 2, 3        the ENUM read as its index, so the ENUM wins
+  MS 9.1.0    4, 5, 5        every argument read as a string
+
+Each answer is one of the arguments under that side's own rule.
+
+The third row of the table above is not the dialect. MDEV-40982, "GREATEST/LEAST
+mixed string+bigint loses precision", Confirmed: every argument goes through a
+double conversion and the conversion is what comes back, so LEAST('d',295)
+returns a value no argument held.
+
+That is why these entries name two exact statements instead of the whole
+function. An entry on the function would mute that finding as well: the run that
+produced these two shapes also produced GREATEST('d',295), which is the MDEV-40982
+shape and has to keep reporting. The price is that a mixed-type GREATEST or LEAST
+in a shape nobody has judged still costs a report, which is the point of it.
+
+
+424985bb422a//RESULT|content|PLAIN|SELECT WEIGHT_STRING(cX) AS r0 FROM tX
+-------------------------------------------------------------------------
+(this lives in corlogic.known.mysql)
+
+WEIGHT_STRING() on a temporal value. MariaDB returns the bytes of the string
+form, MySQL returns the packed sort key:
+
+  SELECT HEX(WEIGHT_STRING(DATE'2020-01-01'));
+
+  CS 13.1.0   323032302D30312D3031    the ASCII of '2020-01-01'
+  MS 9.1.0    99A5420000000000        the packed key
+
+Over a string column both return the same collation weights, because every side
+creates its database CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci, so the
+column is on one collation everywhere. Only a temporal argument differs. MySQL
+documents the function as one for internal use. The entry names the one
+statement shape that was judged, so the function reached another way still
+reports.
+
+
+Cases carried in the code, with no entry here
+=============================================
+
+Five cross-vendor families are handled where they arise rather than muted, so
+nothing about them sits in corlogic.known.mysql.
+
+ALGORITHM= and LOCK= on an ALTER. ALGORITHM=NOCOPY is a MariaDB keyword and
+MySQL answers ERROR 1800 for it. ALGORITHM=COPY with LOCK=NONE is a capability
+rather than a keyword, and where it stands on ALTER TABLE t1 ADD c INT:
+
+  ES 10.6.28-24, CS 10.11.19   ERROR 1846
+  CS 11.4.13, CS 13.1.0        accepted
+  MS 9.1.0                     ERROR 1846
+
+strip_online_ddl() takes both clauses out of the stream on a run whose sides
+differ by engine or by vendor. The ALTER still runs on every side, so what it
+does to the table is still compared.
+
+The row count an ALTER reports. The count is the rows the statement copied, so a
+side that runs the ALTER instantly reports none where a side that rebuilds the
+table reports every row it moved. Forcing ALGORITHM=COPY on 13.1.0 gives the
+MySQL count, and both tables hold the same data either way. compare_pair()
+leaves the count of a DDL alone across the engine axis and across vendors.
+
+A plan difference the server itself explains. Where the two sides of a lookup
+are different types MariaDB declines the index and names the reason:
+
+  Note 1105  Cannot use key `k1` part[0] for lookup: `test`.`t1`.`c1` of type
+             `int` = "`o`.`c4`" of type `datetime`
+
+MySQL takes the lookup after casting both sides to double, which its own Note
+1003 spells out, and both return the same rows. explain_plan() reads the note
+and the plan compare drops the difference on a cross-vendor run where one side
+declined a key and the other used one. Between builds of one vendor the same
+note is a real change and still reports.
+
+An aggregate over an ENUM. SUM(DISTINCT) and AVG(DISTINCT) over an ENUM give
+1 and 1.0000 on MariaDB against 1 and 1 on MySQL: MariaDB reads the ENUM as its
+numeric index and answers in DECIMAL, MySQL reads it as a string and answers in
+DOUBLE. The value is the same. num_policy_match() already treats two renderings
+of one number as one value on a cross-vendor run.
+
+A fractional second going into a temporal that carries no sub-second precision.
+MariaDB cuts it and MySQL rounds it:
+
+  statement                                   CS 13.1.0             MS 9.1.0
+  CAST(35.5 AS TIME)                          00:00:35              00:00:36
+  CAST('2020-01-01 10:00:00.5' AS DATETIME)   2020-01-01 10:00:00   2020-01-01 10:00:01
+
+A plain INSERT of the same values into a TIME column and a DATETIME column
+splits the same way, so the class is not about CAST. Where each product stands,
+on CAST(35.5 AS TIME):
+
+  ES 10.6, CS 13.1   00:00:35, cut
+  MS 5.5             00:00:35.500000, the fraction kept
+  MS 5.6, MS 9.1     00:00:36, rounded
+  PostgreSQL 17.11   rounds
+  Oracle 23ai        rounds to TIMESTAMP(0), cuts to DATE
+
+Cutting it is the MariaDB default by design. MDEV-16991, closed as fixed in
+10.4.1, added sql_mode=TIME_ROUND_FRACTIONAL for the other behaviour, and on
+13.1.0 that flag gives the MySQL answer for both a CAST and a plain INSERT.
+Setting the flag on the MariaDB side alone would take the class out at the
+source, and it is not done. MySQL refuses the value - "Variable 'sql_mode' can't
+be set to the value of 'TIME_ROUND_FRACTIONAL'" - so it cannot be one statement
+both sides take, and corlogic only emits an in-band setup statement every side
+accepts. The reason is the testcase: a report carries one SET sql_mode line, so
+a mode held by one side alone would not replay what the run did.
+
+temporal_round_match() reads it off the cells instead. Where one vendor sits on
+each end of the run, resolve_compare_modes() records which side cuts, and a cell
+pair that is one temporal value on that side and the second after it on the
+other is one value. Everything else about the statement still compares, so a
+second expression in the same SELECT that really does differ still carries the
+statement to a report.
+
+Reading the cells rather than the statement is what makes this safe. The
+generator often pairs two expressions in one SELECT, and an entry on the CAST
+text muted about forty shapes in a 3000-trial run. Taking the entry out and
+reading the cells turned thirty of those shapes into reports, and they carry one
+class the entry had been hiding: a value outside the TIME range, where MySQL
+answers NULL and MariaDB clamps.
+
+  SELECT CAST(1e308 AS TIME);
+
+  CS 13.1.0   838:59:59
+  MS 9.1.0    NULL
+
+A cell pair two seconds apart, a cell that kept its fraction, a bare DATE, and
+any run that is not one vendor against the other are all outside the rule and
+stay a difference.
+
+
+3962a83db959//ERROR|0v1140|AGG|SELECT COUNT(*),cX FROM tX WHERE cX=N AND cX IS NOT NULL
+---------------------------------------------------------------------------------------
+
+MDEV-11588, "Support for ONLY_FULL_GROUP_BY functional dependency". Stalled.
+
+MySQL 5.7 and later work out that a column the WHERE clause fixes to one value is
+functionally dependent on nothing, so a non-aggregated reference to it is allowed.
+MariaDB has no such step and refuses the statement:
+
+  SET sql_mode='ONLY_FULL_GROUP_BY';
+  SELECT COUNT(*),b FROM t WHERE b=2;
+
+  CS 13.1.0  ERROR 1140
+  MS 9.1.0   1 row
+
+Without the WHERE clause both sides refuse it, so the difference is the
+functional-dependency step alone. This entry names the exact statement, so a
+variant is still reported and carries the MDEV-11588 notice.

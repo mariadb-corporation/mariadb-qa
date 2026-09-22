@@ -1,0 +1,51 @@
+# Known differences for a MariaDB against MySQL run:
+#   KNOWN_FILE=corlogic.known.mysql
+# The line forms are the ones corlogic.known documents. Every entry below is a place where
+# the two products promise different things, so a difference there is the dialect and not a
+# defect. Nothing here is muted on a same-vendor run.
+#
+# A function only one of them has, and the same function used where the other cannot take
+# it. GROUPING() is the one this turns up most.
+ERROR|1305v0|*|*
+ERROR|0v1305|*|*
+ERROR|1221v0|*|*
+ERROR|0v1221|*|*
+
+# QUICK is a MariaDB keyword in DELETE. MySQL reads it as a table alias, so the same text
+# is a different statement there and the WHERE clause compares another column.
+ERROR|*|*|DELETE QUICK*
+
+# An unused common table expression: MariaDB resolves its column names and MySQL does not,
+# so a CTE that names a column it does not have is an error on one side only.
+ERROR|1054v0|*CTE*|*
+ERROR|0v1054|*CTE*|*
+
+# MySQL refuses a subquery that reads the table the statement updates or deletes from.
+ERROR|0v1093|*|*
+ERROR|1093v0|*|*
+
+# `utf8` is an alias for utf8mb3 on MySQL and for utf8mb4 on a recent MariaDB, so a
+# statement that mixes an introducer literal with a binary literal aggregates to a
+# different column type on each side. Measured against CS 13.1.0: MySQL 5.5, 5.6 and 5.7
+# differ, 8.0.36 and 9.1.0 agree. As described in corlogic.known.INFO.
+RESULT|coltype|*CSINTRO*|*
+
+# Hexadecimal and binary string literals. MariaDB deliberately separates the two
+# syntaxes: X'value' / x'value' is the SQL Standard binary string literal and stays a
+# string in every context, while 0xvalue is the MySQL/MariaDB hex hybrid that acts as a
+# number in a numeric context. MySQL treats both as numbers. Closed as expected behaviour
+# three times - MDEV-6092, MDEV-10479 and MDEV-38434. As described in corlogic.known.INFO.
+RESULT|content|*|*CONV(*
+RESULT|content|*|*x'*
+
+# GREATEST and LEAST given both a string and a number. MariaDB compares the arguments as
+# numbers and MySQL compares them as strings, so each picks a different argument. The two
+# entries name the two statements that were judged, because the same conversion carries a
+# filed bug and a wider entry would mute that as well. As described in corlogic.known.INFO.
+f05f2e49fd1f//RESULT|content|PLAIN|SELECT GREATEST(cX,cX,N) AS r0 FROM tX WHERE ABS(cX) <N
+58b12e6fc964//RESULT|content|PLAIN|SELECT LEAST(cX,cX,N) AS r0 FROM t WHERE ABS(cX) <N
+
+# WEIGHT_STRING() on a temporal value. MariaDB returns the bytes of the string form and
+# MySQL returns the packed sort key. Over a string column both return collation weights, so
+# only a temporal argument differs. As described in corlogic.known.INFO.
+424985bb422a//RESULT|content|PLAIN|SELECT WEIGHT_STRING(cX) AS r0 FROM tX
