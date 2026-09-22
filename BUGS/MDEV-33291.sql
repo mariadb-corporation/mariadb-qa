@@ -65,3 +65,19 @@ binlog 'bBf2ZBMBAAAANAAAAHUkAAAAAHEAAAAAAAEABHRlc3QAAnQxAAQDDw8IBP0C4h0AaTGFIg==
 # CLI: ERROR 1032 (HY000): Can't find record in 't1'
 # ERR: [ERROR] mariadbd: Can't find record in 't1'
 # ERR: [ERROR]  BINLOG_BASE64_EVENT: Could not execute Update_rows_v1 event on table test.t1; handler error HA_ERR_END_OF_FILE; the event's master log FIRST, end_log_pos 9405, Internal MariaDB error code: 1032
+
+# Requires standard master/slave setup and binlog_format=ROW on master. Execute SQL on the master.
+CREATE TABLE t1 (c1 INT) ENGINE=MyISAM;
+RESET MASTER;
+INSERT INTO t1 VALUES (0);
+SET GLOBAL binlog_checksum=NONE;
+UPDATE t1 SET c1=1;
+# ERR: [ERROR] Slave SQL: Could not execute Update_rows_v1 event on table test.t1; Can't find record in 't1', Error_code: 1032; handler error HA_ERR_END_OF_FILE
+
+# Requires standard master/slave setup and binlog_format=ROW on master. Execute SQL on the master.
+CREATE TABLE t1 (c1 INT PRIMARY KEY) ENGINE=MyISAM;
+RESET MASTER;
+INSERT INTO t1 VALUES (0);
+SET GLOBAL binlog_checksum=NONE;
+UPDATE t1 SET c1=1;
+# ERR: [ERROR] Slave SQL: Could not execute Update_rows_v1 event on table test.t1; Can't find record in 't1', Error_code: 1032; handler error HA_ERR_KEY_NOT_FOUND

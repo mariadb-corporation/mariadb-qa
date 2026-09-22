@@ -6,16 +6,19 @@
 # ASAN/TSAN runs. This script only ever touches the dedicated build_mdpsms_{dbg,opt}_msan.sh.
 # Prerequisite: the MSAN instrumented libraries (/MSAN_libs) and clang-20; set up once with
 # ~/mariadb-qa/msan.instrumentedlibs_ubuntu2404.sh (auto-run below when AUTO_BUILD_MSAN_LIBS=1).
-# With FRESH_PULL=1 each enabled version is (re)cloned right before its build, so no separate
-# cloneall.sh step is needed. All cloning and building happens in a private source workspace
-# (${DIR}/msan_slow_src), so this script never touches the shared /test/<ver> source trees and can run
-# concurrently with the other buildall scripts. Build scratch inside the workspace is
-# <ver>_dbg_msan / <ver>_opt_msan. Between versions each build's tarballs are moved to /data/TARS and
-# the extracted MSAN_*-{dbg,opt} basedirs are moved to this dir ready for use.
+# The enabled versions are built in place from the ${DIR}/<ver> source trees, as buildall_san_slow.sh
+# does; a version with no tree is cloned first (CLONE_IF_MISSING=1) and that clone is removed again
+# once its builds finish (REMOVE_CLONED_SOURCE=1), to reclaim disk between versions. A tree which was
+# already there is used as-is and never removed or re-cloned; to refresh the trees, run cloneall.sh
+# first. The build scratch is <ver>_dbg_msan / <ver>_opt_msan, distinct from the plain (_dbg/_opt) and
+# ub/asan (_dbg_san/_opt_san) scratch, so this can run concurrently with buildall_slow.sh and
+# buildall_san_slow.sh. Do not run it alongside buildall_dbg_msan.sh or buildall_opt_msan.sh: those
+# share the MSAN scratch names and wipe them at start. Between versions each build's tarballs are moved
+# to /data/TARS; the extracted MSAN_*-{dbg,opt} basedirs stay in this dir ready for use.
 
 AUTO_BUILD_MSAN_LIBS=1  # 1: if the clang-20 toolchain and/or the instrumented /MSAN_libs are missing/incomplete, build them first via msan.instrumentedlibs_ubuntu2404.sh. 0: only pre-check, then abort with instructions.
-FRESH_PULL=1            # 1: (re)clone each version right before building (clone.sh for CS, clone_es.sh for ES). 0: build the existing ${DIR}/<ver> as-is.
-REMOVE_SOURCE_AFTER=1   # 1: remove the source tree after its builds finish, to reclaim disk between versions. 0: keep it.
+CLONE_IF_MISSING=1      # 1: clone a version which has no ${DIR}/<ver> source tree (clone.sh for CS, clone_es.sh for ES). 0: skip that version.
+REMOVE_CLONED_SOURCE=1  # 1: remove a source tree this script cloned, once its builds finish, to reclaim disk between versions. A tree which was already there is never removed. 0: keep it.
 
 BUILD_10_1=0
 BUILD_10_2=0
@@ -84,48 +87,40 @@ sed -i 's|^USE_TSAN=[0-1]|USE_TSAN=0|'         ~/mariadb-qa/build_mdpsms_opt_msa
 sed -i 's|^ASAN_OR_MSAN=[0-1]|ASAN_OR_MSAN=1|' ~/mariadb-qa/build_mdpsms_opt_msan.sh ~/mariadb-qa/build_mdpsms_dbg_msan.sh
 
 DIR=${PWD}
-TARS_DIR="/data/TARS"   # built tarballs are moved here between versions; the extracted basedirs are moved to ${DIR}
-SRC_DIR="${DIR}/msan_slow_src"  # private source workspace: clones + build scratch live here, so the shared ${DIR}/<ver> trees are never touched
-mkdir -p "${SRC_DIR}"
+TARS_DIR="/data/TARS"   # built tarballs are moved here between versions; the build scripts leave the extracted basedirs in ${DIR}
 
 cleanup_dirs(){  # $1 = version dir; remove this version's MSAN build scratch (_dbg_msan/_opt_msan)
-  rm -Rf "${SRC_DIR}/${1}_dbg_msan" "${SRC_DIR}/${1}_opt_msan"
+  rm -Rf "${DIR}/${1}_dbg_msan" "${DIR}/${1}_opt_msan"
 }
 
-deliver_basedirs(){  # move the extracted MSAN_* basedirs from ${SRC_DIR} to ${DIR}; a same-named dir in ${DIR} is replaced (same-day same-version rebuild)
-  local D
-  for D in "${SRC_DIR}"/MSAN_*; do
-    [ -d "${D}" ] || continue
-    rm -Rf "${DIR}/$(basename "${D}")"
-    mv "${D}" "${DIR}/"
-  done
-}
-
-archive_tars(){  # between versions: move the freshly-built tarballs to ${TARS_DIR} (skipped if absent, matching buildall_san_slow.sh)
+archive_tars(){  # between versions: move the freshly-built tarballs to ${TARS_DIR} (skipped if absent)
   if [ -d "${TARS_DIR}" ]; then
-    find "${SRC_DIR}" -maxdepth 1 -type f -name 'MSAN_*.tar.gz' -exec mv -t "${TARS_DIR}/" {} +
+    find "${DIR}" -maxdepth 1 -type f -name 'MSAN_*.tar.gz' -exec mv -t "${TARS_DIR}/" {} +
     sync
   fi
 }
 
-build_ver(){  # $1 = version dir under ${SRC_DIR} (e.g. 13.1, 12.3-es)
+build_ver(){  # $1 = version dir under ${DIR} (e.g. 13.1, 12.3-es)
   local ver="$1"
-  cd ${SRC_DIR}
-  if [ ${FRESH_PULL} -eq 1 ]; then  # (re)clone fresh; clone.sh/clone_es.sh rm the old tree first and block until done
+  local cloned=0
+  cd ${DIR}
+  if [ ! -d "${DIR}/${ver}" ] && [ ${CLONE_IF_MISSING} -eq 1 ]; then  # clone.sh/clone_es.sh clone into ${PWD} and block until done
+    cloned=1
     case "${ver}" in
       *-es) ~/mariadb-qa/mariadb-build-qa/clone_es.sh "${ver%-es}" ;;  # ES: clone_es.sh <base> clones <base>-es (needs ~/.git-credentials)
       *)    ~/mariadb-qa/mariadb-build-qa/clone.sh "${ver}" ;;         # CS branch/trunk (13.1 -> main)
     esac
   fi
-  if [ ! -d "${SRC_DIR}/${ver}" ]; then echo "Skipping ${ver}: no source tree (FRESH_PULL=0 with no tree, or clone failed)"; return; fi
+  if [ ! -d "${DIR}/${ver}" ]; then echo "Skipping ${ver}: no source tree (CLONE_IF_MISSING=0, or clone failed)"; return; fi
   cleanup_dirs "${ver}"
-  ( cd ${SRC_DIR}/${ver} && ~/mariadb-qa/build_mdpsms_opt_msan.sh ) &  # opt + dbg in parallel...
-  ( cd ${SRC_DIR}/${ver} && ~/mariadb-qa/build_mdpsms_dbg_msan.sh ) &
-  wait                                                                 # ...double wait for both
-  cleanup_dirs "${ver}"                                                # remove build scratch immediately
-  deliver_basedirs                                                     # move extracted basedirs to ${DIR}
-  archive_tars                                                         # move tarballs to /data/TARS
-  [ ${REMOVE_SOURCE_AFTER} -eq 1 ] && rm -Rf "${SRC_DIR}/${ver}"       # remove the source tree
+  ( cd ${DIR}/${ver} && ~/mariadb-qa/build_mdpsms_opt_msan.sh ) &  # opt + dbg in parallel...
+  ( cd ${DIR}/${ver} && ~/mariadb-qa/build_mdpsms_dbg_msan.sh ) &
+  wait                                                             # ...double wait for both
+  cleanup_dirs "${ver}"                                            # remove build scratch immediately
+  archive_tars                                                     # move tarballs to /data/TARS
+  if [ ${cloned} -eq 1 ] && [ ${REMOVE_CLONED_SOURCE} -eq 1 ]; then
+    rm -Rf "${DIR}/${ver}"                                         # remove this script's own clone; a pre-existing tree is left alone
+  fi
 }
 
 buildall(){  # Newest first (larger builds first, to optimize initial time-till-ready-for-use)
@@ -163,4 +158,3 @@ buildall(){  # Newest first (larger builds first, to optimize initial time-till-
 }
 
 buildall
-rmdir "${SRC_DIR}" 2>/dev/null  # remove the workspace if empty (leftover trees/scratch from aborted builds are kept for inspection)

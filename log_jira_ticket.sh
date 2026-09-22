@@ -27,6 +27,7 @@ LINK_REVERSE=0
 ASSIGNEE=""
 DRY_RUN=0
 ASSUME_YES=0
+ONELINE=0
 MODE="create"
 MODE_FLAG=""
 LINK_TYPE_SET=0
@@ -39,6 +40,7 @@ SEC_LEVEL_NAME="${JIRA_SEC_LEVEL_NAME:-Developers}"
 SEC_ROLE="${JIRA_SEC_ROLE:-Developers}"
 
 declare -a AFFECTS=() FIXINS=() COMPONENTS=() LABELS=() RELATES=() ESVERS=() SEC_COMMENTS=()
+declare -a AFFECTS_DEL=() FIXINS_DEL=() ESVERS_DEL=()
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 
@@ -51,6 +53,28 @@ mode_once() {
   MODE_FLAG="$1"; MODE="$2"
 }
 
+# Guard against posting a file path instead of the file.
+#
+# -d takes the text itself, --description-file takes a file to read. Giving a
+# path to -d posts the path as the body, which has reached a live ticket twice.
+# Both tells of that mistake are refused here: a body starting with "/", and a
+# body of one single line. Neither shape is what a real report or comment looks
+# like. --oneline is the deliberate override when such a body is truly wanted.
+check_body() {
+  local what="$1" body="$2" first
+  if [ "$ONELINE" = 1 ]; then return 0; fi
+  first="${body%%$'\n'*}"
+  if [ "${body#/}" != "$body" ]; then
+    if [ -f "$first" ]; then
+      die "$what starts with \"/\" and names an existing file. To post what that file holds use: --description-file $first"
+    fi
+    die "$what starts with \"/\", the shape of a path passed to -d by mistake. Use --description-file to post a file, or --oneline if the text really starts with a slash."
+  fi
+  if [ "$body" = "$first" ]; then
+    die "$what is a single line. To post a file, use --description-file FILE. If one line really is the whole body, pass --oneline."
+  fi
+}
+
 usage() {
   cat <<EOF
 Usage: log_jira_ticket.sh [MODE] [options]
@@ -60,7 +84,8 @@ Modes:
   --login            (Re)authenticate and store a Personal Access Token
   --whoami           Print the authenticated Jira account
   --createmeta       List required fields for --project / --type
-  --comment KEY      Add a comment to issue KEY (body via -d / --description-file)
+  --comment KEY      Add a comment to issue KEY. A comment held in a file is
+                       posted with --description-file FILE; -d is for text.
                        Add --dev-only to restrict it to the $SEC_ROLE role
   --link KEY         Link KEY to related issues: --link KEY --relates OTHER [--relates ...] [--link-type Relates] [--reverse]
                        Default reads "OTHER <type-inward> KEY" (e.g. PartOf: "OTHER is part of KEY");
@@ -68,21 +93,33 @@ Modes:
                        Valid --link-type values: Blocks, Duplicate, "Issue split", PartOf,
                        Problem/Incident ("is caused by" / "causes"), Relates. An unknown
                        value is rejected; the list is read back from the server.
-  --edit KEY         Add versions and/or labels to an EXISTING issue (additive, never replaces):
+  --edit KEY         Change versions and/or labels on an EXISTING issue. Adding is additive,
+                     so what is already there stays; a --remove- option takes one value off:
                        --edit KEY --affects-version 13.0 [--affects-version 13.1] [--fix-version 13.0] [--es-version 13.0]
                        --edit KEY --label corruption [--label security]
                        --edit KEY --label corruption --affects-version 13.1   (versions + labels combinable)
+                       --edit KEY --remove-fix-version N/A --fix-version 13.0  (replace a placeholder)
+                       --remove-affects-version V / --remove-es-version V / --remove-fix-version V
                      Use mainline X.Y names only (13.0, not 13.0.1).
+                     An out-of-support version is refused for Affects and Fix, see below.
 
 Create options:
   -p, --project KEY        Project key (default: MDEV; also MENT)
   -t, --type NAME          Issue type (default: Bug)
   -s, --summary TEXT       Issue summary  (required)
-  -d, --description TEXT   Description in Jira wiki markup
+  -d, --description TEXT   Description in Jira wiki markup. TEXT is the body
+                           itself, never a path - to post a file use
+                           --description-file.
       --description-file F  Read description from file (e.g. comment_1.txt)
+      --oneline            Allow a body that is one line, or starts with "/".
+                           Both are refused by default: that is what a path
+                           passed to -d by mistake looks like.
       --affects-version V  Affects Version/s - CS (repeatable)
       --es-version V       Affects ES Version/s - Enterprise (repeatable)
       --fix-version V      Fix Version/s (repeatable)
+                           All three refuse an out-of-support version. The project
+                           renames a branch at end of life to "<version>(EOL)", and
+                           that list is what the check reads, so it stays current.
   -c, --component NAME     Component (repeatable)
   -l, --label NAME         Label (repeatable)
       --priority NAME      Priority name
@@ -133,6 +170,9 @@ while [ $# -gt 0 ]; do
     --affects-version) need "$@"; AFFECTS+=("$2"); shift ;;
     --es-version) need "$@"; ESVERS+=("$2"); shift ;;
     --fix-version) need "$@"; FIXINS+=("$2"); shift ;;
+    --remove-affects-version) need "$@"; AFFECTS_DEL+=("$2"); shift ;;
+    --remove-es-version) need "$@"; ESVERS_DEL+=("$2"); shift ;;
+    --remove-fix-version) need "$@"; FIXINS_DEL+=("$2"); shift ;;
     -c|--component) need "$@"; COMPONENTS+=("$2"); shift ;;
     -l|--label) need "$@"; LABELS+=("$2"); shift ;;
     --priority) need "$@"; PRIORITY="$2"; shift ;;
@@ -142,6 +182,7 @@ while [ $# -gt 0 ]; do
     --security-bug) SEC_BUG=1 ;;
     --sec-comment) need "$@"; SEC_COMMENTS+=("$2"); shift ;;
     --dev-only) DEV_ONLY=1 ;;
+    --oneline) ONELINE=1 ;;
     --dry-run) DRY_RUN=1 ;;
     -y|--yes) ASSUME_YES=1 ;;
     -h|--help) usage; exit 0 ;;
@@ -287,6 +328,46 @@ arr_addstr() {
   printf '%s\n' "${_a[@]}" | jq -R '{add:.}' | jq -s '.'
 }
 
+# name-array -> JSON [{"remove":{"name":...}}]  (Jira "update" verb)
+arr_delname() {
+  local -n _a="$1"
+  if [ "${#_a[@]}" -eq 0 ]; then echo '[]'; return; fi
+  printf '%s\n' "${_a[@]}" | jq -R '{remove:{name:.}}' | jq -s '.'
+}
+
+# str-array -> JSON [{"remove":...}]  (labels-type custom field)
+arr_delstr() {
+  local -n _a="$1"
+  if [ "${#_a[@]}" -eq 0 ]; then echo '[]'; return; fi
+  printf '%s\n' "${_a[@]}" | jq -R '{remove:.}' | jq -s '.'
+}
+
+# Refuse an out-of-support version in Affects CS, Affects ES or Fix Version/s.
+# The project renames a branch that reaches end of life to "<version>(EOL)", so
+# that list is the source. Affects ES holds plain strings which the server never
+# checks, and it is checked here against the same set. A removal is exempt: a
+# stale EOL value has to be able to come off. No token or no answer from the
+# server skips the check rather than blocking the edit.
+reject_eol_versions() {
+  local key="$1" resp code body v stripped
+  local -a eol=() bad=()
+  [ "${#AFFECTS[@]}" -gt 0 ] || [ "${#FIXINS[@]}" -gt 0 ] || [ "${#ESVERS[@]}" -gt 0 ] || return 0
+  resp="$(jira_curl -H 'Accept: application/json' -w $'\n%{http_code}' "$JIRA_URL/rest/api/2/project/$key/versions" 2>/dev/null)" || return 0
+  code="${resp##*$'\n'}"; body="${resp%$'\n'*}"
+  [ "$code" = "200" ] || return 0
+  mapfile -t eol < <(printf '%s' "$body" | jq -r '.[].name | select(endswith("(EOL)")) | sub("\\(EOL\\)$";"")')
+  [ "${#eol[@]}" -gt 0 ] || return 0
+  for v in "${AFFECTS[@]}" "${FIXINS[@]}" "${ESVERS[@]}"; do
+    stripped="${v%(EOL)}"
+    if [ "$stripped" != "$v" ] || printf '%s\n' "${eol[@]}" | grep -qxF "$v"; then bad+=("$v"); fi
+  done
+  [ "${#bad[@]}" -eq 0 ] && return 0
+  die "Out of support, so not valid for Affects or Fix: $(printf '%s\n' "${bad[@]}" | sort -u | tr '\n' ' ')
+Out of support in $key: $(printf '%s\n' "${eol[@]}" | tr '\n' ' ')
+To take a stale value off a ticket use --remove-affects-version,
+--remove-es-version or --remove-fix-version."
+}
+
 case "$MODE" in
   login)   require_auth; echo "Login OK: $WHOAMI"; exit 0 ;;
   whoami)  require_auth; echo "Authenticated as: $WHOAMI"; exit 0 ;;
@@ -315,6 +396,7 @@ case "$MODE" in
       DESCRIPTION="$(< "$DESC_FILE")"
     fi
     [ -n "$DESCRIPTION" ] || die "comment body required (-d or --description-file)"
+    check_body "The comment body" "$DESCRIPTION"
     [ "$DRY_RUN" = 1 ] || require_auth
     if [ "$DEV_ONLY" = 1 ]; then
       payload="$(jq -n --arg b "$DESCRIPTION" --arg r "$SEC_ROLE" \
@@ -384,7 +466,11 @@ case "$MODE" in
     exit $rc ;;
   edit)
     [ -n "$EDIT_KEY" ] || die "--edit requires an issue key (e.g. MDEV-12345)"
-    av_json="$(arr_addname AFFECTS)"; fv_json="$(arr_addname FIXINS)"; ev_json="$(arr_addstr ESVERS)"; lb_json="$(arr_addstr LABELS)"
+    if load_pat; then reject_eol_versions "${EDIT_KEY%%-*}"; fi
+    av_json="$(jq -n --argjson a "$(arr_addname AFFECTS)" --argjson d "$(arr_delname AFFECTS_DEL)" '$a + $d')"
+    fv_json="$(jq -n --argjson a "$(arr_addname FIXINS)"  --argjson d "$(arr_delname FIXINS_DEL)" '$a + $d')"
+    ev_json="$(jq -n --argjson a "$(arr_addstr ESVERS)"   --argjson d "$(arr_delstr ESVERS_DEL)" '$a + $d')"
+    lb_json="$(arr_addstr LABELS)"
     upd="$(jq -n --argjson av "$av_json" --argjson fv "$fv_json" --argjson ev "$ev_json" --argjson lb "$lb_json" \
       '{}
        + (if ($av|length) > 0 then {versions: $av}            else {} end)
@@ -392,18 +478,18 @@ case "$MODE" in
        + (if ($ev|length) > 0 then {customfield_13204: $ev}   else {} end)
        + (if ($lb|length) > 0 then {labels: $lb}              else {} end)')"
     if [ -n "$ASSIGNEE" ]; then fld_json="$(jq -n --arg a "$ASSIGNEE" '{assignee:{name:$a}}')"; else fld_json='{}'; fi
-    [ "$(printf '%s' "$upd" | jq 'length')" -gt 0 ] || [ "$(printf '%s' "$fld_json" | jq 'length')" -gt 0 ] || die "--edit needs at least one --affects-version/--fix-version/--es-version/--label/--assignee"
+    [ "$(printf '%s' "$upd" | jq 'length')" -gt 0 ] || [ "$(printf '%s' "$fld_json" | jq 'length')" -gt 0 ] || die "--edit needs at least one --affects-version/--fix-version/--es-version/--label/--assignee, or the --remove- form of a version option"
     payload="$(jq -n --argjson u "$upd" --argjson f "$fld_json" \
       '(if ($u|length) > 0 then {update: $u} else {} end)
        + (if ($f|length) > 0 then {fields: $f} else {} end)')"
-    echo "=== Edit (additive) : PUT $JIRA_URL/rest/api/2/issue/$EDIT_KEY ===" >&2
+    echo "=== Edit : PUT $JIRA_URL/rest/api/2/issue/$EDIT_KEY ===" >&2
     echo "=== Update payload ===" >&2
     printf '%s\n' "$payload" | jq . >&2
     if [ "$DRY_RUN" = 1 ]; then echo "[dry-run] update not applied." >&2; exit 0; fi
     require_auth
     echo "=== As : $WHOAMI ===" >&2
     if [ "$ASSUME_YES" != 1 ]; then
-      echo "Confirm adding these versions/labels to $EDIT_KEY. Press Enter 3x (Ctrl-C to abort)." >&2
+      echo "Confirm this change to $EDIT_KEY. Press Enter 3x (Ctrl-C to abort)." >&2
       read -rp "1x... " _ < /dev/tty
       read -rp "2x... " _ < /dev/tty
       read -rp "3x... " _ < /dev/tty
@@ -430,14 +516,20 @@ fi
 if [ "${#SEC_COMMENTS[@]}" -gt 0 ]; then
   for f in "${SEC_COMMENTS[@]}"; do
     [ -f "$f" ] || die "sec-comment file not found: $f"
+    check_body "The comment in $f" "$(< "$f")"
   done
 fi
 if [ -n "$DESC_FILE" ]; then
   [ -f "$DESC_FILE" ] || die "description file not found: $DESC_FILE"
   DESCRIPTION="$(< "$DESC_FILE")"
 fi
+# A --security-bug with no body of its own falls back to the summary below, and
+# a summary is one line by design, so the check runs before that fallback.
+if [ -n "$DESCRIPTION" ]; then check_body "The description" "$DESCRIPTION"; fi
 if [ -z "$DESCRIPTION" ] && [ "$SEC_BUG" = 1 ]; then DESCRIPTION="$SUMMARY"; fi
 [ -n "$DESCRIPTION" ] || die "--description or --description-file is required"
+
+if load_pat; then reject_eol_versions "$PROJECT"; fi
 
 versions_json="$(arr_named AFFECTS)"
 fixins_json="$(arr_named FIXINS)"

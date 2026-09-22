@@ -216,7 +216,7 @@ fi
 # Provide a script to cleanup build dirs which also have a saved tarball
 if [ -d /data/VARIOUS_BUILDS ]; then
   echo "# A script to cleanup build dirs which also have a saved tarball. Note that running this limits the ability of reduer.sh to auto-find and use a previous basedir" >/data/VARIOUS_BUILDS/cleanup_builds_which_have_tar.sh
-  echo "ls -1 | xargs -I{} ls ../TARS/{}.tar.gz 2>/dev/null | sed 's|../TARS/||' | xargs -I{} rm -f {}" >>/data/VARIOUS_BUILDS/cleanup_builds_which_have_tar.sh 
+  echo "ls -1 | xargs -I{} ls ../TARS/{}.tar.gz 2>/dev/null | sed 's|../TARS/||;s|\.tar\.gz\$||' | xargs -I{} rm -Rf {}" >>/data/VARIOUS_BUILDS/cleanup_builds_which_have_tar.sh 
   chmod +x /data/VARIOUS_BUILDS/cleanup_builds_which_have_tar.sh
 fi
 
@@ -244,6 +244,7 @@ alias clr='${HOME}/clr'    # Claude Code resume: picker for any session across a
 alias cls='${HOME}/cls'    # Claude Code send: 'cls <id-prefix> "prompt"' resumes that session and sends prompt (e.g. sleep N; cls ID 'continue')
 alias crd='${HOME}/crd'    # Claude Code delete session: 'crd' lists, 'crd <id>' dry-run, 'crd <id> 1' deletes
 alias clf='${HOME}/clf'    # Claude Code find: 'clf <regex>' lists session IDs whose logs match the (case-insensitive) regex
+alias claude='claude --fallback-model claude-opus-5 --effort max'  # Claude Code at max effort, Opus 5 as fallback
 alias usage='${HOME}/usage'  # Idem (long form of 'u')
 alias b='${HOME}/b'        # Start bug report for in.sql in current BASEDIR
 alias bs='${HOME}/b SAN'   # Start SAN based bug report for in.sql in current BASEDIR

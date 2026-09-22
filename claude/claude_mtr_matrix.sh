@@ -22,9 +22,11 @@ if [ -z "${1}" ]; then
   echo "* ./mtra is used whenever the BASEDIR has it, so the ASAN, UBSAN, MSAN and TSAN"
   echo "  options are set. A BASEDIR without ./mtra falls back to ./mtr."
   echo "* The testcase is copied into every BASEDIR. With no suite it goes to the main"
-  echo "  suite; with a suite it goes to that suite's t/ directory and MTR is called as"
-  echo "  'suite.test', which is the only way a non-main test is selected."
-  echo "* A matching .result file beside the testcase is copied to the suite's r/ directory."
+  echo "  suite; with a suite it goes to that suite's t/ directory, or to the suite"
+  echo "  directory itself for a flat suite such as maria or mariabackup, and MTR is"
+  echo "  called as 'suite.test', which is the only way a non-main test is selected."
+  echo "* A matching .result file beside the testcase is copied to the suite's r/ directory,"
+  echo "  or next to the testcase for a flat suite."
   echo "* A matching .cnf file beside the testcase is copied next to the testcase."
   echo "* The testcase must be reverse-gated: it fails while the bug is present and passes"
   echo "  once it is fixed. Without that every row reads 'No'."
@@ -92,6 +94,11 @@ run_one() {
   if [ -d "/test/${LINE}/mariadb-test" ]; then MTRDIR="/test/${LINE}/mariadb-test"
   elif [ -d "/test/${LINE}/mysql-test" ]; then MTRDIR="/test/${LINE}/mysql-test"
   else echo "SKIP ${LINE} (no mariadb-test nor mysql-test)"; return; fi
+  # A basedir can carry an empty mariadb-test beside a full mysql-test, so the one
+  # that holds ./mtr wins.
+  if [ ! -x "${MTRDIR}/mtr" ] && [ -x "/test/${LINE}/mysql-test/mtr" ]; then
+    MTRDIR="/test/${LINE}/mysql-test"
+  fi
 
   # ./mtra exports the ASAN, UBSAN, MSAN and TSAN options and then calls ./mtr, so it
   # is used whenever it is there. A BASEDIR without it falls back to ./mtr.
@@ -107,6 +114,18 @@ run_one() {
     if [ ! -d "${TDIR}" ] && [ -d "${MTRDIR}/t" ]; then TDIR="${MTRDIR}/t"; RDIR="${MTRDIR}/r"; fi
   else
     TDIR="${MTRDIR}/suite/${SUITE}/t"; RDIR="${MTRDIR}/suite/${SUITE}/r"
+    # A flat suite, maria and mariabackup among them, keeps its .test and .result
+    # files directly in suite/<name>, with no t/ and r/ below it.
+    if [ ! -d "${TDIR}" ] && [ -d "${MTRDIR}/suite/${SUITE}" ]; then
+      TDIR="${MTRDIR}/suite/${SUITE}"; RDIR="${TDIR}"
+    fi
+    # A plugin's own suite, spider/bugfix among them, sits under
+    # plugin/<plugin>/ instead of suite/.
+    if [ ! -d "${TDIR}" ]; then
+      for PDIR in "${MTRDIR}"/plugin/*/"${SUITE}"; do
+        if [ -d "${PDIR}/t" ]; then TDIR="${PDIR}/t"; RDIR="${PDIR}/r"; break; fi
+      done
+    fi
   fi
   if [ ! -d "${TDIR}" ]; then echo "SKIP ${LINE} (no ${TDIR})"; return; fi
 

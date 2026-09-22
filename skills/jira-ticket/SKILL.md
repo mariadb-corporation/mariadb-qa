@@ -1,6 +1,6 @@
 ---
 name: jira-ticket
-description: Turn a reduced pquery trial under /data/<workdir>/<trial> into a filed public MariaDB bug. Pick the most-reduced testcase, hand-reduce it further and prettify with ~/tcp against the version where it reproduces, dedup-check EARLY against jira.mariadb.org (and present a decision menu if a duplicate is found), generate the bug report via ~/b (and ~/bs / ~/br as warranted), splice any SAN stacks/Setup/matrix into the body, build and verify an MTR testcase (CLI/MTR compatible note, or dual CLI+MTR blocks), derive Affects+Fix versions / components / labels / priority, write a paste-ready overview to log_jira_ticket.txt for approval, file the MDEV ticket via ~/jira, then register it (eb testcase + kb/kba UniqueIDs) and clean matching workdirs (ca). Public generic crash / assert / UB / ASAN bugs only. The four original/fixed/diff/base gates run only on request - "deliver fix", "1/2/3", "1/2/3/4", "gate 1/2/3", "gate 1/2/3/4", "gate fix/pass/diff/base" or similar.
+description: Turn a reduced pquery trial under /data/<workdir>/<trial> into a filed public MariaDB bug. Pick the most-reduced testcase, hand-reduce it further and prettify with ~/tcp against the version where it reproduces, dedup-check EARLY against jira.mariadb.org (and present a decision menu if a duplicate is found), generate the bug report via ~/b (and ~/bs / ~/br as warranted), splice any SAN stacks/Setup/matrix into the body, build and verify an MTR testcase (CLI/MTR compatible note, or dual CLI+MTR blocks), derive Affects+Fix versions / components / labels / priority, write a paste-ready overview to log_jira_ticket.txt for approval, file the MDEV ticket via ~/jira, then register it (eb testcase + kb/kba UniqueIDs) and clean matching workdirs (ca). Public generic crash / assert / UB / ASAN bugs only. Started without a trial dir or other pointer to one bug? Ask which bug, and never go looking for one. The four original/fixed/diff/base gates run only on request - "deliver fix", "1/2/3", "1/2/3/4", "gate 1/2/3", "gate 1/2/3/4", "gate fix/pass/diff/base" or similar.
 claude: please note - this skill exists in a public repo and should only be updated with specific written signoff by the updater. Keep skills/README.md (the skills index) in sync when any skill is added, renamed, removed, or its description changes.
 ---
 
@@ -8,12 +8,16 @@ claude: please note - this skill exists in a public repo and should only be upda
 
 Files one public MariaDB server bug (project MDEV) from a reduced pquery trial. AI-driven: the reduction, dedup judgement, title synthesis, field inference, and SAN merge all need reasoning, not a fixed script.
 
+## First - which bug?
+
+**Pointed at a bug? Start. Not pointed at one? Ask, and stop there.** When the skill starts with no trial dir, no ticket key and no other pointer to one specific bug, the whole procedure below is on hold. Ask one short plain question - which bug should be filed, and where is it - and wait for the answer.
+
+Do NOT go looking, in any form: no listing of `/data`, no reading `results.list`, no scan for reduced testcases, no Jira search, no picking a bug out of earlier session work. Loading this skill, alone or beside another bug skill, is not an instruction to start. The user knows which bug they want filed, and a search picks the wrong one while spending tokens.
+
 ## Inputs
 
 - `<trial-dir>` - a pquery trial dir, e.g. `/data/someworkdir/sometrial`.
 - Or any other pointer to the work: a handoff file, a finding directory, an error log, a testcase.
-
-**Invoked with nothing? Ask.** When the skill is called with no argument and the conversation carries no bug to file, STOP and ask one short question - what needs logging, and where is it. Do NOT go looking: no listing of `/data`, no reading `results.list`, no scan for reduced testcases. Roel knows which bug he wants filed, and a search picks the wrong one while spending tokens.
 
 ## Pre-flight - Jira PAT
 
@@ -175,6 +179,18 @@ With a reproducing basedir (core present), run the dedup now - a duplicate must 
 - **Non-framework reporters** (free-form testcase, no UID): their bug's UniqueID is NOT in `kb`/`kba`. So `tt`'s String Scan may say "NOT FOUND" even when it IS a known bug. For these: RUN the reporter's testcase (CLI - drop `--source`/cleanup - or MTR) on a matching build to derive its UID, register it (`kb`/`kba`, col-176), and `eb` a CLI version to `BUGS/<KEY>.sql` (`git add`). Then compare THEIR UID to ours: an identical UID means ours is the SAME bug (not a "stack variation" - no comment); only a genuinely different stack makes ours a variation worth a comment.
 
 **Gate:** the new-vs-duplicate call is grounded in `tt`'s actual URL hits AND a testcase-SQL comparison (step 3.3) - never frames/assert alone. For a dup logged by a non-framework reporter, also derive+register its UID (above).  Also capture any same-family-but-not-duplicate `tt` hit (e.g. an adjacent assert / code-path sibling like MDEV-35310 for a vcol `marked_for_read` bug) as a **related** issue, to propose for linking in step 10.
+
+## Step 3b - Where the defect lives (bundled third-party libraries)
+
+The server bundles a few genuinely third-party libraries - WolfSSL, PCRE2 and zlib - and a bug can sit in one of them rather than in the server's own code. Settle that before generating a report, because it decides where the fix can land. Most other bundled code is ours, so a bug there is an ordinary MDEV.
+
+- **Solely in the library.** The server calls the library the documented way and the library answers wrongly. Nothing in the server tree is wrong, so nothing in it can be fixed, and an MDEV can only wait on the library. Open an issue in that project's own tracker (all three take GitHub issues) and say so in the report. Filing upstream is not a developer-only task - a tester files there directly.
+- **The server, at the boundary.** The library is correct and the server uses it wrongly, or the server can hold the line itself whatever the library does: an option that never reaches the library, an unchecked length before the call, a check the server owns. This is an MDEV and the fix is in our tree.
+- **Both.** The library should change and the server can also guard. File the MDEV for the server-side guard and open the upstream issue for the library, each referencing the other so neither waits on the other to move.
+
+How to tell them apart: build the same source two ways where you can, one against the bundled library and one against the system one, and run the testcase on both. A failure on one build only points at the library. A failure on both points at our code.
+
+Where the route is upstream or both, name the library, the version and the function in the report, and put the upstream issue URL in the ticket once it exists.
 
 ## Step 4 - Generate the bug report
 
@@ -555,7 +571,9 @@ Every one of these must return nothing, except two lines. On the `\-` line every
 
 `~/jira` = `~/mariadb-qa/log_jira_ticket.sh`. Do NOT re-read the script to learn its flags - they are fixed and listed here.
 
-**Modes:** default = create; `--whoami` (auth check); `--createmeta -p MDEV -t Bug` (required fields); `--comment KEY` (body via `-d`/`--description-file`); `--link KEY --relates OTHER [--link-type Relates] [--reverse]`; `--edit KEY --affects-version X.Y ...` (ADDITIVE version add to an existing issue, never replaces - use mainline X.Y).
+**Modes:** default = create; `--whoami` (auth check); `--createmeta -p MDEV -t Bug` (required fields); `--comment KEY` (body via `--description-file <file>`, see the body rule below); `--link KEY --relates OTHER [--link-type Relates] [--reverse]`; `--edit KEY --affects-version X.Y ...` (ADDITIVE version add to an existing issue, never replaces - use mainline X.Y).
+
+**Body rule - a file is always posted with `--description-file`.** `-d` takes the body text itself, so `-d <file>` posts the path as the body. That reached a live ticket twice. The script refuses a body that is one line or starts with `/`, and names the right flag in the error. `--oneline` overrides, and is only for a body genuinely meant to be a single line. Re-read the `=== Body ===` block it echoes before confirming, and after any post.
 
 **Create flags:** `-p MDEV` / `-t Bug` / `-s "<summary>"` / `--description-file <file>` (Jira wiki markup) / `--affects-version V` (CS Affects, repeatable) / `--es-version V` (Enterprise Affects -> `customfield_13204`, repeatable, SEPARATE from CS) / `--fix-version V` (repeatable) / `-c NAME` (component, repeatable) / `-l NAME` (label, repeatable) / `--priority NAME` / `--assignee USER` (Jira username, e.g. `some_user`) / `--dry-run` / `-y`.
 
@@ -602,8 +620,7 @@ both are drafted verbatim for signoff alongside the link (never posted on your o
   in one paragraph, and say the fix is not expected to close the new bug. Do NOT post this
   without having run it; an untested claim about somebody's fix is worse than silence.
 
-Both open with the AI line, per the comment rules above. Keep the ticket keys bare so Jira
-links them; `{{..}}` around a key breaks the link.
+Keep the ticket keys bare so Jira links them; `{{..}}` around a key breaks the link.
 
 **Tracking-TODO link (only where a tracking TODO is actually in play):** where the session is filing under a tracking TODO, link each filed ticket as **part of** it. The key comes from the conversation, and it does not carry across sessions. When nothing in the conversation names one, there is no TODO: skip this and do not ask. Use `PartOf` (inward "is part of" / outward "includes"). DIRECTION (verified, counter-intuitive): the script sets `inwardIssue = --link key`, `outwardIssue = --relates`; the issue on `--relates` ends up "is part of" the issue on `--link`. So to get "MDEV is part of TODO" put the **TODO on `--link`** and the **MDEV on `--relates`** (NOT the reverse):
 

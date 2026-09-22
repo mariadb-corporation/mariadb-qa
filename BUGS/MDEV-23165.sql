@@ -74,3 +74,11 @@ INSERT INTO t SELECT t.a FROM t t,t t2;
 SET GLOBAL innodb_limit_optimistic_insert_debug=2;
 CREATE TABLE t (id INT AUTO_INCREMENT PRIMARY KEY, k INT, KEY(k)) ENGINE=InnoDB;
 INSERT INTO t (k) SELECT seq MOD 10 FROM seq_1_to_2000;
+
+SET GLOBAL innodb_limit_optimistic_insert_debug=2;
+CREATE TABLE t (id INT AUTO_INCREMENT PRIMARY KEY, k VARCHAR(20), KEY(k)) ENGINE=InnoDB;
+INSERT INTO t (k) SELECT CONCAT('a', seq MOD 10) FROM seq_1_to_2000;
+
+SET GLOBAL innodb_limit_optimistic_insert_debug=2;
+CREATE TABLE t (id INT AUTO_INCREMENT PRIMARY KEY, k INT, KEY(k)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED;
+INSERT INTO t (k) SELECT seq MOD 10 FROM seq_1_to_2000;

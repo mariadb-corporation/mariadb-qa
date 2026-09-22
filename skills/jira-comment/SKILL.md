@@ -80,6 +80,16 @@ A case reaching that path would still fault.
 Could you confirm whether {{ha_innodb.cc:5260}} needs the same guard?
 ```
 
+## Posting it
+
+Only after the exact text is approved, and always from the file:
+
+```
+~/jira --comment <KEY> --description-file <file>
+```
+
+`--description-file` reads the file. `-d` takes the comment text itself, so `-d <file>` posts the path as the comment - that reached a live ticket twice. The script refuses a body that is one line or starts with `/`, and names the right flag in the error. `--oneline` overrides it, and is only for a comment genuinely meant to be a single line. Read the `=== Body ===` block the script echoes, before confirming and after the post.
+
 ## Self-check before declaring done
 
 - No backticks (markdown code) and no `**bold**` (markdown bold).

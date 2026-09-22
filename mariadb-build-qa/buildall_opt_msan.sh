@@ -3,7 +3,7 @@
 # This script can likely be sourced (. ./buildall_opt_msan.sh) to be able to use job control ('jobs', 'fg' etc)
 
 # This script creates MSAN builds via the dedicated build_mdpsms_opt_msan.sh script (no sed flips of the shared _san.sh script, so concurrent ASAN+UBSAN use elsewhere is unaffected). Prerequisites: clang-20 and the MSAN-instrumented libraries in /MSAN_libs, ref mariadb-qa/msan.instrumentedlibs_ubuntu2404.sh.
-# The build scratch dir is <ver>_opt_msan (distinct from UBASAN's <ver>_opt_san), so this script can run concurrently with buildall_opt_san.sh; buildall_msan_slow.sh uses its own private source workspace and does not conflict either.
+# The build scratch dir is <ver>_opt_msan (distinct from UBASAN's <ver>_opt_san), so this script can run concurrently with buildall_opt_san.sh. Do not run it alongside buildall_msan_slow.sh: that uses the same MSAN scratch names, which this script wipes at start.
 
 # A note on memory consumption: buildall_opt_msan.sh consumes about 35-40G on an otherwise idle server, when MAKE_THREADS=30 in ~/mariadb-qa/build_mdpsms_opt_msan.sh - if this is too much, use /test/buildall_msan_slow.sh instead. This script will also create a significant I/O load. It is best to run this on an otherwise idle server with at least 120GB memory.
 

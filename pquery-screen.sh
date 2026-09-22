@@ -208,10 +208,10 @@ SNAMEWIDTH="${#TITLE[3]}"
 WHENWIDTH="${#TITLE[4]}"
 HERE="$(ps -o tty= -p $$)"  # The window this runs in, to mark it in the list
 HERE="${HERE// /}"
-BOLD= GREY= BLUE= GREEN= ORANGE= OFF=
+BOLD= GREY= BLUE= GREEN= ORANGE= PINK= OFF=
 # The colours are 256-colour indices. GNU screen 4 has no 24-bit colour: it reads a
 # 38;2;R;G;B sequence as SGR 2 and paints the whole line faint grey
-if [ -t 1 ]; then BOLD=$'\033[1m'; GREY=$'\033[38;5;246m'; BLUE=$'\033[38;5;75m'; GREEN=$'\033[38;5;114m'; ORANGE=$'\033[38;5;173m'; OFF=$'\033[0m'; fi
+if [ -t 1 ]; then BOLD=$'\033[1m'; GREY=$'\033[38;5;246m'; BLUE=$'\033[38;5;75m'; GREEN=$'\033[38;5;114m'; ORANGE=$'\033[38;5;173m'; PINK=$'\033[38;5;175m'; OFF=$'\033[0m'; fi
 
 add_row(){  # ${1}=depth ${2}=tree mark ${3}=name ${4}=pid ${5}=middle column ${6}=tail ${7}=session that ended
   local INDENT="$(( 2 * ${1} ))" NAME="${3}" SID="${SIDOF[${4}]:--}" SNAME="${SNAMEOF[${4}]:--}"
@@ -275,6 +275,7 @@ else
 fi
 row_colour(){  # ${1}=name ${2}=session id. Sets ROWCOL to the colour of the whole row
   ROWCOL=
+  if [[ "${1,,}" == *sec* ]]; then ROWCOL="${PINK}"; return; fi  # Security work
   if [ "${2:0:1}" = '(' ]; then return; fi  # A session that ended leaves the row plain
   if [ "${2}" != '-' ]; then ROWCOL="${BLUE}"; return; fi
   if [[ "${1}" =~ ^(s|ge|pr)[0-9]+$ ]]; then ROWCOL="${ORANGE}"; return; fi  # A reducer, a run, a reducer handler
