@@ -256,6 +256,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+INNODB_ERROR|Flagged corruption of `iv` in table X.X in CHECK TABLE; Wrong count                                                                                               ## MDEV-41272
 SIGSEGV|Item_field::Item_field|Aggregator_distinct::setup|Item_sum::aggregator_setup|setup_sum_funcs                                                                           ## MDEV-41269
 open_tables == 0 && temporary_tables == 0 && derived_tables == 0 && lock == 0 && locked_tables_mode == LTM_NONE && m_reprepare_observer == __null|SIGABRT|THD::restore_backup_open_tables_state|get_all_tables|get_schema_tables_result|JOIN::exec_inner ## MDEV-41241
 SIGSEGV|SQL_SELECT::cleanup|SQL_SELECT::~SQL_SELECT|st_join_table::cleanup|JOIN::cleanup                                                                                       ## MDEV-41240
