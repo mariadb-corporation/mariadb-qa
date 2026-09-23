@@ -256,6 +256,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+val > 0x7F|SIGABRT|mach_read_next_much_compressed|trx_undo_rec_get_pars|trx_undo_prev_version|trx_undo_prev_version_build                                                      ## MDEV-41290
 update->n_fields > 2|SIGABRT|btr_cur_trim|btr_cur_pessimistic_update|row_undo_mod_clust_low|row_undo_mod_clust                                                                 ## MDEV-39709
 INNODB_ERROR|Flagged corruption of `iv` in table X.X in CHECK TABLE; Wrong count                                                                                               ## MDEV-41272
 SIGSEGV|Item_field::Item_field|Aggregator_distinct::setup|Item_sum::aggregator_setup|setup_sum_funcs                                                                           ## MDEV-41269
