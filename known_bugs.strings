@@ -256,6 +256,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+current_lsn < archive_header_was_reset|SIGABRT|log_t::write_checkpoint|log_checkpoint_low|log_checkpoint|buf_flush_page_cleaner                                                ## MDEV-41310
 !recv_sys.rpo|SIGABRT|mtr_t::commit|innobase_binlog_write_direct_ordered|MYSQL_BIN_LOG::open_engine|init_server_components                                                     ## MDEV-41300
 !silent|SIGABRT|recv_sys_t::find_checkpoint_archived|recv_sys_t::find_checkpoint|srv_start|innodb_init                                                                         ## MDEV-41296
 val > 0x7F|SIGABRT|mach_read_next_much_compressed|trx_undo_rec_get_pars|trx_undo_prev_version|trx_undo_prev_version_build                                                      ## MDEV-41290
