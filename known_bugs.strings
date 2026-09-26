@@ -256,6 +256,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+"no ha_innopart in MariaDB" == 0|SIGABRT|row_sel_store_mysql_rec|InnoDBPolicy<true, true>::output_record|row_search_mvcc<InnoDBPolicy<true, true> >|ha_innobase::index_read    ## MDEV-39794
+"no ha_innopart in MariaDB" == 0|SIGABRT|row_sel_store_mysql_rec|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_first                                              ## MDEV-39794
 from_deadlock || trx->lock.wait_thr|SIGABRT|lock_wait_end<false>|lock_cancel_waiting_and_release<false, true>|lock_sys_t::cancel<false>|innobase_kill_query                    ## MDEV-40473
 current_lsn < archive_header_was_reset|SIGABRT|log_t::write_checkpoint|log_checkpoint_low|log_checkpoint|buf_flush_page_cleaner                                                ## MDEV-41310
 !recv_sys.rpo|SIGABRT|mtr_t::commit|innobase_binlog_write_direct_ordered|MYSQL_BIN_LOG::open_engine|init_server_components                                                     ## MDEV-41300
