@@ -256,6 +256,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+INNODB_ERROR|Table X.X contains unrecognizable instant ALTER metadata                                                                                                          ## MDEV-41331
+index->n_fields >= index->n_core_fields || index->in_instant_init|SIGABRT|rec_get_offsets_func|btr_estimate_number_of_different_key_vals|dict_stats_update_transient_for_index|dict_stats_update_transient ## MDEV-41331
 SIGSEGV|engine_option_value::engine_option_value|merge_engine_options|parse_engine_part_options|open_table_from_share                                                          ## MDEV-41325
 !index->is_dummy|SIGABRT|rec_get_offsets_func|page_validate|ibuf_merge_or_delete_for_page|buf_page_ibuf_merge_try                                                              ## MDEV-37919
 s|SIGABRT|buf_page_get_gen|btr_copy_blob_prefix|btr_copy_externally_stored_field_prefix_low|btr_copy_externally_stored_field                                                   ## MDEV-37967
