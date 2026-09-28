@@ -256,6 +256,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+*type >= TRX_UNDO_RENAME_TABLE|SIGABRT|trx_undo_rec_get_pars|trx_undo_prev_version|trx_undo_prev_version_build|row_check_index                                                 ## MDEV-41336
 INNODB_ERROR|Table X.X contains unrecognizable instant ALTER metadata                                                                                                          ## MDEV-41331
 index->n_fields >= index->n_core_fields || index->in_instant_init|SIGABRT|rec_get_offsets_func|btr_estimate_number_of_different_key_vals|dict_stats_update_transient_for_index|dict_stats_update_transient ## MDEV-41331
 SIGSEGV|engine_option_value::engine_option_value|merge_engine_options|parse_engine_part_options|open_table_from_share                                                          ## MDEV-41325
