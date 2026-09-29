@@ -256,6 +256,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|BJSON::GetArray|BJSON::SetArrayValue|BTUTIL::MakeTopTree|TDBBSON::MakeNewDoc                                                                                           ## MDEV-41339
 SIGSEGV|__strlen_evex|my_b_vprintf|my_b_printf|MYSQL_QUERY_LOG::write                                                                                                          ## MDEV-41338
 !table_list->vers_conditions.need_setup() || !*conds || thd->stmt_arena->is_stmt_execute()|SIGABRT|mysql_prepare_update|mysql_update|mysql_execute_command|mysql_parse         ## MDEV-41332
 to <= end|SIGABRT|my_vsnprintf_ex|my_vsnprintf|my_snprintf|log_query                                                                                                           ## MENT-2911
