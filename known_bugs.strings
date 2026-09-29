@@ -256,6 +256,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+my_charset_same(args[0]->collation.collation, collation.collation) || (args[0]->collation.repertoire == MY_REPERTOIRE_ASCII && !(collation.collation->state & 8192))|SIGABRT|Item_func_set_collation::val_str|Item_str_func::val_real|Item_func_plus::real_op|Item_func_hybrid_field_type::val_real_from_real_op ## MDEV-41341
+my_charset_same(args[0]->collation.collation, collation.collation) || (args[0]->collation.repertoire == MY_REPERTOIRE_ASCII && !(collation.collation->state & 8192))|SIGABRT|Item_func_set_collation::val_str|Type_handler::Item_send_str|Type_handler_string_result::Item_send|Item::send ## MDEV-41341
+my_charset_same(args[0]->collation.collation, collation.collation) || (args[0]->collation.repertoire == MY_REPERTOIRE_ASCII && !(collation.collation->state & 8192))|SIGABRT|Item_func_set_collation::val_str|Type_handler::Item_send_str|Protocol::send_result_set_row|select_send::send_data ## MDEV-41341
 SIGSEGV|BJSON::GetArray|BJSON::SetArrayValue|BTUTIL::MakeTopTree|TDBBSON::MakeNewDoc                                                                                           ## MDEV-41339
 SIGSEGV|__strlen_evex|my_b_vprintf|my_b_printf|MYSQL_QUERY_LOG::write                                                                                                          ## MDEV-41338
 !table_list->vers_conditions.need_setup() || !*conds || thd->stmt_arena->is_stmt_execute()|SIGABRT|mysql_prepare_update|mysql_update|mysql_execute_command|mysql_parse         ## MDEV-41332
