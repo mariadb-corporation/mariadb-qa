@@ -1,6 +1,6 @@
-# corlogic
+# CorLogic
 
-corlogic runs the same SQL on two or more servers at once and reports where they answer
+CorLogic runs the same SQL on two or more servers at once and reports where they answer
 differently. It is a differential tester: no expected results, no test suite. The other
 server is the oracle.
 
@@ -29,7 +29,7 @@ coverage, currently 82.1%; it exits non-zero below `COVERAGE_TARGET`, 75 by defa
 MSAN reads every byte it sees, so it needs the client library to be instrumented too.
 `./build.sh msan` links against an MSAN MariaDB basedir when `gendirs.sh msan` lists one,
 and says which it used. With no such basedir it links the stock client library, and then a
-workload stops in pre-flight on reports from inside that library rather than from corlogic:
+workload stops in pre-flight on reports from inside that library rather than from CorLogic:
 the mode covers the selftest only, and the build says so.
 
 A binary in this directory can be older than the source beside it. A run says so on its
@@ -108,6 +108,9 @@ say more than that.
 | `OPTIONS_SETS` | one side per server-option group |
 | `OPTIMIZER_SWITCH_COMBINATORICS` | side 2 runs one `optimizer_switch` combination per trial |
 | `REDUCE_TIMEOUT` | seconds a reduction may spend before it hands back what it has |
+| `SEED_SCHEMA` | 1 the built-in schema, 0 none, 2 a fresh schema from the generator each trial |
+| `SIDE_SETS` | side sets in the pool. Left at 0 it is twice the trial slots, so a set restarting does not idle one |
+| `GROUP_BY_MECHANISM` | one report per error and mechanism, with the later statements listed inside it |
 | `KNOWN_FILE` | the known-difference filter; one path or a comma list. Left empty the run picks its own, see below |
 
 `corlogic.conf` carries every setting with a one-line comment. `corlogic.weights` is the
@@ -164,7 +167,7 @@ An engine that ships as a plugin is loaded by name, so `ENGINES=innodb,rocksdb` 
 no extra options. The testcase in the report installs the plugin and sources the guard the
 test tree ships for that engine, so it runs under `./mtr` as it is written.
 
-corlogic handles the first one itself: on an engine axis where one side is not
+CorLogic handles the first one itself: on an engine axis where one side is not
 transactional, a trial stops at the first statement that fails on every side, because from
 there on the sides hold different rows. Nothing is compared after that, the end-of-trial
 table scan included. The run log counts those stops. It costs the rest of each such trial,
@@ -203,7 +206,7 @@ known whatever the sides are stay muted. A `KNOWN_FILE` you name wins outright, 
 name several files, comma separated.
 
 Error codes are compared by state on a cross-vendor run, not by code, because the numbers
-do not mean the same thing. corlogic works that out itself from the two versions.
+do not mean the same thing. CorLogic works that out itself from the two versions.
 
 ## Design
 

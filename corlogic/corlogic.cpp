@@ -1,5 +1,5 @@
 // Created by Roel Van de Paar, MariaDB
-// corlogic - query correctness and logic differential tester. Single-file C++20.
+// CorLogic - query correctness and logic differential tester. Single-file C++20.
 //
 // Feeds one deterministic SQL stream (simplified generatorcpp output) to N server "sides"
 // in lockstep, compares per-query outcomes (state/errors/warnings/results/affected rows),
@@ -71,7 +71,7 @@ namespace fs = std::filesystem;
 using std::string;
 using std::vector;
 
-static const char* CORLOGIC_VERSION = "1.0";
+static const char* CORLOGIC_VERSION = "1.1";
 
 // The client library allocates state for a thread on its first use there, and the thread
 // gives it back. Every thread that talks to a server declares one of these.
@@ -317,6 +317,10 @@ struct Cfg {
   string sql_filter_file;                  // user ERE drop-list
   string seed_sql;                         // seed override file
   int seed_schema = 1;
+  int group_by_mechanism = 1;             // one report per error+mechanism+construct set
+  int side_sets = 0;                      // 0 = twice the trial slots, grown on demand
+  long seed_gen_pool = 20000;             // SEED_SCHEMA=2: statements harvested from
+  long seed_gen_max = 300;                // and the most kept as this trial's schema
   // compare
   string error_compare = "auto";           // auto|state|code|text
   string warning_compare = "auto";         // auto|off|state|codes|text
@@ -434,6 +438,10 @@ static bool cfg_set(Cfg& c, const string& key_in, const string& val) {
   else if (key == "SQL_FILTER_FILE") c.sql_filter_file = val;
   else if (key == "SEED_SQL") c.seed_sql = val;
   else if (key == "SEED_SCHEMA") as_int(c.seed_schema);
+  else if (key == "GROUP_BY_MECHANISM") as_int(c.group_by_mechanism);
+  else if (key == "SIDE_SETS") as_int(c.side_sets);
+  else if (key == "SEED_GEN_POOL") as_long(c.seed_gen_pool);
+  else if (key == "SEED_GEN_MAX") as_long(c.seed_gen_max);
   else if (key == "ERROR_COMPARE") c.error_compare = lower(val);
   else if (key == "WARNING_COMPARE") c.warning_compare = lower(val);
   else if (key == "WARNINGS_AS_BUG") as_int(c.warnings_as_bug);
@@ -608,7 +616,7 @@ static string probe_server_bin(const string& basedir) {
 
 // run a command, capture combined output (bounded), return exit status or -1.
 // Hard timeout: the child is killed and status is -2, so a wedged external
-// call (or one whose descendants keep the pipe open) can never hang corlogic.
+// call (or one whose descendants keep the pipe open) can never hang CorLogic.
 struct RunOut { int status = -1; string out; };
 static RunOut run_capture(const vector<string>& argv, const string& cwd = "",
                           size_t max_out = 262144, int timeout_sec = 60) {
@@ -735,7 +743,7 @@ static void resolve_init_tool(SideSpec& s) {
 // ---------------------------------------------------------------------------
 static void usage() {
   printf(
-    "corlogic %s - query correctness/logic differential tester\n"
+    "CorLogic %s - query correctness/logic differential tester\n"
     "Usage: corlogic [options] [KEY=VALUE ...] [basedir1 basedir2 ...]\n"
     "  --config FILE   config file (default: ./corlogic.conf, else tool-dir corlogic.conf)\n"
     "  --seed N        xoshiro256++ seed (reproducible runs)\n"
@@ -758,7 +766,7 @@ static void parse_cli(int argc, char** argv, string& config_path) {
       return argv[++i];
     };
     if (a == "--help" || a == "-h") { usage(); exit(0); }
-    else if (a == "--version") { printf("corlogic %s\n", CORLOGIC_VERSION); exit(0); }
+    else if (a == "--version") { printf("CorLogic %s\n", CORLOGIC_VERSION); exit(0); }
     else if (a == "--config") config_path = need("--config");
     else if (a == "--seed") {
       // the same check the config file gets: a seed that is not a number would silently
@@ -978,7 +986,7 @@ static void make_run_dirs() {
 // ./pr in the workdir: pr-style results (bugs with UID, trials, reduction state)
 static void write_pr_script() {
   static const char* sh = R"SH(#!/bin/bash
-# pr-style results for this corlogic workdir: every bug with its UID, title and state
+# pr-style results for this CorLogic workdir: every bug with its UID, title and state
 cd "$(dirname "$0")" || exit 1
 log=$(ls corlogic-*.log 2>/dev/null | head -n1)
 seen=bugs.seen
@@ -1891,6 +1899,7 @@ static vector<string> g_setup_pins;          // PIN_VARS every side has
 static vector<string> g_engine_pool;         // ENGINE_MIX pool: engines every side has
 static bool g_engine_axis = false;           // the sides differ by engine
 static bool g_same_vendor = true;            // ... or by vendor: resolve_compare_modes sets it
+static bool g_same_version = true;           // ... or by release series, X.Y: set there too
 static bool g_engine_tx_mixed = false;       // ... and not every one of them is transactional
 static bool g_engine_var_all = false;        // every side has default_storage_engine
 static bool g_fk_allow = true;               // foreign keys are kept in the stream
@@ -2169,6 +2178,7 @@ struct StreamStmt {
   string sql;
   bool state_only = false;     // compare outcome state only (ANALYZE and similar)
   bool checkpoint = false;     // a statistics refresh point: the sides are compared here
+  bool generated = false;      // came from the generator, not from the preamble or the seed
 };
 
 // Every setting the stream depends on is a statement in the stream: nothing that
@@ -2272,145 +2282,132 @@ static vector<StreamStmt> seed_schema_sql(bool with_partition) {
     }
     return v;
   }
+  if (g_cfg.seed_schema != 1) return v;   // 0 = no schema, 2 = the generator writes it
   auto num = [](string& s, long long n) { s += std::to_string(n); };
-  // t1: empty table
-  v.push_back({"CREATE TABLE t1 (id INT NOT NULL PRIMARY KEY, c1 INT, c2 VARCHAR(32), "
-               "c3 DECIMAL(10,2), c4 DATETIME, c5 CHAR(8), KEY k1 (c1), KEY k2 (c2(8)))", false});
-  // t2: 1 row, no PK, composite prefix key
-  v.push_back({"CREATE TABLE t2 (c1 INT, c2 VARCHAR(32), c3 DATE, KEY k1 (c1, c2(4)))", false});
-  v.push_back({"INSERT INTO t2 VALUES (1,'one','2001-01-01')", false});
-  // t3: 10 rows, NULLs every 3rd
-  v.push_back({"CREATE TABLE t3 (id INT NOT NULL PRIMARY KEY, c1 SMALLINT, c2 VARCHAR(16), "
-               "c3 DECIMAL(8,3), KEY k1 (c1, id))", false});
-  seed_insert_rows(v, "INSERT INTO t3 VALUES ", 10, [&](string& s, long i) {
-    num(s, i); s += ",";
-    if (i % 3 == 0) s += "NULL"; else num(s, (i * 13) % 100 - 50);
-    s += ",'v" + std::to_string(i % 4) + "',";
-    if (i % 5 == 4) s += "NULL"; else { num(s, i * 7); s += "." + std::to_string(i % 1000); }
-  });
-  // t4: 100 rows, heavy duplicates, ENUM + DATE
-  v.push_back({"CREATE TABLE t4 (id INT NOT NULL PRIMARY KEY, c1 INT, c2 ENUM('a','b','c','d'), "
-               "c3 DATE, c4 VARCHAR(24), KEY k1 (c1), KEY k2 (c2))", false});
-  seed_insert_rows(v, "INSERT INTO t4 VALUES ", 100, [&](string& s, long i) {
-    num(s, i); s += ","; num(s, i % 7); s += ",'";
-    s += (char)('a' + i % 4); s += "','" + seed_date(i) + "','w" + std::to_string(i % 11) + "'";
-  });
-  // t5: 1000 rows, type-edge values
-  v.push_back({"CREATE TABLE t5 (id BIGINT NOT NULL PRIMARY KEY, c1 BIGINT, c2 DECIMAL(20,6), "
-               "c3 VARCHAR(40), c4 DATETIME, KEY k1 (c1), KEY k2 (c3(10), c1))", false});
-  seed_insert_rows(v, "INSERT INTO t5 VALUES ", 1000, [&](string& s, long i) {
-    num(s, i); s += ",";
-    switch (i % 9) {
-      case 0: s += "NULL"; break;
-      case 1: s += "-9223372036854775808"; break;
-      case 2: s += "9223372036854775807"; break;
-      case 3: s += "0"; break;
-      case 4: s += "-1"; break;
-      default: num(s, (i * 37) % 2000 - 1000);
-    }
-    s += ",";
-    switch (i % 7) {
-      case 0: s += "NULL"; break;
-      case 1: s += "-99999999999999.999999"; break;
-      case 2: s += "99999999999999.999999"; break;
-      case 3: s += "0.000001"; break;
-      default: s += std::to_string((i * 11) % 500) + "." + std::to_string(i % 1000000);
-    }
-    s += ",";
-    if (i % 13 == 12) s += "''";
-    else s += "'s" + std::to_string(i % 100) + "x" + std::to_string((i * 3) % 17) + "'";
-    s += ",'" + seed_date(i) + " " + (i % 24 < 10 ? "0" : "") + std::to_string(i % 24) + ":00:0" +
-         std::to_string(i % 10) + "'";
-  });
-  // t6: 10000 rows, the join workhorse
-  v.push_back({"CREATE TABLE t6 (id INT NOT NULL PRIMARY KEY, c1 INT, c2 INT, c3 VARCHAR(32), "
-               "c4 DECIMAL(12,4), c5 DATE, KEY k1 (c1), KEY k2 (c2, c1), KEY k3 (c3(6)))", false});
-  seed_insert_rows(v, "INSERT INTO t6 VALUES ", 10000, [&](string& s, long i) {
-    num(s, i); s += ","; num(s, i % 100); s += ",";
-    if (i % 17 == 16) s += "NULL"; else num(s, (i * 31) % 1000);
-    s += ",'j" + std::to_string(i % 250) + "',";
-    num(s, (i * 3) % 10000); s += "." + std::to_string(i % 10000);
-    s += ",'" + seed_date(i) + "'";
-  });
-  // t7: partitioned when supported and enabled, plain otherwise
-  string t7 = "CREATE TABLE t7 (id INT NOT NULL, c1 INT, c2 VARCHAR(20), PRIMARY KEY (id))";
-  if (with_partition) t7 += " PARTITION BY HASH (id) PARTITIONS 4";
-  v.push_back({t7, false});
-  seed_insert_rows(v, "INSERT INTO t7 VALUES ", 100, [&](string& s, long i) {
-    num(s, i); s += ","; num(s, (i * 13) % 40); s += ",'p" + std::to_string(i % 9) + "'";
-  });
-  // t8: binary/text
-  v.push_back({"CREATE TABLE t8 (id INT NOT NULL PRIMARY KEY, b1 BLOB, x1 TEXT, vb VARBINARY(64))", false});
-  seed_insert_rows(v, "INSERT INTO t8 VALUES ", 10, [&](string& s, long i) {
-    num(s, i);
-    s += ",x'" + string((size_t)(2 + (i % 5) * 2), "0123456789ABCDEF"[i % 16]) + "'";
-    s += ",'text" + std::to_string(i) + "',x'FF00" + string((size_t)((i % 4) * 2), 'A') + "'";
-  });
-  // t9: the numeric and temporal types the tables above leave out, with a UNIQUE key
-  v.push_back({"CREATE TABLE t9 (id INT NOT NULL PRIMARY KEY, c1 TINYINT UNSIGNED, "
-               "c2 SMALLINT UNSIGNED, c3 FLOAT, c4 DOUBLE, c5 BIT(8), c6 YEAR, c7 TIME, "
-               "c8 TIMESTAMP NULL DEFAULT NULL, UNIQUE KEY u1 (c1, c2), KEY k1 (c4))", false});
-  seed_insert_rows(v, "INSERT INTO t9 VALUES ", 200, [&](string& s, long i) {
-    num(s, i); s += ","; num(s, i % 256); s += ","; num(s, (i * 257) % 65536); s += ",";
-    if (i % 11 == 10) s += "NULL"; else s += std::to_string((i % 400) - 200) + ".5";
-    s += ",";
-    if (i % 13 == 12) s += "NULL";
-    else s += "0." + std::to_string(100000000 + (i * 7919) % 899999999);
-    s += ",b'" + string(8 - (size_t)(i % 8) - 1, '0') + "1" + string((size_t)(i % 8), '0') + "'";
-    s += "," + std::to_string(1990 + i % 40);
-    s += ",'" + std::to_string(i % 24) + ":" + std::to_string(i % 60) + ":" +
-         std::to_string((i * 7) % 60) + "'";
-    s += ",";
-    if (i % 7 == 6) s += "NULL"; else s += "'" + seed_date(i) + " 12:00:00'";
-  });
-  // t10: text the collation decides on - trailing space, case, multi-byte, empty
-  v.push_back({"CREATE TABLE t10 (id INT NOT NULL PRIMARY KEY, c1 VARCHAR(32), c2 CHAR(16), "
-               "c3 TEXT, KEY k1 (c1), KEY k2 (c3(12)))", false});
-  {
-    static const char* TXT[] = {"abc", "ABC", "abc ", " abc", "AbC", "", "aaa", "\u00e4bc",
-                               "\u00c4BC", "\u65e5\u672c", "a", "A", "abcd", "ab", "zzz", "ZZZ"};
-    seed_insert_rows(v, "INSERT INTO t10 VALUES ", 100, [&](string& s, long i) {
-      const char* t = TXT[i % (sizeof(TXT) / sizeof(TXT[0]))];
-      num(s, i);
-      s += string(",'") + t + "','" + t + "','" + t + std::to_string(i % 5) + "'";
-    });
-  }
-  // t11: one value on nearly every row, the rest distinct - the shape that makes two
-  // optimizers pick different plans
-  v.push_back({"CREATE TABLE t11 (id INT NOT NULL PRIMARY KEY, c1 INT, c2 INT, "
-               "c3 VARCHAR(16), KEY k1 (c1), KEY k2 (c2))", false});
-  seed_insert_rows(v, "INSERT INTO t11 VALUES ", 1000, [&](string& s, long i) {
-    num(s, i); s += ",";
-    if (i % 20) s += "0"; else num(s, i);         // 95% one value
-    s += ",";
-    if (i < 990) s += "1"; else num(s, i);        // 99% one value
-    s += ",'k" + std::to_string(i % 3) + "'";
-  });
-  // t12: a wide row and a long composite index
-  {
-    string c12 = "CREATE TABLE t12 (id INT NOT NULL PRIMARY KEY";
-    for (int i = 1; i <= 24; i++) c12 += ", c" + std::to_string(i) + " INT";
-    c12 += ", KEY k1 (c1, c2, c3, c4, c5, c6, c7, c8))";
-    v.push_back({c12, false});
-    seed_insert_rows(v, "INSERT INTO t12 VALUES ", 50, [&](string& s, long i) {
-      num(s, i);
-      for (int k = 1; k <= 24; k++) {
-        s += ",";
-        if ((i + k) % 9 == 8) s += "NULL"; else num(s, (i * k) % 37);
+  // The tables the generator's read classes name, at the sizes that make an optimizer
+  // choose differently: empty, one row, ten, a hundred, ten thousand. Every table carries
+  // c1 to c4 so a generated column reference resolves on any of them, and every index is
+  // named after the column it leads on, because an index hint asks for it by that name.
+  struct Tab { const char* name; long rows; const char* c1; const char* c2; const char* c3;
+               const char* c4; const char* extra; const char* keys; };
+  static const Tab TABS[] = {
+    {"t1",     0, "INT",      "VARCHAR(32)", "DECIMAL(10,2)", "DATETIME", ", c5 CHAR(8)",  ""},
+    {"t2",     1, "INT",      "VARCHAR(32)", "DATE",          "INT",      ", c5 TEXT",     ""},
+    {"t3",    10, "SMALLINT", "VARCHAR(16)", "DECIMAL(8,3)",  "DATE",     ", c5 TINYINT",  ""},
+    {"t4",   100, "INT",      "VARCHAR(24)", "DATE",          "INT",
+     ", c5 ENUM('a','b','c','d')", ", KEY c5 (c5)"},
+    {"t5", 10000, "BIGINT",   "VARCHAR(40)", "DECIMAL(20,6)", "DATETIME",
+     ", c5 DOUBLE, c6 BIT(8), c7 TIME", ", KEY c5 (c5), UNIQUE KEY u1 (id, c1)"},
+  };
+  // text a collation decides on: trailing space, case, multi-byte, empty
+  static const char* TXT[] = {"abc", "ABC", "abc ", " abc", "AbC", "", "aaa",
+                              "\u00e4bc", "\u00c4BC", "\u65e5\u672c", "a", "A", "abcd", "zzz"};
+  static const size_t NTXT = sizeof(TXT) / sizeof(TXT[0]);
+  for (auto& t : TABS) {
+    string c = string("CREATE TABLE ") + t.name +
+               " (id INT NOT NULL PRIMARY KEY, c1 " + t.c1 + ", c2 " + t.c2 +
+               ", c3 " + t.c3 + ", c4 " + t.c4 + t.extra +
+               ", KEY c1 (c1), KEY c2 (c2(8)), KEY c3 (c3), KEY c4 (c4)" + t.keys + ")";
+    v.push_back({c, false});
+    if (!t.rows) continue;
+    string head = string("INSERT INTO ") + t.name + " VALUES ";
+    bool big = t.rows >= 1000;
+    seed_insert_rows(v, head, t.rows, [&](string& s, long i) {
+      num(s, i); s += ",";
+      // c1: nulls, type edges on the big table, one value on nearly every row on t4
+      if (string(t.c1) == "BIGINT") {
+        switch (i % 9) {
+          case 0: s += "NULL"; break;
+          case 1: s += "-9223372036854775808"; break;
+          case 2: s += "9223372036854775807"; break;
+          case 3: s += "0"; break;
+          case 4: s += "-1"; break;
+          default: num(s, (i * 37) % 2000 - 1000);
+        }
+      } else if (i % 17 == 16) s += "NULL";
+      else num(s, big ? i % 100 : (i * 13) % 40);
+      s += ",";
+      // c2: the collation set on the small tables, a join key on the big one
+      if (big) s += "'j" + std::to_string(i % 250) + "'";
+      else { s += "'"; s += TXT[(size_t)i % NTXT]; s += "'"; }
+      s += ",";
+      string c3(t.c3);
+      if (c3 == "DATE") s += "'" + seed_date(i) + "'";
+      else if (i % 5 == 4) s += "NULL";
+      else s += std::to_string((i * 7) % 500) + "." + std::to_string(i % 100);
+      s += ",";
+      string c4(t.c4);
+      if (c4 == "DATETIME")
+        s += "'" + seed_date(i) + " " + (i % 24 < 10 ? "0" : "") + std::to_string(i % 24) +
+             ":00:0" + std::to_string(i % 10) + "'";
+      else if (c4 == "DATE") s += "'" + seed_date(i) + "'";
+      else if (i % 19 == 18) s += "NULL";
+      else num(s, (i * 31) % 1000);
+      // the per-table extras, in the order they were declared
+      string nm(t.name);
+      if (nm == "t2") s += ",'text" + std::to_string(i) + "'";
+      else if (nm == "t3") s += "," + std::to_string(i % 128);
+      else if (nm == "t4") { s += ",'"; s += (char)('a' + i % 4); s += "'"; }
+      else if (nm == "t5") {
+        s += ",0." + std::to_string(100000000 + (i * 7919) % 899999999);
+        s += ",b'" + string(8 - (size_t)(i % 8) - 1, '0') + "1" + string((size_t)(i % 8), '0') + "'";
+        s += ",'" + std::to_string(i % 24) + ":" + std::to_string(i % 60) + ":" +
+             std::to_string((i * 7) % 60) + "'";
       }
     });
   }
-  // t13: a child row set that points at t6, when foreign keys are in play
-  if (g_fk_allow) {
-    v.push_back({"CREATE TABLE t13 (id INT NOT NULL PRIMARY KEY, ref INT, c1 VARCHAR(16), "
-                 "KEY k1 (ref), CONSTRAINT fk1 FOREIGN KEY (ref) REFERENCES t6 (id))", false});
-    seed_insert_rows(v, "INSERT INTO t13 VALUES ", 200, [&](string& s, long i) {
-      num(s, i); s += ","; num(s, (i * 47) % 10000); s += ",'r" + std::to_string(i % 6) + "'";
-    });
-  }
-  string an = "ANALYZE TABLE t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12";
-  if (g_fk_allow) an += ", t13";
-  v.push_back({an, true});               // result text varies per version; state compare only
+  // The helper objects the read classes assume are already there. Without them every
+  // statement that names one answers ER_NO_SUCH_TABLE on every side.
+  v.push_back({"CREATE TABLE nums (n INT NOT NULL PRIMARY KEY, c1 INT, c2 VARCHAR(16), "
+               "c3 DECIMAL(8,2), c4 INT, KEY c1 (c1), KEY c2 (c2), KEY c3 (c3))", false});
+  seed_insert_rows(v, "INSERT INTO nums VALUES ", 200, [&](string& s, long i) {
+    num(s, i); s += ","; num(s, i % 50); s += ",'n" + std::to_string(i % 12) + "',";
+    s += std::to_string(i % 90) + "." + std::to_string(i % 100) + ",";
+    num(s, (i * 7) % 200);
+  });
+  v.push_back({"CREATE TABLE cte1 (id INT NOT NULL PRIMARY KEY, n INT, c1 INT, "
+               "c2 VARCHAR(16), c3 DECIMAL(8,2), c4 INT, KEY c1 (c1), KEY c2 (c2), "
+               "KEY c3 (c3))", false});
+  seed_insert_rows(v, "INSERT INTO cte1 VALUES ", 100, [&](string& s, long i) {
+    num(s, i); s += ","; num(s, i); s += ","; num(s, i % 25);
+    s += ",'q" + std::to_string(i % 7) + "',";
+    s += std::to_string(i % 80) + "." + std::to_string(i % 100) + ",";
+    num(s, (i * 3) % 300);
+  });
+  // ft_part carries the partition names the generator writes: p0, p1, p2, pm
+  string ftp = "CREATE TABLE ft_part (id INT NOT NULL, c1 INT, c2 VARCHAR(64), "
+               "c3 DECIMAL(8,2), c4 INT, dt DATE NOT NULL, PRIMARY KEY (id, dt), "
+               "KEY c1 (c1), KEY c2 (c2), KEY c3 (c3))";
+  if (with_partition)
+    ftp += " PARTITION BY RANGE (YEAR(dt)) (PARTITION p0 VALUES LESS THAN (2015), "
+           "PARTITION p1 VALUES LESS THAN (2022), PARTITION p2 VALUES LESS THAN (2030), "
+           "PARTITION pm VALUES LESS THAN MAXVALUE)";
+  v.push_back({ftp, false});
+  seed_insert_rows(v, "INSERT INTO ft_part VALUES ", 400, [&](string& s, long i) {
+    num(s, i); s += ","; num(s, i % 40);
+    s += ",'word" + std::to_string(i % 15) + " text" + std::to_string(i % 9) + "',";
+    s += std::to_string(i % 70) + "." + std::to_string(i % 100) + ",";
+    num(s, (i * 11) % 400); s += ",'" + seed_date(i) + "'";
+  });
+  // the generator asks for MATCH(c3), so one table carries a text c3 under a full-text
+  // index. It stays out of ft_part because a partitioned table cannot hold one everywhere.
+  v.push_back({"CREATE TABLE ft1 (id INT NOT NULL PRIMARY KEY, c1 INT, c2 VARCHAR(32), "
+               "c3 TEXT, c4 INT, KEY c1 (c1), KEY c2 (c2(8)), KEY c4 (c4), "
+               "FULLTEXT KEY ft1 (c3))", false});
+  seed_insert_rows(v, "INSERT INTO ft1 VALUES ", 100, [&](string& s, long i) {
+    num(s, i); s += ","; num(s, i % 25);
+    s += ",'k" + std::to_string(i % 12) + "',";
+    s += "'word" + std::to_string(i % 15) + " text" + std::to_string(i % 9) +
+         " apple banana',";
+    num(s, (i * 7) % 200);
+  });
+  if (g_cfg.views)
+    for (int k = 1; k <= 5; k++) {
+      string n = std::to_string(k);
+      v.push_back({"CREATE OR REPLACE VIEW v" + n +
+                   " AS SELECT id, c1, c2, c3, c4 FROM t" + n, false});
+    }
+  v.push_back({"ANALYZE TABLE t1, t2, t3, t4, t5, nums, cte1, ft_part, ft1", true});
   return v;
 }
 
@@ -2419,7 +2416,7 @@ static vector<StreamStmt> seed_schema_sql(bool with_partition) {
 // ---------------------------------------------------------------------------
 struct FilterStats {
   std::atomic<long> not_allowed{0}, denied{0}, toggled_off{0}, user_filtered{0},
-                    limit_stripped{0}, kept{0};
+                    limit_stripped{0}, kept{0}, modifier_stripped{0}, seed_guard{0};
 };
 static FilterStats g_fstat;
 static vector<std::pair<std::regex, std::atomic<long>*>> g_user_filters;
@@ -2527,6 +2524,13 @@ static const char* ALLOW_PREFIXES[] = {
   "CREATE TABLE", "CREATE INDEX", "CREATE UNIQUE INDEX", "CREATE OR REPLACE TABLE",
   "ALTER TABLE", "TRUNCATE", "DROP TABLE", "DROP INDEX",
   "BEGIN", "START TRANSACTION", "COMMIT", "ROLLBACK",
+  "CREATE TEMPORARY TABLE", "CREATE OR REPLACE TEMPORARY TABLE",
+  "CREATE FULLTEXT INDEX", "CREATE SPATIAL INDEX",
+  "SAVEPOINT", "RELEASE SAVEPOINT",
+  // LOCK TABLES is deliberately absent: with one connection per side, every later
+  // statement on an unlocked table answers ER_TABLE_NOT_LOCKED until UNLOCK TABLES
+  "ANALYZE", "OPTIMIZE", "CHECK", "CHECKSUM",
+  "PREPARE", "EXECUTE", "DEALLOCATE", "XA ", "DO ", "TABLE ", "VALUES ", "CALL",
   // reached only when the matching toggle is on; the token rules below drop them again
   "CREATE VIEW", "CREATE OR REPLACE VIEW", "ALTER VIEW", "DROP VIEW",
   "CREATE SEQUENCE", "CREATE OR REPLACE SEQUENCE", "ALTER SEQUENCE", "DROP SEQUENCE"
@@ -2628,7 +2632,74 @@ static void strip_online_ddl(string& sql) {
 // keyword MySQL refuses as unknown, and MySQL wants a lock for ALGORITHM=COPY where a
 // MariaDB from 11.4 on carries the copy with LOCK=NONE. The ALTER itself still runs on
 // every side, so what it does to the table is still compared.
-static bool stream_strips_online_ddl() { return g_engine_axis || !g_same_vendor; }
+static bool stream_strips_online_ddl() { return g_engine_axis || !g_same_vendor || !g_same_version; }
+
+// A modifier that changes how the server schedules or caches the work, not what it
+// answers. Dropping the statement over one of these costs a tenth of the generator's
+// output, so the modifier goes and the statement stays. ENGINE= is in the list because the
+// engine is pinned in the preamble and an in-band one would take a side off the axis.
+static bool strip_neutral_modifiers(string& sql) {
+  static const char* WORDS[] = {"LOW_PRIORITY", "HIGH_PRIORITY", "DELAYED",
+                                "SQL_NO_CACHE", "SQL_CACHE"};
+  bool hit = false;
+  for (const char* w : WORDS) {
+    size_t wl = strlen(w);
+    for (;;) {
+      string up = upper(sql);
+      size_t k = string::npos;
+      for (size_t i = 0; i + wl <= up.size();) {
+        char c = up[i];
+        if (c == '\'' || c == '"' || c == '`') { i = skip_quoted(up, i); continue; }
+        if (up.compare(i, wl, w) == 0 && (i == 0 || !ident_ch(up[i - 1])) &&
+            (i + wl == up.size() || !ident_ch(up[i + wl]))) { k = i; break; }
+        i++;
+      }
+      if (k == string::npos) break;
+      size_t e = k + wl;
+      while (e < sql.size() && isspace((unsigned char)sql[e])) e++;
+      sql.erase(k, e - k);
+      hit = true;
+    }
+  }
+  // ENGINE=<name>, with the comma before it when there is one
+  for (;;) {
+    string up = upper(sql);
+    size_t k = up.find("ENGINE");
+    if (k == string::npos) break;
+    size_t v = k + 6;
+    while (v < up.size() && isspace((unsigned char)up[v])) v++;
+    if (v >= up.size() || up[v] != '=') break;
+    v++;
+    while (v < sql.size() && isspace((unsigned char)sql[v])) v++;
+    while (v < sql.size() && (isalnum((unsigned char)sql[v]) || sql[v] == '_')) v++;
+    size_t b = k;
+    while (b > 0 && isspace((unsigned char)sql[b - 1])) b--;
+    if (b > 0 && sql[b - 1] == ',') b--;
+    sql.erase(b, v - b);
+    hit = true;
+  }
+  if (hit) sql = trim(sql);
+  return hit;
+}
+
+// Structural DDL against a table the seed built. One of these takes the table, its columns
+// or its partitions away for the rest of the trial, and every statement after it that
+// wanted them fails. An additive ALTER is left alone: that is coverage.
+static bool destroys_seed_object(const string& up) {
+  static const std::regex TARGET(
+      "^(DROP +(TABLE|VIEW)|TRUNCATE( +TABLE)?|CREATE +OR +REPLACE +(TEMPORARY +)?TABLE) +"
+      "(IF +(NOT +)?EXISTS +)?`?(T[0-9]+|NUMS|CTE1|FT_PART|FT1|V[0-9]+)`?",
+      std::regex::extended);
+  if (std::regex_search(up, TARGET)) return true;
+  static const std::regex ALTERED(
+      "^ALTER +TABLE +`?(T[0-9]+|NUMS|CTE1|FT_PART|FT1)`?",
+      std::regex::extended);
+  if (!std::regex_search(up, ALTERED)) return false;
+  return up.find("REMOVE PARTITIONING") != string::npos ||
+         up.find("DROP COLUMN") != string::npos ||
+         up.find("DROP PARTITION") != string::npos ||
+         up.find("DROP PRIMARY KEY") != string::npos;
+}
 
 // then covers several engines while the sides still compare like for like. The clause goes
 // straight after the column list, where a table option belongs.
@@ -2686,12 +2757,16 @@ static bool stream_filter_keep(string& stmt) {
           (up.rfind("BEGIN", 0) == 0 || up.rfind("START", 0) == 0 ||
            up.rfind("COMMIT", 0) == 0 || up.rfind("ROLLBACK", 0) == 0)) {
         if (!g_cfg.tx) { g_fstat.toggled_off++; return false; }
+        // a non-transactional side keeps the rows a ROLLBACK takes back on the others
+        if (g_engine_tx_mixed && up.rfind("ROLLBACK", 0) == 0) { g_fstat.toggled_off++; return false; }
       }
       allowed = true;
       break;
     }
   }
   if (!allowed) { g_fstat.not_allowed++; return false; }
+  if (strip_neutral_modifiers(stmt)) { g_fstat.modifier_stripped++; up = upper(stmt); }
+  if (g_cfg.seed_schema && destroys_seed_object(up)) { g_fstat.seed_guard++; return false; }
   for (auto* t : DENY_TOKENS)
     if (has_token(up, t)) { g_fstat.denied++; return false; }
   if (!g_cfg.views && has_token(up, " VIEW ")) { g_fstat.toggled_off++; return false; }
@@ -2773,6 +2848,49 @@ static vector<StreamStmt> generator_batch(int wid) {
                       starts_with_i(stmt, "CHECK") || starts_with_i(stmt, "REPAIR") ||
                       starts_with_i(stmt, "CHECKSUM");
     out.push_back({std::move(stmt), state_only});
+  }
+  return out;
+}
+
+// SEED_SCHEMA=2: the trial's schema comes from the generator, not from a table set written
+// into this file. A larger batch is asked for, and every CREATE TABLE, CREATE INDEX and
+// row-adding statement in it is kept, in the order the generator emitted them, so the
+// tables carry the columns and indexes the generator's own read classes go looking for.
+// One batch per trial, so every trial runs a different schema.
+static vector<StreamStmt> generator_seed_batch(int wid) {
+  string raw = g_run.rundir + "/seed.w" + std::to_string(wid) + ".sql";
+  long seed = (long)(g_gen_seed_base + 0x5eed0000u + g_gen_batches.fetch_add(1));
+  vector<string> argv = {g_cfg.generator_bin, "--output", raw, "--seed", std::to_string(seed),
+                         "--threads", "1"};
+  if (!g_cfg.weights_file.empty() && fs::exists(g_cfg.weights_file)) {
+    argv.push_back("--weights");
+    argv.push_back(g_cfg.weights_file);
+  }
+  argv.push_back(std::to_string(g_cfg.seed_gen_pool));
+  RunOut r = run_capture(argv, g_run.rundir, 65536, 300);
+  if (r.status != 0) {
+    logline("seed generator failed (status %d): this trial runs with no schema", r.status);
+    return {};
+  }
+  string body = read_file(raw);
+  vector<StreamStmt> out;
+  size_t pos = 0;
+  while (pos < body.size() && (long)out.size() < g_cfg.seed_gen_max) {
+    size_t nl = body.find('\n', pos);
+    if (nl == string::npos) nl = body.size();
+    string stmt = trim(body.substr(pos, nl - pos));
+    pos = nl + 1;
+    if (stmt.empty() || stmt[0] == '#' || stmt.rfind("--", 0) == 0) continue;
+    if (!stmt.empty() && stmt.back() == ';') { stmt.pop_back(); stmt = trim(stmt); }
+    string w = leading_word(stmt);
+    if (w != "CREATE" && w != "INSERT" && w != "REPLACE") continue;
+    if (w == "CREATE") {
+      string up = upper(stmt);
+      if (up.find(" TABLE") == string::npos && up.find(" INDEX") == string::npos) continue;
+    }
+    if (!stream_filter_keep(stmt)) continue;
+    engine_mix_rewrite(stmt);
+    out.push_back({std::move(stmt), false});
   }
   return out;
 }
@@ -2903,8 +3021,12 @@ static void resolve_plan_perf_report() {
 }
 
 static void resolve_compare_modes() {
-  for (size_t i = 1; i < g_sides.size(); i++)
+  for (size_t i = 1; i < g_sides.size(); i++) {
     if (g_sides[i].vendor != g_sides[0].vendor) g_same_vendor = false;
+    if (g_sides[i].ver_major != g_sides[0].ver_major ||
+        g_sides[i].ver_minor != g_sides[0].ver_minor)
+      g_same_version = false;
+  }
   g_error_mode = pick_mode(g_cfg.error_compare, g_same_vendor, 1, 0);
   g_warning_mode = pick_mode(g_cfg.warning_compare, g_same_vendor, 1, 0);
   if (g_error_mode < 0) g_error_mode = 0;
@@ -2937,6 +3059,7 @@ struct DiffHit {
   bool ref_worse = false;        // PLAN/PERF: the reference side is the worse one
   string combo;                  // combinatorics: the optimizer_switch side 2 ran with
   string diag;                   // PLAN: the plans and row counts detection measured
+  string cause_sql;              // CHECKSUM: the statement that left the tables unsynced
 };
 
 // A read-only statement keeps its LIMIT, and a LIMIT leaves the choice of rows at a tie to
@@ -2966,6 +3089,54 @@ static string order_by_total(const string& sql, unsigned cols) {
   string tail;
   for (unsigned c = 1; c <= cols; c++) tail += ", " + std::to_string(c);
   return head + tail + (at < sql.size() ? " " + sql.substr(at) : string());
+}
+
+// the same question without the LIMIT: which rows there were to choose from
+static string drop_trailing_limit(const string& sql) {
+  string up = upper_blanked(sql);
+  size_t ob = find_word_top(up, "ORDER BY", 0);
+  if (ob == string::npos) return {};
+  size_t at = string::npos;
+  for (const char* t : {"LIMIT", "OFFSET", "FETCH"}) {
+    size_t p = find_word_top(up, t, ob + 8);
+    if (p != string::npos && (at == string::npos || p < at)) at = p;
+  }
+  if (at == string::npos) return {};
+  string head = sql.substr(0, at);
+  while (!head.empty() && isspace((unsigned char)head.back())) head.pop_back();
+  return head;
+}
+
+// The appended positions make the sort total only when no two rows are equal under their
+// own collation. Rows that are equal that way tie on every one of them, so the sequence is
+// still a choice. This asks how many rows tie: 0 means the sort is total. Cutting the ORDER
+// BY takes any LIMIT with it, so the rows to choose from can be many more than the statement
+// returned; the count is bounded, and a set that reaches the bound answers 1, because a tie
+// beyond it cannot be ruled out.
+static string order_tie_probe(const string& sql, unsigned cols) {
+  if (cols == 0 || cols > 64) return {};
+  string up = upper_blanked(sql);
+  size_t ob = find_word_top(up, "ORDER BY", 0);
+  if (ob == string::npos) return {};
+  string body = sql.substr(0, ob);
+  while (!body.empty() && isspace((unsigned char)body.back())) body.pop_back();
+  if (body.empty()) return {};
+  string cl;
+  for (unsigned c = 1; c <= cols; c++) cl += (c > 1 ? ", a" : "a") + std::to_string(c);
+  return "SELECT IF(COUNT(*) > 10000, 1, COUNT(*) - COUNT(DISTINCT " + cl + ")) FROM (" +
+         body + " LIMIT 10001) AS clg_tie(" + cl + ")";
+}
+
+// A question that cannot be asked, or that comes back empty, counts as a tie, so a
+// difference the tiebreaker did not settle is never reported on the tiebreaker's word alone.
+// Both sides are asked, so the sessions stay alike, and the first side's answer is the one
+// read.
+static bool tiebreaker_is_total(Conn& a, Conn& b, const string& sql, unsigned cols) {
+  string probe = order_tie_probe(sql, cols);
+  if (probe.empty()) return false;
+  string n = query_scalar(a, probe);
+  query_scalar(b, probe);
+  return n == "0";
 }
 
 static std::atomic<long> g_limit_ties{0};   // a kept LIMIT returned another tied row set
@@ -3070,6 +3241,55 @@ static bool err_warn_equivalent(const QOutcome& e, const QOutcome& w) {
   return false;
 }
 
+// The equivalence above makes a strict error and a lenient warning one outcome. On a write
+// the lenient side took, it changed rows where the strict side changed none, so from there
+// on the two sides hold different rows
+static bool strict_write_diverged(const vector<QOutcome>& outs, const string& sql) {
+  if (g_same_vendor || stmt_readonly(sql)) return false;
+  bool err = false, wrote = false;
+  for (auto& o : outs) {
+    if (o.state == QState::ERR) err = true;
+    else if (!o.cols && o.affected > 0) wrote = true;
+  }
+  return err && wrote;
+}
+
+// A write with IGNORE passes over a row a key collision would otherwise have stopped. Which
+// row it keeps and which one it passes over follows the order the rows are read in, and two
+// builds are free to read them in a different order, so from there on the sides can hold
+// different rows. This only says the trial used such a write; whether the rows really differ
+// is then read off the tables themselves.
+static bool ignore_write(const string& sql) {
+  if (!starts_with_i(sql, "UPDATE") && !starts_with_i(sql, "INSERT") &&
+      !starts_with_i(sql, "REPLACE") && !starts_with_i(sql, "DELETE")) return false;
+  string up = upper_blanked(sql);
+  return find_word_top(up, "IGNORE", 0) != string::npos;
+}
+
+// A multi-table UPDATE that copies a value out of the joined row takes an unspecified partner
+// when a row has more than one, and two builds are free to read the partners in a different
+// order, so from there on the sides can hold different rows. This only says the trial used such
+// a write; whether the rows really differ is then read off the tables themselves.
+static vector<string> split_top_level(const string& s);
+static bool copying_multi_update(const string& sql) {
+  if (!starts_with_i(sql, "UPDATE")) return false;
+  string up = upper_blanked(sql);
+  size_t set = find_word_top(up, "SET", 0);
+  if (set == string::npos) return false;
+  string tables = up.substr(0, set);
+  if (find_word_top(tables, "JOIN", 0) == string::npos &&
+      split_top_level(tables).size() < 2) return false;
+  size_t end = find_word_top(up, "WHERE", set);          // the assignments, without the WHERE
+  if (end == string::npos) end = find_word_top(up, "ORDER BY", set);
+  if (end == string::npos) end = up.size();
+  for (const string& a : split_top_level(up.substr(set + 3, end - set - 3))) {
+    size_t eq = a.find('=');                             // the name being assigned is always
+    if (eq == string::npos) continue;                    // qualified, so only the value counts
+    if (a.find('.', eq) != string::npos) return true;
+  }
+  return false;
+}
+
 // One side computes a result in DECIMAL where the other picks DOUBLE (an aggregate over
 // an ENUM does this), so one number prints at two precisions: 2.3333 against
 // 2.3333333333333335. Cells that agree after rounding to the shorter fraction are one
@@ -3084,6 +3304,7 @@ static bool num_policy_equal(const string& x, const string& y) {
   double dy = strtod(y.c_str(), &e);
   if (!e || *e) return false;
   if (!std::isfinite(dx) || !std::isfinite(dy)) return false;
+  if (dx == 0 && dy == 0) return true;                // MySQL prints a negative zero as -0
   auto frac = [](const string& s) {
     size_t d = s.find('.');
     return d == string::npos ? (size_t)0 : s.size() - d - 1;
@@ -3192,6 +3413,55 @@ static bool temporal_round_match(const QOutcome& a, const QOutcome& b) {
   return true;
 }
 
+// a cell in lower case, without trailing spaces and without the Latin-1 accents
+static string fold_cell(const string& v) {
+  // the base letter of U+00C0 to U+00FF: '.' is no base letter, 's' is the "ss" of U+00DF
+  static const char* L1 = "aaaaaa.ceeeeiiiidnooooo.ouuuuy.saaaaaa.ceeeeiiiidnooooo.ouuuuy.y";
+  if (v == "\\N") return v;
+  string r;
+  for (size_t i = 0; i < v.size(); i++) {
+    unsigned char c = v[i], n = i + 1 < v.size() ? v[i + 1] : 0;
+    char l = c == 0xC3 && n >= 0x80 && n <= 0xBF ? L1[n - 0x80] : '.';
+    if (l == '.') r += (char)tolower(c);
+    else { r += l == 's' ? "ss" : string(1, l); i++; }
+  }
+  size_t e = r.find_last_not_of(' ');
+  r.erase(e == string::npos ? 0 : e + 1);
+  return r;
+}
+
+static string fold_row(const string& row) {
+  string out;
+  for (size_t i = 0;;) {
+    size_t t = row.find('\t', i);
+    out += fold_cell(row.substr(i, t == string::npos ? string::npos : t - i));
+    if (t == string::npos) return out;
+    out += '\t';
+    i = t + 1;
+  }
+}
+
+static bool contains_word(const string& up, const string& w);
+
+// A group keeps one row to stand for it, and the collation of the column forms the group:
+// under a case and accent insensitive collation 'a', 'A ' and 'ä' are one group. The row
+// that stands for the group is the first one the plan reads, so a GROUP BY, a DISTINCT, a
+// set operation, a MIN or a MAX can show another member of the same group on each side
+static bool group_member_match(const QOutcome& a, const QOutcome& b, const string& sql) {
+  if (a.capped || b.capped || a.rows.empty() || a.rows.size() != b.rows.size()) return false;
+  string up = upper_blanked(sql);
+  bool grouped = false;
+  for (const char* w : {"GROUP", "DISTINCT", "UNION", "INTERSECT", "EXCEPT", "MIN", "MAX"})
+    grouped = grouped || contains_word(up, w);
+  if (!grouped) return false;
+  vector<string> ra, rb;
+  for (auto& r : a.rows) ra.push_back(fold_row(r));
+  for (auto& r : b.rows) rb.push_back(fold_row(r));
+  std::sort(ra.begin(), ra.end());
+  std::sort(rb.begin(), rb.end());
+  return ra == rb;
+}
+
 // compare side b against side a for one statement; returns the category or "" on match
 static bool stmt_is_dml(const string& sql) {
   string w = leading_word(sql);
@@ -3210,7 +3480,14 @@ static string compare_pair(const QOutcome& a, const QOutcome& b, bool state_only
     if (sb == QState::WARN) sb = QState::OK;
   }
   if (sa == QState::CRASH || sb == QState::CRASH) return sa == sb ? "" : "CRASH";
-  if (sa == QState::TIMEOUT || sb == QState::TIMEOUT) return sa == sb ? "" : "TIMEOUT";
+  if (sa == QState::TIMEOUT || sb == QState::TIMEOUT) {
+    if (sa == sb) return "";
+    // one side stopped at the limit while the other sat close to it: the limit fell between
+    // two runs of the same slow query, so the timing and not the server decides which stops
+    const QOutcome& ran = (sa == QState::TIMEOUT) ? b : a;
+    if (ran.ms >= g_cfg.query_timeout * 500.0) return "";
+    return "TIMEOUT";
+  }
   if (sa == QState::ERR || sb == QState::ERR) {
     if (sa != sb) {
       if (admin_error_equivalent(a, b) || admin_error_equivalent(b, a)) return "";
@@ -3243,14 +3520,16 @@ static string compare_pair(const QOutcome& a, const QOutcome& b, bool state_only
     if (a.multiset_hash != b.multiset_hash) {
       if (num_policy_match(a, b)) {}                   // one number, two result types
       else if (temporal_round_match(a, b)) {}          // one temporal, one cut and one round
+      else if (group_member_match(a, b, sql)) {}       // one group, two members
       else if (!stmt_rows_unspecified(sql)) return "RESULT";
       else g_limit_ties++;
     }
   } else if (a.affected != b.affected) {
-    // the count a DDL reports is the rows it copied, and each engine, and each vendor,
-    // decides for itself whether it copies them at all: an ALTER one side runs instantly
-    // reports none where a side that rebuilt the table reports every row it moved
-    if (!((g_engine_axis || !g_same_vendor) && !sql.empty() && !stmt_is_dml(sql)))
+    // the count a DDL reports is the rows it copied, and each engine, each vendor and each
+    // release series decides for itself whether it copies them at all: an ALTER one side
+    // runs instantly reports none where a side that rebuilt the table reports every row
+    if (!((g_engine_axis || !g_same_vendor || !g_same_version) && !sql.empty() &&
+          !stmt_is_dml(sql)))
       return "AFFECTED";
   }
   return "";
@@ -3307,6 +3586,40 @@ static bool stmt_readonly(const string& sql) {
   if (w != "WITH") return false;
   string body = with_body_word(sql);
   return body.empty() ? false : body == "SELECT" || body == "TABLE" || body == "VALUES";
+}
+
+// The two sides kept as many rows as each other under one top-level LIMIT and kept
+// different ones. Adding the remaining columns to the sort settles that when they separate
+// the rows that tied, and the sides then answer alike. When they do not - a case- or
+// accent-insensitive collation leaves distinct strings equal to the sort - ask one side on
+// its own: a side that answers the same question with two different row sets is telling us
+// the sort does not decide which rows the LIMIT keeps, so the sides differing about them
+// says nothing about either.
+static bool limit_tie_settled(Conn& a, Conn& b, const string& sql, unsigned cols,
+                              size_t rows_seen) {
+  string tb = order_by_total(sql, cols);
+  if (tb.empty() || rows_seen > 10000 || !stmt_readonly(sql)) return false;
+  auto ra = query_rows(a, tb);
+  if (ra.empty()) return false;
+  if (ra == query_rows(b, tb)) return true;
+  auto plain = query_rows(a, sql);
+  query_rows(b, sql);                    // both sides get asked, so the sessions stay alike
+  if (!plain.empty() && plain != ra) return true;
+  // The tiebreaker changed nothing, which happens when the sort already names every column
+  // it could name and rows are still equal to it. Then ask what rows there were to choose
+  // from: when both sides hold the same ones, the sides differ only over rows the sort was
+  // never able to separate, and which of them the LIMIT keeps is not specified.
+  string all = drop_trailing_limit(sql);
+  if (all.empty()) return false;
+  // the LIMIT that was taken off was the only bound on this query, so put a bound back:
+  // the answer is only useful when both sides return the same rows, and a row set this
+  // large is not worth carrying to find that out
+  all += " LIMIT 10001";
+  auto fa = query_rows(a, all), fb = query_rows(b, all);
+  if (fa.empty() || fa.size() > 10000 || fa.size() != fb.size()) return false;
+  std::sort(fa.begin(), fa.end());
+  std::sort(fb.begin(), fb.end());
+  return fa == fb;
 }
 
 struct PlanInfo {
@@ -3623,17 +3936,26 @@ static string plan_mech_of(const PlanInfo& a, const PlanInfo& b) {
   return plans_line_up(a, b) ? plan_mech(access_delta(a.access, b.access)) : plan_mech("");
 }
 
-// serial median-of-5 wall time for one statement on one side (rows discarded)
-static double perf_median5(Conn& c, const string& sql) {
-  double t[5];
+// Serial median-of-5 wall time for one statement, on two sides, taking turns. Five runs on one
+// side and then five on the other read a busy box as a difference between the builds, because
+// whichever side holds the slow window carries all five of its readings. Taking turns puts both
+// sides in the same window. Returns false when either side did not answer.
+static bool perf_median5_pair(Conn& a, Conn& b, const string& sql, double& ma, double& mb) {
+  double ta[5], tb[5];
   for (int i = 0; i < 5; i++) {
-    QOutcome o;
-    exec_stmt(c, sql, o, false, false);
-    if (o.state != QState::OK && o.state != QState::WARN) return -1;
-    t[i] = o.ms;
+    QOutcome oa, ob;
+    exec_stmt(a, sql, oa, false, false);
+    if (oa.state != QState::OK && oa.state != QState::WARN) return false;
+    exec_stmt(b, sql, ob, false, false);
+    if (ob.state != QState::OK && ob.state != QState::WARN) return false;
+    ta[i] = oa.ms;
+    tb[i] = ob.ms;
   }
-  std::sort(t, t + 5);
-  return t[2];
+  std::sort(ta, ta + 5);
+  std::sort(tb, tb + 5);
+  ma = ta[2];
+  mb = tb[2];
+  return true;
 }
 static std::atomic<long> g_perf_gap_max{0};    // largest read-only side gap seen, in ms
 static bool perf_exceeds(double fast, double slow) {
@@ -3668,10 +3990,27 @@ struct Stats {
                     order_notes{0}, warn_notes{0}, improve_notes{0}, crashes{0}, revivals{0},
                     unreproduced{0}, unverified{0}, plan_flux{0}, plan_shape{0},
                     plan_order{0}, plan_explained{0}, plan_in_tx{0}, engine_stops{0},
-                    timing_notes{0};
+                    timing_notes{0}, strict_stops{0}, ignore_taints{0};
   std::atomic<long> stmt_ms{0};              // summed trial wall time
+  // What the stream is actually doing on side 1. A read that comes back with rows is the
+  // only statement shape a RESULT difference can come from, so its share is the measure of
+  // how much of a run is capable of finding a wrong result.
+  std::atomic<long> out_err{0}, out_read_rows{0}, out_read_empty{0}, out_write{0};
 };
 static Stats g_stats;
+static std::mutex g_errcode_mtx;
+static std::map<unsigned, long> g_errcodes;      // side-1 error code -> how often
+static void note_outcome(const QOutcome& o) {
+  if (o.state == QState::ERR) {
+    g_stats.out_err++;
+    std::lock_guard<std::mutex> lk(g_errcode_mtx);
+    g_errcodes[o.err]++;
+    return;
+  }
+  if (o.state != QState::OK) return;             // CRASH and TIMEOUT are counted elsewhere
+  if (o.cols == 0) { g_stats.out_write++; return; }
+  if (o.row_count) g_stats.out_read_rows++; else g_stats.out_read_empty++;
+}
 
 // What every worker slot is doing right now: the dashboard's threads panel reads this.
 // One line per slot, and a slot is one server, so a line reads
@@ -4085,6 +4424,11 @@ static std::atomic<long> g_side_revs[MAX_SIDE_STATS];
 static std::mutex g_uid_mtx;
 static std::map<string, long> g_uids_seen;             // UID -> candidate number (first sighting)
 static std::map<string, long> g_uid1_seen;             // testcase id -> the trial that reported it
+// The UID's last field is the statement, so a generated column name or a different sibling
+// expression in the select list splits one root cause across many UIDs and many reports.
+// The coarse key drops that field: what differs, by what mechanism, over which constructs.
+// The first finding under a key gets the report; a later one is listed inside it.
+static std::map<string, long> g_coarse_seen;          // coarse key -> the trial that reported it
 static std::map<string, long> g_uid_drops;             // UID -> how often its candidate dropped
 static long g_trial_base = 0;                          // a resumed run numbers trials after this
 static long g_cand_base = 0, g_bug_base = 0;           // and counts its own candidates and bugs
@@ -4374,8 +4718,8 @@ static string generic_name(const string& id) {
 
 // the failing statement as it goes into a UID: each string literal becomes a letter in
 // order of first appearance, each number becomes N, each table and column name is
-// generic, spacing collapses, length is capped
-static string norm_stmt(const string& sql) {
+// generic, spacing collapses, length is capped unless cap is false
+static string norm_stmt(const string& sql, bool cap = true) {
   static const char* LET = "XYZABCDEFGHIJKLMNOPQRSTUVW";
   std::map<string, string> lets;
   string out;
@@ -4450,7 +4794,7 @@ static string norm_stmt(const string& sql) {
   }
   out = trim(out);
   while (!out.empty() && out.back() == ';') out.pop_back();
-  if (out.size() > 120) out = out.substr(0, 117) + "...";
+  if (cap && out.size() > 120) out = out.substr(0, 117) + "...";
   return out;
 }
 
@@ -4519,10 +4863,10 @@ static bool mech_is_remeasurable(const string& category) {
 }
 
 static string uid_build(const DiffHit& hit, const QOutcome& a, const QOutcome& b,
-                        const string& crash_errlog) {
+                        const string& crash_errlog, bool cap = true) {
   return hit.category + "|" +
          outcome_mech(hit.category, a, b, hit.statement, crash_errlog, hit.mech) + "|" +
-         constructs_of(hit.statement) + "|" + norm_stmt(hit.statement);
+         constructs_of(hit.statement) + "|" + norm_stmt(hit.statement, cap);
 }
 
 // a testcase id is the 12 hex characters a report prints before the "//"
@@ -4711,7 +5055,8 @@ static void enqueue_reduction(long cand, long trial, const string& uid, const Di
 // reduction and its report; one worker thread runs one trial at a time
 static thread_local string t_combo;
 
-static void handle_diff(long trial, int wid, const vector<StreamStmt>& stream, DiffHit hit,
+// true when the difference is one already known: muted, or seen earlier in this run
+static bool handle_diff(long trial, int wid, const vector<StreamStmt>& stream, DiffHit hit,
                         const QOutcome& a, const QOutcome& b, vector<SideRun>& sides) {
   hit.combo = t_combo;
   int sidx = (hit.side_b >= 0 && hit.side_b < (int)sides.size())
@@ -4723,10 +5068,26 @@ static void handle_diff(long trial, int wid, const vector<StreamStmt>& stream, D
       if (!sr.inst.alive()) { crash_log = sr.inst.errlog; break; }
   }
   string uid = uid_build(hit, a, b, crash_log);
-  if (known_match(uid)) {
+  // the UID caps the statement, so an entry that names a construct late in a long
+  // statement is also tried against the whole statement
+  if (known_match(uid) || known_match(uid_build(hit, a, b, crash_log, false))) {
     g_known_matches++;
     logline("known diff muted: %s", uid.c_str());
-    return;
+    return true;
+  }
+  // a CHECKSUM hit names the table it found unsynced, not the statement that left it that
+  // way, so an entry is also tried against that statement, with the table name kept
+  if (!hit.cause_sql.empty()) {
+    string head = hit.category + "|" +
+                  outcome_mech(hit.category, a, b, hit.statement, crash_log, hit.mech) + "|" +
+                  constructs_of(hit.cause_sql) + "|";
+    if (known_match(head + norm_stmt(hit.cause_sql, true)) ||
+        known_match(head + norm_stmt(hit.cause_sql, false))) {
+      g_known_matches++;
+      logline("known diff muted by its statement: %s%s", head.c_str(),
+              norm_stmt(hit.cause_sql, true).c_str());
+      return true;
+    }
   }
   if (string near = known_near(uid); !near.empty())
     logline("trial %ld: a muted entry is close to this one: %s", trial, near.c_str());
@@ -4738,7 +5099,7 @@ static void handle_diff(long trial, int wid, const vector<StreamStmt>& stream, D
       g_dup_diffs++;
       append_seen("cand" + std::to_string(it->second), uid, trial);
       logline("duplicate diff (this run): %s", uid.c_str());
-      return;
+      return true;
     }
     g_cands++;                                       // the trial number is the ID
     cand = trial;
@@ -4757,6 +5118,7 @@ static void handle_diff(long trial, int wid, const vector<StreamStmt>& stream, D
   }
   logline("trial %ld: candidate (%s, UID %s)", cand, hit.category.c_str(), uid.c_str());
   enqueue_reduction(cand, trial, uid, hit, stream);
+  return false;
 }
 
 // Contention, deadlock and interruption: a server error whose cause is timing. Compared
@@ -4779,10 +5141,31 @@ static bool any_timing_error(Lockstep& ls) {
   return false;
 }
 
-// checkpoint: SHOW TABLES + per-table content hash on every side via the lockstep barrier
+// The tables a checkpoint reads. SHOW TABLES lists temporary tables from 11.2 on and not
+// before, and MySQL never lists them, so two builds on either side of that line would differ
+// on a table neither of them lost. Temporary tables stay out on every side.
+static const char* TABLE_LIST_SQL =
+  "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() "
+  "AND TABLE_TYPE<>'TEMPORARY' ORDER BY TABLE_NAME";
+
+// A system-versioned table that names its row start and row end columns makes them visible,
+// so SELECT * returns them, and they hold a wall clock reading that no two sides can share.
+// This lists the other columns of such a table, in order, so the content hash reads those
+// and leaves the two clock columns out. A table with no such column returns no row here and
+// is read with SELECT *. A side too old for GENERATION_EXPRESSION fails the query, and the
+// caller then reads every table with SELECT * as before.
+static const char* VERS_TABLE_COLS_SQL =
+  "SELECT TABLE_NAME, COLUMN_NAME FROM information_schema.COLUMNS "
+  "WHERE TABLE_SCHEMA=DATABASE() "
+  "AND (GENERATION_EXPRESSION IS NULL OR GENERATION_EXPRESSION NOT IN ('ROW START','ROW END')) "
+  "AND TABLE_NAME IN (SELECT TABLE_NAME FROM information_schema.COLUMNS "
+  "WHERE TABLE_SCHEMA=DATABASE() AND GENERATION_EXPRESSION IN ('ROW START','ROW END')) "
+  "ORDER BY TABLE_NAME, ORDINAL_POSITION";
+
+// checkpoint: the table list + per-table content hash on every side via the lockstep barrier
 static bool checkpoint_compare(Lockstep& ls, long trial, int wid, long after_idx,
                                const vector<StreamStmt>& stream, vector<SideRun>& sides) {
-  ls.exec_all("SHOW TABLES", false, true);
+  ls.exec_all(TABLE_LIST_SQL, false, true);
   if (any_timing_error(ls)) { g_stats.timing_notes++; return true; }
   for (size_t i = 1; i < ls.outs.size(); i++) {
     if (ls.outs[0].row_count != ls.outs[i].row_count ||
@@ -4797,9 +5180,21 @@ static bool checkpoint_compare(Lockstep& ls, long trial, int wid, long after_idx
   }
   vector<string> tables = ls.outs[0].rows;
   std::sort(tables.begin(), tables.end());
+  std::map<string, string> vers_cols;             // table -> its columns bar row start and row end
+  ls.exec_all(VERS_TABLE_COLS_SQL, false, true);
+  if (ls.outs[0].state == QState::OK) {
+    for (auto& r : ls.outs[0].rows) {
+      size_t tab = r.find('\t');
+      if (tab == string::npos) continue;
+      string& list = vers_cols[r.substr(0, tab)];
+      if (!list.empty()) list += ", ";
+      list += "`" + r.substr(tab + 1) + "`";
+    }
+  }
   for (auto& t : tables) {
     if (g_stop.load()) return true;
-    string q = "SELECT * FROM `" + t + "`";
+    auto vc = vers_cols.find(t);
+    string q = "SELECT " + (vc == vers_cols.end() ? string("*") : vc->second) + " FROM `" + t + "`";
     ls.exec_all(q, false, false);                    // hash-only scan, no row storage
     if (any_timing_error(ls)) { g_stats.timing_notes++; continue; }
     string cat;
@@ -4822,11 +5217,46 @@ static bool checkpoint_compare(Lockstep& ls, long trial, int wid, long after_idx
   return true;
 }
 
+// The same content hash as the checkpoint, asked as a question instead of a verdict: do the
+// sides still hold the same rows? A trial that used a write with IGNORE can have them holding
+// different rows, and then a difference the data feeds says nothing about the code. The probe
+// reads the tables, so it is only worth running once a difference is already in hand.
+static bool data_diverged(Lockstep& ls) {
+  ls.exec_all(TABLE_LIST_SQL, false, true);
+  if (any_timing_error(ls)) return true;             // cannot tell, so do not call it a find
+  for (size_t i = 1; i < ls.outs.size(); i++)
+    if (ls.outs[0].row_count != ls.outs[i].row_count ||
+        ls.outs[0].multiset_hash != ls.outs[i].multiset_hash) return true;
+  vector<string> tables = ls.outs[0].rows;
+  std::sort(tables.begin(), tables.end());
+  std::map<string, string> vers_cols;
+  ls.exec_all(VERS_TABLE_COLS_SQL, false, true);
+  if (ls.outs[0].state == QState::OK) {
+    for (auto& r : ls.outs[0].rows) {
+      size_t tab = r.find('\t');
+      if (tab == string::npos) continue;
+      string& list = vers_cols[r.substr(0, tab)];
+      if (!list.empty()) list += ", ";
+      list += "`" + r.substr(tab + 1) + "`";
+    }
+  }
+  for (auto& t : tables) {
+    if (g_stop.load()) return true;
+    auto vc = vers_cols.find(t);
+    ls.exec_all("SELECT " + (vc == vers_cols.end() ? string("*") : vc->second) +
+                " FROM `" + t + "`", false, false);
+    if (any_timing_error(ls)) return true;
+    for (size_t i = 1; i < ls.outs.size(); i++)
+      if (!compare_pair(ls.outs[0], ls.outs[i], false).empty()) return true;
+  }
+  return false;
+}
+
 // The trial's checkpoint reads every table, which leaves the buffer pool in the state the
 // plan and the timing were measured in. A probe does the same reading, so both paths
 // measure the same server. It is not a verdict here: detection already judged the content.
 static void checkpoint_warm(Lockstep& ls) {
-  ls.exec_all("SHOW TABLES", false, true);
+  ls.exec_all(TABLE_LIST_SQL, false, true);
   vector<string> tables = ls.outs[0].rows;
   std::sort(tables.begin(), tables.end());
   for (auto& t : tables) {
@@ -4849,12 +5279,36 @@ static bool contains_word(const string& up, const string& w) {
   return false;
 }
 
+// A read that leaves the session and the data as they were: no variable is set and no
+// sequence moves
+static bool stmt_keeps_state(const string& sql) {
+  if (!stmt_readonly(sql)) return false;
+  string up = upper_blanked(sql);
+  return !contains_word(up, "INTO") && up.find(":=") == string::npos &&
+         !contains_word(up, "NEXTVAL") && !contains_word(up, "SETVAL") &&
+         up.find("NEXT VALUE") == string::npos;
+}
+
+// A statement whose effect cannot depend on optimizer_switch: it changes nothing, or no plan
+// picks the rows it touches. A view runs only when it is read.
+static bool stmt_switch_neutral(const string& sql) {
+  string up = upper_blanked(sql);
+  if (stmt_readonly(sql)) return stmt_keeps_state(sql);
+  string w = leading_word(sql);
+  if (w == "UPDATE" || w == "DELETE" || w == "CALL" || w == "DO" || w == "EXECUTE") return false;
+  if (w == "CREATE" && contains_word(up, "VIEW")) return true;
+  for (const char* k : {"SELECT", "UPDATE", "DELETE", "CALL", "TRIGGER", "PROCEDURE", "FUNCTION",
+                        "EVENT"})
+    if (contains_word(up, k)) return false;
+  return true;
+}
+
 // A plan delta measured on data that is no longer the same on both sides is a data
 // difference, not a plan difference. The tables the statement reads are compared before a
 // PLAN candidate is accepted; the name returned is the first table that differs. The
 // caller's ls.outs is overwritten, so it keeps its own copies.
 static string first_unsynced_table(Lockstep& ls, const string& sql, size_t side_i) {
-  ls.exec_all("SHOW TABLES", false, true);
+  ls.exec_all(TABLE_LIST_SQL, false, true);
   if (ls.outs[0].state == QState::ERR || any_timing_error(ls)) return "";
   vector<string> tabs = ls.outs[0].rows;
   string up = upper_blanked(sql);
@@ -5251,14 +5705,10 @@ struct Reducer {
       // settles it, so both judge the same phenomenon
       if (cat == "RESULT" && stmt_limit_ordered(cand[k].sql) && ls->outs[0].cols &&
           !ls->outs[0].capped && !ls->outs[1].capped &&
-          ls->outs[0].row_count == ls->outs[1].row_count) {
-        string tb = order_by_total(cand[k].sql, ls->outs[0].cols);
-        if (!tb.empty() && ls->outs[0].rows.size() <= 10000) {
-          auto ra = query_rows(sides[0].conn, tb);
-          auto rb = query_rows(sides[1].conn, tb);
-          if (!ra.empty() && ra == rb) cat.clear();
-        }
-      }
+          ls->outs[0].row_count == ls->outs[1].row_count &&
+          limit_tie_settled(sides[0].conn, sides[1].conn, cand[k].sql, ls->outs[0].cols,
+                            ls->outs[0].rows.size()))
+        cat.clear();
       if (!cat.empty()) {
         if (!pinned || cat != job.hit.category) {      // a different bug
           no_note = cat + " diff at line " + std::to_string(k + 1);
@@ -5324,8 +5774,9 @@ struct Reducer {
         return Probe::REPRO;
       }
       if (pinned && job.hit.category == "PERF") {
-        double m0 = perf_median5(sides[0].conn, sql), m1 = perf_median5(sides[1].conn, sql);
-        if (m0 < 0 || m1 < 0 || !perf_exceeds(std::min(m0, m1), std::max(m0, m1))) {
+        double m0 = -1, m1 = -1;
+        bool timed = perf_median5_pair(sides[0].conn, sides[1].conn, sql, m0, m1);
+        if (!timed || !perf_exceeds(std::min(m0, m1), std::max(m0, m1))) {
           char nb[96];
           snprintf(nb, sizeof(nb), "medians %.1f vs %.1f ms, under the thresholds", m0, m1);
           no_note = nb;
@@ -5353,7 +5804,7 @@ struct Reducer {
       return Probe::NO;
     }
     // CHECKSUM: end-state scan, same shape as the discovery checkpoint
-    ls->exec_all("SHOW TABLES", false, true);
+    ls->exec_all(TABLE_LIST_SQL, false, true);
     if (any_timing_error(*ls)) {                       // this pass measured nothing
       no_note = "a side met contention or a time limit while reading the tables";
       return Probe::NO;
@@ -6571,7 +7022,7 @@ static void write_log_script(Reducer& rd, const vector<SweepRow>& sweep,
   string prio = cat == "CRASH" ? "Critical" : "Major";
   string body = "bug" + nb + ".body";
   string sh = "#!/bin/bash\n";
-  sh += "# corlogic filing helper for bug" + nb + ".report (trial " + nb + ").\n";
+  sh += "# CorLogic filing helper for bug" + nb + ".report (trial " + nb + ").\n";
   sh += "# The title is line 1 of bug" + nb + ".report and the description is the rest, read\n";
   sh += "# when this script runs: edit the report, and that is what gets filed.\n";
   sh += "# ~/jira asks for confirmation three times before posting; pass --dry-run to validate only.\n";
@@ -7001,9 +7452,13 @@ static string write_bug_artifacts(Reducer& rd, const vector<StreamStmt>& lines,
           lines.back().sql + ";\n" + pf_read + ";\n";
   string pinned = (!rd.is_checkpoint && !lines.empty()) ? lines.back().sql : rd.job.hit.statement;
   // combinatorics: both sides are the same build, so one script shows both outcomes -
-  // the statement under the default optimizer_switch, then under the combination
+  // the statement under the default optimizer_switch, then under the combination. Side 2
+  // ran every statement under it, so that holds only when none ahead of it can differ.
   if (!rd.job.hit.combo.empty()) {
-    if (!rd.is_checkpoint && !lines.empty() && stmt_readonly(pinned))
+    bool neutral = true;
+    for (size_t k = 0; k + 1 < lines.size(); k++)
+      if (!stmt_switch_neutral(lines[k].sql)) neutral = false;
+    if (!rd.is_checkpoint && !lines.empty() && stmt_readonly(pinned) && neutral)
       tc += "SET SESSION optimizer_switch='" + rd.job.hit.combo + "';\n" + pinned + ";\n";
     else
       tc += "# run the statements above again after SET SESSION optimizer_switch='" +
@@ -7036,7 +7491,9 @@ static string write_bug_artifacts(Reducer& rd, const vector<StreamStmt>& lines,
     for (const char* ext : {".sql", ".master.err", ".core"}) fs::remove(base + ext, ec);
     fs::remove(g_run.workdir + "/reducer" + std::to_string(rd.job.trial) + ".sh", ec);
   };
-  if (known_uid1(uid1) || known_match(tail)) {
+  if (known_uid1(uid1) || known_match(tail) ||
+      known_match(rd.job.hit.category + "|" + mech + "|" + constructs_of(pinned) + "|" +
+                  norm_stmt(pinned, false))) {
     g_known_matches++;
     logline("trial %ld: known testcase muted: %s", rd.job.trial, uid.c_str());
     drop_files();
@@ -7054,6 +7511,29 @@ static string write_bug_artifacts(Reducer& rd, const vector<StreamStmt>& lines,
       return {};
     }
     if (!uid1.empty()) g_uid1_seen[uid1] = rd.job.trial;
+    if (g_cfg.group_by_mechanism) {
+      string coarse = rd.job.hit.category + "|" + mech + "|" + constructs_of(pinned);
+      auto ci = g_coarse_seen.find(coarse);
+      if (ci != g_coarse_seen.end()) {
+        string rp = g_run.workdir + "/bug" + std::to_string(ci->second) + ".report";
+        bool listed = fs::exists(rp);
+        if (listed) {
+          string body = read_file(rp);
+          if (body.find("\nAlso reached by:\n") == string::npos)
+            body += "\nAlso reached by:\n";
+          body += "* {{" + norm_stmt(pinned) + "}}\n";
+          write_file(rp, body);
+        }
+        g_dup_diffs++;
+        logline(listed ? "trial %ld: the same mechanism as trial %ld, listed in that report"
+                       : "trial %ld: the same mechanism as trial %ld, whose report is gone",
+                rd.job.trial, ci->second);
+        append_seen("bug" + std::to_string(ci->second), rd.job.uid, rd.job.trial);
+        drop_files();
+        return {};
+      }
+      g_coarse_seen[coarse] = rd.job.trial;
+    }
   }
   string rep = bug_title(rd, ver_r, ver_d, pinned) + "\n\n";   // line 1 is the title, line 2 blank
   rep += "{code:sql}\n" + block + "{code}\n\n";
@@ -7545,7 +8025,7 @@ static bool run_trial(long trial, int wid, vector<SideRun>& sides, Lockstep& ls,
   t_combo = combo;
   stream.reserve(stream.size() + base.size() + gen.size());
   for (auto& b : base) stream.push_back(b);
-  for (auto& g : gen) stream.push_back(std::move(g));
+  for (auto& g : gen) { g.generated = true; stream.push_back(std::move(g)); }
   insert_stats_refresh(stream, g_cfg.checkpoint_every);
   if (g_cfg.keep_all_trials)
     write_stream_file(g_run.workdir + "/trial" + std::to_string(trial) + ".sql", stream);
@@ -7553,7 +8033,9 @@ static bool run_trial(long trial, int wid, vector<SideRun>& sides, Lockstep& ls,
   double t0 = now_ms();
   long executed = 0, parse_skips = 0;
   bool had_diff = false;
-  bool engine_stop = false;          // the engines undid a failed statement differently
+  bool engine_stop = false;          // a failed write left the sides holding different rows
+  bool ignore_seen = false;          // the trial used a write whose outcome follows read order
+  bool ignore_tainted = false;       // and the sides were then shown to hold different rows
   bool timing_stop = false;          // a write met contention or interruption on one side
   bool tx_open = false;              // the stream opened a transaction and has not closed it
   for (size_t k = 0; k < stream.size(); k++) {
@@ -7581,6 +8063,7 @@ static bool run_trial(long trial, int wid, vector<SideRun>& sides, Lockstep& ls,
     }
     ls.exec_all(sql, want_warn, true);
     executed++;
+    if (stream[k].generated && !ls.outs.empty()) note_outcome(ls.outs[0]);
     if (stmt_opens_tx(sql)) tx_open = true;
     else if (stmt_ends_tx(sql)) tx_open = false;
     // connection lost but server alive: client-side break, reconnect and grade as ERR
@@ -7637,29 +8120,54 @@ static bool run_trial(long trial, int wid, vector<SideRun>& sides, Lockstep& ls,
       // terms they were given.
       if (cat == "RESULT" && stmt_limit_ordered(sql) && ls.outs[0].cols &&
           !ls.outs[0].capped && !ls.outs[i].capped &&
-          ls.outs[0].row_count == ls.outs[i].row_count) {
-        string tb = order_by_total(stream[k].sql, ls.outs[0].cols);
-        if (!tb.empty() && ls.outs[0].rows.size() <= 10000) {
-          auto ra = query_rows(sides[0].conn, tb);
-          auto rb = query_rows(sides[i].conn, tb);
-          if (!ra.empty() && ra == rb) {
-            g_limit_ties++;
-            g_limit_checked++;                       // this one was shown, not assumed
-            cat.clear();
-            continue;
-          }
-        }
+          ls.outs[0].row_count == ls.outs[i].row_count &&
+          limit_tie_settled(sides[0].conn, sides[i].conn, stream[k].sql, ls.outs[0].cols,
+                            ls.outs[0].rows.size())) {
+        g_limit_ties++;
+        g_limit_checked++;                           // this one was shown, not assumed
+        cat.clear();
+        continue;
       }
       diff_side = i;
+    }
+    if (cat.empty() && strict_write_diverged(ls.outs, sql)) {
+      g_stats.strict_stops++;
+      engine_stop = true;
+      break;
+    }
+    if (!ignore_seen && (ignore_write(sql) || copying_multi_update(sql))) ignore_seen = true;
+    // After such a write the sides can hold different rows, and then a difference the data
+    // feeds is not a finding. Read the tables and say which it is. A crash or a hang needs no
+    // such question. The trial keeps running either way.
+    if (ignore_seen && !cat.empty() && cat != "CRASH" && cat != "TIMEOUT") {
+      if (ignore_tainted || data_diverged(ls)) {
+        if (!ignore_tainted) { g_stats.ignore_taints++; ignore_tainted = true; }
+        cat.clear();
+      }
     }
     if (!cat.empty()) {
       DiffHit hit{cat, (long)k, sql, "", 0, (int)diff_side};
       for (size_t i = 0; i < sides.size(); i++)
         hit.detail += sides[i].inst.spec->label + ": " + outcome_brief(ls.outs[i]) + "\n";
+      // The built-in schema and the preamble are the same text in every trial, so a
+      // difference there is not a finding: it repeats until the run ends and nothing else
+      // gets a chance to run. Say which statement and stop. A seed given with SEED_SQL is
+      // the testcase, so it is left alone.
+      if (!stream[k].generated && g_cfg.seed_schema == 1 && g_cfg.seed_sql.empty()) {
+        logline("the sides do not agree on the setup, so no trial can run: %s\n  on: %s\n"
+                "  stopping the run", cat.c_str(), sql.c_str());
+        logline("%s", hit.detail.c_str());
+        g_stop.store(true);
+        return false;
+      }
       g_stats.diffs++;
-      had_diff = true;
       if (cat == "CRASH") g_stats.crashes++;
-      handle_diff(trial, wid, stream, hit, ls.outs[0], ls.outs[diff_side], sides);
+      // A known difference on a statement that only reads leaves both sides holding the
+      // same rows, so the rest of the trial still compares like with like
+      if (handle_diff(trial, wid, stream, hit, ls.outs[0], ls.outs[diff_side], sides) &&
+          cat != "CRASH" && cat != "TIMEOUT" && stmt_keeps_state(sql))
+        continue;
+      had_diff = true;
       break;                                         // state diverged: stop this trial
     }
     // Engine axis with a non-transactional side: a DML that fails part-way keeps what it
@@ -7687,7 +8195,9 @@ static bool run_trial(long trial, int wid, vector<SideRun>& sides, Lockstep& ls,
           auto rb = query_rows(sides[i].conn, tb);
           if (!ra.empty() && ra.size() == rb.size()) {
             g_order_checked++;                       // the check ran and had rows to judge
-            if (ra != rb) honoured = false;
+            if (ra != rb)
+              honoured = !tiebreaker_is_total(sides[0].conn, sides[i].conn, stream[k].sql,
+                                              ls.outs[0].cols);
           }
         }
         if (honoured) { g_stats.order_notes++; break; }
@@ -7762,6 +8272,7 @@ static bool run_trial(long trial, int wid, vector<SideRun>& sides, Lockstep& ls,
           string unsynced = first_unsynced_table(ls, sql, i);
           if (!unsynced.empty()) {                     // the data diverged: report that
             DiffHit chit{"CHECKSUM", (long)k, "content of `" + unsynced + "`", "", 0, (int)i};
+            chit.cause_sql = sql;
             for (size_t m = 0; m < ls.outs.size(); m++)
               chit.detail += sides[m].inst.spec->label + ": " + outcome_brief(ls.outs[m]) + "\n";
             g_stats.diffs++;
@@ -7796,9 +8307,9 @@ static bool run_trial(long trial, int wid, vector<SideRun>& sides, Lockstep& ls,
         for (long g = (long)(slow - fast), seen = g_perf_gap_max.load(); g > seen;)
           if (g_perf_gap_max.compare_exchange_weak(seen, g)) break;
         if (!perf_exceeds(fast, slow)) continue;
-        double m0 = perf_median5(sides[0].conn, sql);
-        double mi = perf_median5(sides[i].conn, sql);
-        if (m0 < 0 || mi < 0 || !perf_exceeds(std::min(m0, mi), std::max(m0, mi))) continue;
+        double m0 = -1, mi = -1;
+        if (!perf_median5_pair(sides[0].conn, sides[i].conn, sql, m0, mi)) continue;
+        if (!perf_exceeds(std::min(m0, mi), std::max(m0, mi))) continue;
         bool i_worse = mi > m0;
         if (!regression_reportable(sides[0].inst.spec, sides[i].inst.spec, i_worse)) {
           g_stats.improve_notes++;                     // the newer build is the faster one
@@ -7854,8 +8365,12 @@ static bool run_trial(long trial, int wid, vector<SideRun>& sides, Lockstep& ls,
   g_stats.parse_skips += parse_skips;
   double ms = now_ms() - t0;
   g_stats.stmt_ms += (long)ms;
-  logline("set %d: trial %ld: %ld stmts (%ld parse-skip), %ld diff(s) total, %.1fs (%.0f stmts/s)",
-          wid, trial, executed, parse_skips, g_stats.diffs.load(), ms / 1000.0,
+  // the run's own tally, so a dry run reads as dry: what is worth looking at, and what has
+  // already been recognised and dropped
+  logline("set %d: trial %ld: %ld stmts (%ld parse-skip), %ld candidate(s) so far, %ld muted, "
+          "%.1fs (%.0f stmts/s)",
+          wid, trial, executed, parse_skips, g_cands.load(),
+          g_known_matches.load() + g_dup_diffs.load(), ms / 1000.0,
           executed / std::max(0.001, ms / 1000.0));
   return true;
 }
@@ -8033,7 +8548,7 @@ static void tui_thread_fn(double t0) {
     rule("┌", "┐", "");
     {
       TuiLine L;
-      string title = string(" corlogic ") + CORLOGIC_VERSION;
+      string title = string(" CorLogic ") + CORLOGIC_VERSION;
       char rb[80];
       snprintf(rb, sizeof(rb), "up %02d:%02d:%02d  [q]uit [p]ause [r]educe-now ",
                (int)up / 3600, ((int)up / 60) % 60, (int)up % 60);
@@ -8512,7 +9027,13 @@ static void run_one_trial(long t, const vector<StreamStmt>& base) {
   slot_text_all("waiting for generated SQL");
   vector<StreamStmt> gen = set->pre.get();
   set_prefetch(*set);
-  bool cont = run_trial(t, wid, set->sides, *set->ls, base, std::move(gen));
+  vector<StreamStmt> gen_seed;
+  if (g_cfg.seed_schema == 2) {
+    slot_text_all("building this trial's schema");
+    gen_seed = generator_seed_batch(wid);
+  }
+  bool cont = run_trial(t, wid, set->sides, *set->ls,
+                        g_cfg.seed_schema == 2 ? gen_seed : base, std::move(gen));
   // The slots stay held while the set is copying a fresh datadir and waiting for a socket:
   // a slot is one server, and those two servers are neither free nor idle. Giving them
   // back early only lets another worker take slots it cannot run anything on, because a
@@ -8607,7 +9128,17 @@ static int run_discovery(vector<Instance>&& preflight) {
     std::lock_guard<std::mutex> lk(g_status_mtx);
     g_slot_text.assign((size_t)nslots, string());
   }
-  g_sets_max = std::max(1, nslots / (int)g_sides.size());
+  // A set restarts from a fresh datadir after every trial, and while it does, its trial slot
+  // has nothing to run. One set per slot therefore idles the slot for as long as the restart
+  // takes: measured at 1.4s against a 1.2s trial, so 46% occupancy. The cap goes above the
+  // slot count so a restarting set is covered by one that is already up. Sets are created
+  // only when a worker finds none free, and every start passes the RAM governor, so the pool
+  // settles at what the box and the restart cost actually need.
+  int per_slot = std::max(1, nslots / (int)g_sides.size());
+  g_sets_max = g_cfg.side_sets > 0 ? g_cfg.side_sets : per_slot * 2;
+  if (g_sets_max > per_slot)
+    logline("side sets: up to %d for %d trial slot(s), created as workers ask for them, so a "
+            "set restarting from a fresh datadir does not idle a slot", g_sets_max, per_slot);
   int nsweep = g_cfg.version_sweep ? sweep_worker_count(nslots, g_cfg.ver_sweep_jobs) : 0;
   g_sweep_slots = nsweep * 2;
   g_red_slot_max = reduction_slot_ceiling(nslots - g_sweep_slots, (int)g_sides.size());
@@ -8622,8 +9153,13 @@ static int run_discovery(vector<Instance>&& preflight) {
   bool part_ok = g_cfg.partitioning > 0;
   for (auto& c : g_caps) part_ok = part_ok && c.has_partitioning;
   for (auto& s : seed_schema_sql(part_ok)) base.push_back(std::move(s));
-  logline("stream base: %zu seed statements; %ld generated per trial",
-          base.size(), g_cfg.queries_per_trial);
+  if (g_cfg.seed_schema == 2)
+    logline("stream base: schema from the generator, up to %ld statements harvested from a "
+            "%ld statement batch, a fresh one per trial; %ld generated per trial",
+            g_cfg.seed_gen_max, g_cfg.seed_gen_pool, g_cfg.queries_per_trial);
+  else
+    logline("stream base: %zu seed statements; %ld generated per trial",
+            base.size(), g_cfg.queries_per_trial);
   bool tui_on = g_cfg.tui == "1" || (g_cfg.tui == "auto" && isatty(1));
   std::thread tui;
   if (tui_on) {
@@ -8662,8 +9198,20 @@ static int run_discovery(vector<Instance>&& preflight) {
     for (auto& sr : s->sides) { sr.conn.close(); sr.ctl.close(); sr.inst.stop(); }
   }
   if (tui.joinable()) { g_stop.store(true); tui.join(); }
+  string stops;
+  if (g_stats.engine_stops.load())
+    stops += ", " + std::to_string(g_stats.engine_stops.load()) +
+             " trial(s) stopped at a failed statement the engines undo differently";
+  if (g_stats.strict_stops.load())
+    stops += ", " + std::to_string(g_stats.strict_stops.load()) +
+             " trial(s) stopped at a write one vendor refuses and the other takes";
+  if (g_stats.ignore_taints.load())
+    stops += ", " + std::to_string(g_stats.ignore_taints.load()) +
+             " trial(s) where a write whose outcome follows read order left the sides holding "
+             "different rows, so from "
+             "there on only a crash is read as a difference";
   logline("done: %ld trials, %ld stmts, %ld parse-skips, %ld diffs (%ld crash), "
-          "%ld order-only notes (%ld shown to be ties), "
+          "%ld order-only notes (%ld order checks run), "
           "%ld limit-tie notes (%ld shown to be ties), %ld warn-notes, "
           "%ld improvement-notes, %ld plan-flux notes, %ld plan-shape notes, "
           "%ld plan-order notes, %ld plan-explained notes, "
@@ -8674,10 +9222,29 @@ static int run_discovery(vector<Instance>&& preflight) {
           g_stats.warn_notes.load(),
           g_stats.improve_notes.load(), g_stats.plan_flux.load(), g_stats.plan_shape.load(),
           g_stats.plan_order.load(), g_stats.plan_explained.load(), g_stats.plan_in_tx.load(),
-          g_stats.timing_notes.load(), g_stats.engine_stops.load()
-              ? (", " + std::to_string(g_stats.engine_stops.load()) +
-                 " trial(s) stopped at a failed statement the engines undo differently").c_str()
-              : "");
+          g_stats.timing_notes.load(), stops.c_str());
+  {
+    long e = g_stats.out_err.load(), rr = g_stats.out_read_rows.load();
+    long re = g_stats.out_read_empty.load(), w = g_stats.out_write.load();
+    long tot = e + rr + re + w;
+    if (tot < 1) tot = 1;
+    string codes;
+    {
+      std::lock_guard<std::mutex> lk(g_errcode_mtx);
+      vector<std::pair<long, unsigned>> v;
+      for (auto& kv : g_errcodes) if (kv.first) v.push_back({kv.second, kv.first});
+      std::sort(v.rbegin(), v.rend());
+      for (size_t i = 0; i < v.size() && i < 6; i++)
+        codes += (i ? ", " : "") + std::to_string(v[i].second) + ":" +
+                 std::to_string(v[i].first);
+    }
+    logline("statements: %ld errored (%.1f%%), %ld read no rows (%.1f%%), "
+            "%ld wrote (%.1f%%), %ld read rows (%.1f%%) - generated statements only; the "
+            "last is the share that can show a wrong result",
+            e, 100.0 * e / tot, re, 100.0 * re / tot, w, 100.0 * w / tot,
+            rr, 100.0 * rr / tot);
+    if (!codes.empty()) logline("top error codes: %s", codes.c_str());
+  }
   logline("candidates: %ld (%ld confirmed as bugs, %ld dropped - the diff did not replay, "
           "%ld left unverified), %ld known-muted, %ld duplicate-muted",
           g_cands.load() - g_cand_base, g_bugs.load() - g_bug_base,
@@ -8690,9 +9257,11 @@ static int run_discovery(vector<Instance>&& preflight) {
     logline("workdir totals: %ld candidates, %ld bugs", g_cands.load(), g_bugs.load());
   if (g_cfg.perf_factor > 0)                       // helps size PERF_MIN_DELTA for a workload
     logline("perf: largest read-only side gap seen %ld ms", g_perf_gap_max.load());
-  logline("filter: %ld kept, %ld not-allowlisted, %ld denied, %ld toggled-off, %ld user-filtered, %ld LIMIT-stripped",
+  logline("filter: %ld kept, %ld not-allowlisted, %ld denied, %ld toggled-off, "
+          "%ld user-filtered, %ld LIMIT-stripped, %ld modifier-stripped, %ld seed-guarded",
           g_fstat.kept.load(), g_fstat.not_allowed.load(), g_fstat.denied.load(),
-          g_fstat.toggled_off.load(), g_fstat.user_filtered.load(), g_fstat.limit_stripped.load());
+          g_fstat.toggled_off.load(), g_fstat.user_filtered.load(), g_fstat.limit_stripped.load(),
+          g_fstat.modifier_stripped.load(), g_fstat.seed_guard.load());
   for (size_t i = 0; i < g_user_filters.size(); i++)
     if (g_user_filter_hits[i].load())
       logline("  user filter pattern %zu: %ld drop(s)", i + 1, g_user_filter_hits[i].load());
@@ -8701,7 +9270,7 @@ static int run_discovery(vector<Instance>&& preflight) {
 }
 
 // ------------------------------------------------------------------ selftest
-// --selftest runs every part of corlogic that needs no server: the SQL parsing, the
+// --selftest runs every part of CorLogic that needs no server: the SQL parsing, the
 // stream filters, the compare core, the UID chain, the reduction rewrites and the report
 // helpers. It then runs the same checks from several threads at once, which is where a
 // shared buffer or a static local would show up. build.sh runs it on every build.
@@ -8782,6 +9351,17 @@ static void st_stmt_readonly() {
   st_true(!stmt_readonly("WITH cte AS (SELECT 1) INSERT INTO t1 SELECT * FROM cte"),
           "a WITH over an INSERT");
   st_true(!stmt_readonly("UPDATE t1 SET c1=1"), "an UPDATE is a write");
+  st_true(stmt_switch_neutral("INSERT INTO t1 VALUES (1,'select')"), "an INSERT of values");
+  st_true(stmt_switch_neutral("CREATE VIEW v1 AS SELECT * FROM t1"), "a view is not run");
+  st_true(stmt_switch_neutral("SELECT c1 FROM t1"), "a plain read");
+  st_true(!stmt_switch_neutral("SELECT c1 INTO @a FROM t1"), "a read that sets a variable");
+  st_true(!stmt_switch_neutral("INSERT INTO t1 SELECT * FROM t2"), "an INSERT from a read");
+  st_true(!stmt_switch_neutral("DELETE FROM t1 WHERE c1=1"), "a DELETE picks its rows");
+  st_true(!stmt_switch_neutral("CREATE TRIGGER tr1 AFTER INSERT ON t1 FOR EACH ROW SET @a=1"),
+          "a trigger runs later");
+  st_true(stmt_keeps_state("SELECT c1 FROM t1 WHERE c1 IN (SELECT c1 FROM t2)"), "a read");
+  st_true(!stmt_keeps_state("SELECT NEXTVAL(s1)"), "a read that moves a sequence");
+  st_true(!stmt_keeps_state("UPDATE t1 SET c1=1"), "a write");
   st_eq(with_body_word("WITH `select` AS (SELECT 1) DELETE FROM t1"), "DELETE",
         "a quoted CTE name is not the body");
   st_eq(with_body_word("SELECT 1"), "", "no WITH, no body word");
@@ -8830,6 +9410,15 @@ static void st_order_by_total() {
   st_eq(order_by_total("SELECT * FROM (SELECT c1 FROM t1 ORDER BY c1) d", 1), "",
         "no top-level ORDER BY, no rewrite");
   st_eq(order_by_total("SELECT c1 FROM t1 ORDER BY c1", 0), "", "no columns, no rewrite");
+  st_eq(order_tie_probe("SELECT c1 FROM t1 ORDER BY c1", 1),
+        "SELECT IF(COUNT(*) > 10000, 1, COUNT(*) - COUNT(DISTINCT a1)) FROM "
+        "(SELECT c1 FROM t1 LIMIT 10001) AS clg_tie(a1)",
+        "tie probe over one column");
+  st_eq(order_tie_probe("SELECT c1, c2 FROM t1 ORDER BY c1 LIMIT 5", 2),
+        "SELECT IF(COUNT(*) > 10000, 1, COUNT(*) - COUNT(DISTINCT a1, a2)) FROM "
+        "(SELECT c1, c2 FROM t1 LIMIT 10001) AS clg_tie(a1, a2)",
+        "tie probe drops the ORDER BY and what follows it");
+  st_eq(order_tie_probe("SELECT c1 FROM t1", 1), "", "no top-level ORDER BY, no probe");
 }
 
 static void st_tx_tracking() {
@@ -8889,17 +9478,31 @@ static void st_stream_rewrites() {
   s = "ALTER TABLE t1 COMMENT='LOCK=NONE', ALGORITHM=COPY";
   strip_online_ddl(s);
   st_eq(s, "ALTER TABLE t1 COMMENT='LOCK=NONE'", "the real clause goes, the literal stays");
-  bool save_axis = g_engine_axis, save_vendor = g_same_vendor;
+  bool save_axis = g_engine_axis, save_vendor = g_same_vendor, save_version = g_same_version;
   g_engine_axis = false;
   g_same_vendor = true;
   st_true(!stream_strips_online_ddl(), "one vendor on one engine keeps the clauses");
   g_same_vendor = false;
   st_true(stream_strips_online_ddl(), "two vendors drop them");
   g_same_vendor = true;
+  g_same_version = false;
+  st_true(stream_strips_online_ddl(), "two release series drop them");
+  g_same_version = true;
   g_engine_axis = true;
   st_true(stream_strips_online_ddl(), "two engines drop them");
   g_engine_axis = save_axis;
   g_same_vendor = save_vendor;
+  g_same_version = save_version;
+  {
+    bool save_mixed = g_engine_tx_mixed;
+    string rb = "ROLLBACK", cm = "COMMIT";
+    g_engine_tx_mixed = false;
+    st_true(stream_filter_keep(rb), "ROLLBACK stays when every side is transactional");
+    g_engine_tx_mixed = true;
+    st_true(!stream_filter_keep(rb), "ROLLBACK goes when a side is not transactional");
+    st_true(stream_filter_keep(cm), "COMMIT stays when a side is not transactional");
+    g_engine_tx_mixed = save_mixed;
+  }
   int save_mix = g_cfg.engine_mix;
   vector<string> save_pool = g_engine_pool;
   g_cfg.engine_mix = 1;
@@ -8953,6 +9556,9 @@ static void st_compare_core() {
   st_eq(compare_pair(a, b, false), "CRASH", "one side crashes");
   a.state = QState::TIMEOUT;
   st_eq(compare_pair(a, b, false), "TIMEOUT", "one side times out");
+  b.ms = g_cfg.query_timeout * 600.0;
+  st_eq(compare_pair(a, b, false), "", "the other side sat close to the limit");
+  b.ms = 0;
   b.state = QState::TIMEOUT;
   st_eq(compare_pair(a, b, false), "", "both sides time out");
   {
@@ -8997,6 +9603,43 @@ static void st_compare_core() {
   {
     bool sv = g_same_vendor;
     g_same_vendor = false;
+    QOutcome e, w;
+    e.state = QState::ERR; e.err = 1292;
+    w.state = QState::WARN; w.affected = 3;
+    const string del = "DELETE FROM t2 WHERE c3>16";
+    st_true(strict_write_diverged({e, w}, del), "a write one vendor refuses and the other takes");
+    st_true(strict_write_diverged({w, e}, del), "either side may be the strict one");
+    st_true(!strict_write_diverged({e, w}, "SELECT 1"), "a read changes no rows");
+    w.affected = 0;
+    st_true(!strict_write_diverged({e, w}, del), "a write the lenient side changed nothing with");
+    w.affected = 3;
+    g_same_vendor = true;
+    st_true(!strict_write_diverged({e, w}, del), "same vendor: the error is a difference");
+    g_same_vendor = sv;
+  }
+  {
+    st_true(ignore_write("UPDATE IGNORE t1 SET c1 = 68 WHERE c2 > 0"), "an IGNORE update");
+    st_true(ignore_write("INSERT IGNORE INTO t1 SELECT * FROM t2"), "an IGNORE insert");
+    st_true(ignore_write("DELETE IGNORE FROM t1 WHERE c2 > 0"), "an IGNORE delete");
+    st_true(!ignore_write("UPDATE t1 SET c1 = 68 WHERE c2 > 0"), "a write without IGNORE");
+    st_true(!ignore_write("SELECT 1 FROM t1 IGNORE INDEX (k1)"),
+            "a read passes over nothing");
+    st_true(copying_multi_update("UPDATE t1 AS a1 JOIN t1 AS a2 ON a1.c1 = a2.c1 "
+                                 "SET a1.c2 = a2.c2"), "a copying multi-table update");
+    st_true(copying_multi_update("UPDATE t1, t2 SET t1.c1 = t2.c1 WHERE t1.c2 = t2.c2"),
+            "the comma form of the same");
+    st_true(!copying_multi_update("UPDATE t1 JOIN t2 ON t1.c1 = t2.c1 SET t1.c2 = 5"),
+            "a multi-table update that assigns a constant");
+    st_true(!copying_multi_update("UPDATE t1 SET c1 = c2 WHERE c2 > 0"),
+            "a single-table update");
+    st_true(!copying_multi_update("UPDATE t1 SET c1 = 'a.b' WHERE c2 > 0"),
+            "a dot inside a string is not a qualified column");
+    st_true(!ignore_write("UPDATE t1 SET c1 = 'IGNORE' WHERE c2 > 0"),
+            "the word inside a string is not the keyword");
+  }
+  {
+    bool sv = g_same_vendor;
+    g_same_vendor = false;
     QOutcome x, y;
     x.cols = y.cols = 2;
     x.row_count = y.row_count = 1;
@@ -9015,6 +9658,9 @@ static void st_compare_core() {
     x.rows = {"2.34\tab"};
     y.rows = {"2.35\tab"};
     st_eq(compare_pair(x, y, false), "RESULT", "same precision stays a difference");
+    x.rows = {"0"};
+    y.rows = {"-0"};
+    st_eq(compare_pair(x, y, false), "", "a negative zero is zero");
     // an aggregate over an ENUM: one side reads the numeric index and answers in DECIMAL,
     // the other reads the string and answers in DOUBLE, and the value is the same
     x.rows = {"1\t1.0000"};
@@ -9055,6 +9701,20 @@ static void st_compare_core() {
     y.rows = {"7\t2.3333"};
     g_same_vendor = true;
     st_eq(compare_pair(x, y, false), "RESULT", "same-vendor precision change stays a difference");
+    const string grp = "SELECT COUNT(*),c2 FROM t GROUP BY c2 ORDER BY c2";
+    x.rows = {"4\ta", "9\tABC", "1\t\\N"};
+    y.rows = {"4\tA", "9\t\xC3\xA4" "bc ", "1\t\\N"};
+    st_eq(compare_pair(x, y, false, grp), "", "two members of one group under GROUP BY");
+    st_eq(compare_pair(x, y, false, "SELECT DISTINCT c2 FROM t"), "",
+          "two members of one group under DISTINCT");
+    st_eq(compare_pair(x, y, false, "SELECT c1,c2 FROM t"), "RESULT",
+          "no group, so the stored value is the value");
+    y.rows = {"5\tA", "9\tabc", "1\t\\N"};
+    st_eq(compare_pair(x, y, false, grp), "RESULT", "a count that differs");
+    y.rows = {"4\tb", "9\tabc", "1\t\\N"};
+    st_eq(compare_pair(x, y, false, grp), "RESULT", "another group");
+    y.rows = {"4\ta", "9\tabc", "1\t"};
+    st_eq(compare_pair(x, y, false, grp), "RESULT", "an empty string is not NULL");
     g_same_vendor = sv;
   }
   a.state = b.state = QState::OK;
@@ -9150,6 +9810,13 @@ static void st_uid_chain() {
   st_eq(norm_stmt("ALTER TABLE t4 CHANGE c2 c2_renamed VARCHAR(32) FIRST"),
         "ALTER TABLE tX CHANGE cX cX_renamed VARCHAR(N) FIRST",
         "a numbered name with a suffix is the same family");
+  {
+    string lng = "CREATE TABLE t1 (c1 INT, c2 INT, c3 INT, c4 INT, c5 INT, c6 INT, c7 INT, "
+                 "c8 INT, c9 INT, c10 INT, c11 INT, c12 INT, c13 INT) PAGE_COMPRESSED=1";
+    st_true(norm_stmt(lng).find("PAGE_COMPRESSED") == string::npos, "norm_stmt caps a long statement");
+    st_true(norm_stmt(lng, false).find(") PAGE_COMPRESSED=N") != string::npos,
+            "norm_stmt with no cap keeps the whole statement");
+  }
   st_eq(norm_stmt("SELECT count1, tab2, t1x FROM utf8mb4 WHERE 0x1F = 1e5"),
         "SELECT count1, tab2, t1x FROM utf8mb4 WHERE N = N",
         "norm_stmt, other names are left alone");
@@ -9179,7 +9846,8 @@ static void st_uid1_chain() {
 static void st_known_filter() {
   string f = "/dev/shm/corlogic_selftest_known.txt";
   write_file(f, "# a comment\nRESULT|content|*|ANALYZE TABLE*\nPLAN|*|*|*\n"
-                "RESULT|coltype|*|*_utf8 *\nAFFECTED|*|*IN*|*\n");
+                "RESULT|coltype|*|*_utf8 *\nAFFECTED|*|*IN*|*\n"
+                "CHECKSUM|*|*|*FROM_UNIXTIME(*\n");
   string save = g_cfg.known_file;
   g_cfg.known_file = f;
   g_known.clear();
@@ -9190,6 +9858,10 @@ static void st_known_filter() {
   st_true(!known_match("RESULT|content|PLAIN|OPTIMIZE TABLE `t1`"), "another statement is not muted");
   st_true(known_match("PLAN|x|y|z"), "known wildcards");
   st_true(!known_match("ERROR|x|y|z"), "unknown category is not muted");
+  st_true(!known_match("CHECKSUM|tbl:t1|PLAIN|content of `t1`"),
+          "a CHECKSUM table name carries no statement to match");
+  st_true(known_match("CHECKSUM|tbl:t1|PLAIN|DELETE FROM t1 WHERE c1 <= FROM_UNIXTIME(0)"),
+          "a CHECKSUM entry matches the statement that left the table unsynced");
   st_eq(known_near("RESULT|content|PLAIN|OPTIMIZE TABLE `t1`"), "",
         "a mechanism naming neither side cannot be near");
   g_known.push_back({"RESULT", "rows1v2", "*", "ANALYZE TABLE*", ""});
@@ -9785,7 +10457,7 @@ static void st_mutating() {
 }
 
 static int run_selftest(int threads) {
-  printf("corlogic selftest\n");
+  printf("CorLogic selftest\n");
   st_all_pure();
   st_mutating();
   long single = g_st_pass.load() + g_st_fail.load();
@@ -9808,7 +10480,7 @@ int main(int argc, char** argv) { return main_real(argc, argv); }
 
 static int main_real(int argc, char** argv) {
   // keep server cores small: drop shared/file-backed mappings (the InnoDB buffer pool);
-  // the filter is inherited by every mariadbd corlogic spawns
+  // the filter is inherited by every mariadbd CorLogic spawns
   if (FILE* cf = fopen("/proc/self/coredump_filter", "w")) {
     fputs("0x11", cf);
     fclose(cf);
@@ -9918,7 +10590,7 @@ static int main_real(int argc, char** argv) {
   open_run_log();
   check_build_stamp();
   resolve_weights_file();
-  logline("corlogic %s starting - run %s", CORLOGIC_VERSION, g_run.id.c_str());
+  logline("CorLogic %s starting - run %s", CORLOGIC_VERSION, g_run.id.c_str());
   logline("workdir: %s  rundir: %s", g_run.workdir.c_str(), g_run.rundir.c_str());
   logline("config: %s  seed: %" PRIu64 "  generator seed base: %" PRIu64,
           config_path.empty() ? "(defaults)" : config_path.c_str(), g_cfg.seed, g_gen_seed_base);

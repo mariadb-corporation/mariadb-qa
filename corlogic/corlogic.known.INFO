@@ -64,7 +64,7 @@ not a CONCAT bug:
 Same aggregation rule on both sides, and @@old_mode reads UTF8_IS_UTF8MB3 on
 12.3 and empty on 13.1. Only the meaning of _utf8 moved.
 
-MariaDB sides are fixed in code, not muted: at pre-flight corlogic strips
+MariaDB sides are fixed in code, not muted: at pre-flight CorLogic strips
 UTF8_IS_UTF8MB3 from each side's @@old_mode and, when every side then agrees,
 emits one SET SESSION old_mode. Verified 12.3.3 against 13.1.0, one candidate
 before and none after.
@@ -177,7 +177,7 @@ brackets. MariaDB reads only the bare form, and rejects the bracketed one:
   SELECT ST_ASTEXT(ST_GEOMFROMTEXT('MULTIPOINT((1 1),(2 2))'));   -- NULL
   SELECT ST_ASTEXT(ST_GEOMFROMTEXT('MULTIPOINT(1 1,2 2)'));       -- MULTIPOINT(1 1,2 2)
 
-The output side is what corlogic sees. ST_ASTEXT prints the bare form, so any
+The output side is what CorLogic sees. ST_ASTEXT prints the bare form, so any
 statement building a MULTIPOINT differs from MySQL, which prints the bracketed
 one. ST_UNION of two POINTs is the shape the run turned up.
 
@@ -389,7 +389,7 @@ Cutting it is the MariaDB default by design. MDEV-16991, closed as fixed in
 Setting the flag on the MariaDB side alone would take the class out at the
 source, and it is not done. MySQL refuses the value - "Variable 'sql_mode' can't
 be set to the value of 'TIME_ROUND_FRACTIONAL'" - so it cannot be one statement
-both sides take, and corlogic only emits an in-band setup statement every side
+both sides take, and CorLogic only emits an in-band setup statement every side
 accepts. The reason is the testcase: a report carries one SET sql_mode line, so
 a mode held by one side alone would not replay what the run did.
 
@@ -435,3 +435,46 @@ MariaDB has no such step and refuses the statement:
 Without the WHERE clause both sides refuse it, so the difference is the
 functional-dependency step alone. This entry names the exact statement, so a
 variant is still reported and carries the MDEV-11588 notice.
+
+## ERROR|0v1911|*|*COMPRESSION=* and ERROR|1911v0|*|*COMPRESSION=*
+
+COMPRESSION= is a table option only one of the two products has.
+
+  ALTER TABLE t1 COMPRESSION='lz4';
+
+  MS 9.1.0   OK, affected=0
+  CS 13.1.0  ERROR 1911 Unknown option 'COMPRESSION'
+
+MySQL carries the option for InnoDB page compression and takes the statement.
+MariaDB has no COMPRESSION table option at all, so it answers ER_UNKNOWN_OPTION;
+it asks for page compression through PAGE_COMPRESSED instead.
+
+The entry leaves the statement field open, because the option can sit on a
+CREATE as well as on an ALTER.
+
+Both orders of the pair are written, because the first number is side 1 and the
+second is side 2, so which one carries the error follows the order the basedirs
+were given on the command line. A run with the MySQL side first reports 0v1911
+and one with the MariaDB side first reports 1911v0.
+
+
+## ERROR|1292v0|INSERT|* and ERROR|0v1292|INSERT|* (corlogic.known.engines)
+
+STRICT_TRANS_TABLES, which the run sets, makes a bad value an error for a
+transactional engine and a warning for a non-transactional one.
+
+  SET sql_mode='STRICT_TRANS_TABLES';
+  CREATE TABLE t (c4 DATETIME) ENGINE=<engine>;
+  CREATE TABLE s (c4 INT); INSERT INTO s VALUES (0),(31);
+  INSERT INTO t SELECT * FROM s;
+
+  InnoDB   ERROR 1292 Incorrect datetime value: '31', 0 rows in t
+  MyISAM   affected=2, warning 1265 Data truncated, 2 rows in t
+  Aria     affected=2, warning 1265 Data truncated, 2 rows in t
+
+With STRICT_ALL_TABLES the MyISAM insert stops on the same row, which shows the
+mode and not the engine decides this.
+
+The entry names the INSERT statement kind and leaves the statement text open,
+because any INSERT that writes a value the column cannot hold takes this path.
+Both orders of the pair are written, because the first number is side 1.

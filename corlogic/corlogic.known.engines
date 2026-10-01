@@ -15,3 +15,50 @@ ERROR|1114v0|*|*
 # MDEV-40874. An UPDATE that writes a column back to the value it already holds counts one
 # affected row on Aria and none on InnoDB. As described in corlogic.known.INFO.
 AFFECTED|0v1|UPDATE|UPDATE tX SET cX=DEFAULT
+
+# InnoDB refuses ROW_FORMAT=COMPRESSED and KEY_BLOCK_SIZE while innodb_read_only_compressed
+# is ON, the default, with ER_UNSUPPORTED_COMPRESSED_TABLE; MyISAM and Aria take the same CREATE.
+ERROR|4047v*|*|*
+ERROR|*v4047|*|*
+
+# MyISAM and Aria run MATCH ... AGAINST (... IN BOOLEAN MODE) without a FULLTEXT index; InnoDB
+# needs the index and refuses with ER_FT_MATCHING_KEY_NOT_FOUND.
+ERROR|1191v0|*|*
+ERROR|0v1191|*|*
+
+# Aria takes part in a transaction but keeps no savepoints, so SAVEPOINT in a transaction that
+# used an Aria table fails with ER_CHECK_NOT_IMPLEMENTED.
+ERROR|1178v0|*|SAVEPOINT*
+ERROR|0v1178|*|SAVEPOINT*
+
+# InnoDB adds a VIRTUAL column in place and does not compute it for the rows already there.
+# MyISAM and Aria copy the table and compute the column, so a value that does not fit the
+# column type fails the ALTER in strict mode.
+ERROR|0v*|*ALTER*|*VIRTUAL*
+ERROR|*v0*|*ALTER*|*VIRTUAL*
+
+# Each engine reads its own table options and checks them its own way, so the same CREATE or
+# ALTER can stop with ER_CANT_CREATE_TABLE on one side, be refused as ER_UNKNOWN_OPTION on
+# another, and be taken on a third. PAGE_COMPRESSED, KEY_BLOCK_SIZE, ROW_FORMAT, TRANSACTIONAL
+# and ENCRYPTION_KEY_ID are the usual ones.
+ERROR|1005v*|*|*
+ERROR|*v1005|*|*
+ERROR|0v1911|*|*
+ERROR|1911v0|*|*
+
+# STRICT_TRANS_TABLES makes a bad value an error for a transactional engine and a warning for a
+# non-transactional one, so the same write stops on InnoDB and goes through on MyISAM and Aria.
+# As described in corlogic.known.INFO.
+ERROR|1292v0|*|*
+ERROR|0v1292|*|*
+
+# The longest key an engine takes is its own limit: 3072 bytes on InnoDB, 1000 on MyISAM and
+# Aria, so the same CREATE or ALTER stops with ER_TOO_LONG_KEY on one side only.
+ERROR|1071v*|*|*
+ERROR|*v1071|*|*
+
+# A condition is only evaluated when the statement reaches a row, and how soon an engine
+# reports an empty table decides that, so an error inside the condition, such as
+# ER_SUBQUERY_NO_1_ROW, comes out on one side only.
+ERROR|1242v*|*|*
+ERROR|*v1242|*|*

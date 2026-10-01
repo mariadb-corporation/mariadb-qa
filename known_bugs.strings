@@ -639,6 +639,8 @@ SIGFPE|Json_schema_multiple_of::validate|Item_func_json_schema_valid::val_bool|I
 SIGSEGV|Type_handler_timestamp_common::Item_save_in_field|Item::save_in_field|save_window_function_values|compute_window_func                                                  ## MDEV-37806
 SIGSEGV|Field::set_notnull|Item::save_str_in_field|Item::save_in_field|save_window_function_values                                                                             ## MDEV-36356
 SIGSEGV|Field::set_notnull|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field|Item::save_in_field                                                          ## MDEV-36356
+SIGSEGV|set_field_to_null_with_conversions|Item::save_decimal_in_field|Item::save_in_field|save_window_function_values                                                         ## MDEV-36356
+SIGSEGV|set_field_to_null_with_conversions|Item::save_decimal_in_field|Type_handler_decimal_result::Item_save_in_field|Item::save_in_field                                     ## MDEV-36356
 SIGSEGV|Item_func_json_extract::read_json|Arg_comparator::compare_e_json_str_basic|Arg_comparator::compare_e_json_str|Arg_comparator::compare                                  ## MDEV-35352
 SIGSEGV|Item_func_json_extract::read_json|Arg_comparator::compare_e_json_str_basic|Arg_comparator::compare|Item_func_equal::val_bool                                           ## MDEV-35352
 SIGSEGV|Item_subselect::init|Item_exists_subselect::Item_exists_subselect|MYSQLparse|parse_sql                                                                                 ## MDEV-36857

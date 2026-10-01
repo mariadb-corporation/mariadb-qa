@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# A 7-digit directory is a corlogic workdir; it carries its own ./pr results script
+# A 7-digit directory is a CorLogic workdir; it carries its own ./pr results script
 if [[ "$(basename "${PWD}")" =~ ^[0-9]{7}$ ]]; then
   if [ -x ./pr ]; then exec ./pr "$@"; fi
-  echo "This looks like a corlogic workdir (7-digit name) but it has no ./pr script. Terminating."
+  echo "This looks like a CorLogic workdir (7-digit name) but it has no ./pr script. Terminating."
   exit 1
 fi
 

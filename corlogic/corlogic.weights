@@ -1,6 +1,6 @@
-# corlogic generator class weights (generator --weights). One "<class> <weight>" per line.
+# CorLogic generator class weights (generator --weights). One "<class> <weight>" per line.
 # 0 disables a class. Names are the generator's class registry; unknown names are ignored.
-# Every class is listed so the mix is fully pinned; corlogic's own statement filter drops
+# Every class is listed so the mix is fully pinned; CorLogic's own statement filter drops
 # the remaining off-target output. The two non-CIT dispatch paths carry the reserved names
 # legacy and grammar, in per mille of all statements; both are set here to the generator
 # defaults, so lowering them shifts their share to the classes below.

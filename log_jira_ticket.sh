@@ -101,7 +101,7 @@ Modes:
                        --edit KEY --remove-fix-version N/A --fix-version 13.0  (replace a placeholder)
                        --remove-affects-version V / --remove-es-version V / --remove-fix-version V
                      Use mainline X.Y names only (13.0, not 13.0.1).
-                     An out-of-support version is refused for Affects and Fix, see below.
+                     An out-of-support version is refused for Affects CS and Fix, see below.
 
 Create options:
   -p, --project KEY        Project key (default: MDEV; also MENT)
@@ -117,9 +117,12 @@ Create options:
       --affects-version V  Affects Version/s - CS (repeatable)
       --es-version V       Affects ES Version/s - Enterprise (repeatable)
       --fix-version V      Fix Version/s (repeatable)
-                           All three refuse an out-of-support version. The project
-                           renames a branch at end of life to "<version>(EOL)", and
-                           that list is what the check reads, so it stays current.
+                           Affects CS and Fix refuse an out-of-support version. The
+                           project renames a branch at end of life to "<version>(EOL)",
+                           and that list is what the check reads, so it stays current.
+                           Affects ES is not checked against it: an ES branch keeps
+                           its own support dates, so ES 10.6 is current while CS 10.6
+                           is not.
   -c, --component NAME     Component (repeatable)
   -l, --label NAME         Label (repeatable)
       --priority NAME      Priority name
@@ -342,30 +345,30 @@ arr_delstr() {
   printf '%s\n' "${_a[@]}" | jq -R '{remove:.}' | jq -s '.'
 }
 
-# Refuse an out-of-support version in Affects CS, Affects ES or Fix Version/s.
-# The project renames a branch that reaches end of life to "<version>(EOL)", so
-# that list is the source. Affects ES holds plain strings which the server never
-# checks, and it is checked here against the same set. A removal is exempt: a
-# stale EOL value has to be able to come off. No token or no answer from the
-# server skips the check rather than blocking the edit.
+# Refuse an out-of-support version in Affects CS or Fix Version/s. The project
+# renames a branch that reaches end of life to "<version>(EOL)", so that list is
+# the source. Affects ES is left out: an ES branch keeps its own support dates,
+# so ES 10.6 is current while CS 10.6 is not. A removal is exempt: a stale EOL
+# value has to be able to come off. No token or no answer from the server skips
+# the check rather than blocking the edit.
 reject_eol_versions() {
   local key="$1" resp code body v stripped
   local -a eol=() bad=()
-  [ "${#AFFECTS[@]}" -gt 0 ] || [ "${#FIXINS[@]}" -gt 0 ] || [ "${#ESVERS[@]}" -gt 0 ] || return 0
+  [ "${#AFFECTS[@]}" -gt 0 ] || [ "${#FIXINS[@]}" -gt 0 ] || return 0
   resp="$(jira_curl -H 'Accept: application/json' -w $'\n%{http_code}' "$JIRA_URL/rest/api/2/project/$key/versions" 2>/dev/null)" || return 0
   code="${resp##*$'\n'}"; body="${resp%$'\n'*}"
   [ "$code" = "200" ] || return 0
   mapfile -t eol < <(printf '%s' "$body" | jq -r '.[].name | select(endswith("(EOL)")) | sub("\\(EOL\\)$";"")')
   [ "${#eol[@]}" -gt 0 ] || return 0
-  for v in "${AFFECTS[@]}" "${FIXINS[@]}" "${ESVERS[@]}"; do
+  for v in "${AFFECTS[@]}" "${FIXINS[@]}"; do
     stripped="${v%(EOL)}"
     if [ "$stripped" != "$v" ] || printf '%s\n' "${eol[@]}" | grep -qxF "$v"; then bad+=("$v"); fi
   done
   [ "${#bad[@]}" -eq 0 ] && return 0
   die "Out of support, so not valid for Affects or Fix: $(printf '%s\n' "${bad[@]}" | sort -u | tr '\n' ' ')
 Out of support in $key: $(printf '%s\n' "${eol[@]}" | tr '\n' ' ')
-To take a stale value off a ticket use --remove-affects-version,
---remove-es-version or --remove-fix-version."
+To take a stale value off a ticket use --remove-affects-version or
+--remove-fix-version."
 }
 
 case "$MODE" in

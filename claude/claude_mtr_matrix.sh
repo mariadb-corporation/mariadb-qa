@@ -21,13 +21,17 @@ if [ -z "${1}" ]; then
   echo "  and ALL for the default set plus the sanitizer, Galera and monty builds."
   echo "* ./mtra is used whenever the BASEDIR has it, so the ASAN, UBSAN, MSAN and TSAN"
   echo "  options are set. A BASEDIR without ./mtra falls back to ./mtr."
-  echo "* The testcase is copied into every BASEDIR. With no suite it goes to the main"
+  echo "* The testcase is copied into every BASEDIR, under a name of its own made with"
+  echo "  mktemp, and the copy is removed after the run. With no suite it goes to the main"
   echo "  suite; with a suite it goes to that suite's t/ directory, or to the suite"
   echo "  directory itself for a flat suite such as maria or mariabackup, and MTR is"
   echo "  called as 'suite.test', which is the only way a non-main test is selected."
   echo "* A matching .result file beside the testcase is copied to the suite's r/ directory,"
   echo "  or next to the testcase for a flat suite."
   echo "* A matching .cnf file beside the testcase is copied next to the testcase."
+  echo "* MySQL 8.0 and later have no include/have_innodb.inc, so that line of the copy is"
+  echo "  left empty there. They also refuse a test with no .result, so with none they"
+  echo "  run with --nocheck-testcases."
   echo "* The testcase must be reverse-gated: it fails while the bug is present and passes"
   echo "  once it is fixed. Without that every row reads 'No'."
   echo "* A row reads 'No (gate did not trigger)' when the statement the gate expects to"
@@ -63,7 +67,10 @@ export MTR_PRINT_CORE=no    # skip MTR's slow inline gdb; the matrix stage uses 
 export DEBUGINFOD_URLS=     # Ubuntu sets this system-wide; llvm-symbolizer then stalls per SAN report
 
 WORK="$(mktemp -d)"
-trap 'rm -rf "${WORK}"' EXIT
+# Every copy made in a BASEDIR is listed in copies, so a sweep that is stopped part way
+# removes them as well.
+: > "${WORK}/copies"
+trap 'while read -r F; do rm -f "${F}"; done < "${WORK}/copies"; rm -rf "${WORK}"' EXIT
 
 # gendirs.sh lists with a relative ls and reads REGEX_EXCLUDE from the current directory,
 # so it has to run in /test.
@@ -78,7 +85,7 @@ if [ ! -s "${WORK}/blist" ]; then
 fi
 
 echo "Testcase   : ${TESTFILE}"
-echo "MTR name   : ${MTRTEST}"
+echo "MTR name   : ${MTRTEST}_XXXXXX, a name of its own in each BASEDIR"
 echo "BASEDIRs   : $(grep -c '' "${WORK}/blist") (gendirs.sh '${GENOPT}')"
 BCOUNT="$(grep -c '' "${WORK}/blist")"
 [ "${JOBS}" -gt "${BCOUNT}" ] && JOBS="${BCOUNT}"
@@ -129,9 +136,34 @@ run_one() {
   fi
   if [ ! -d "${TDIR}" ]; then echo "SKIP ${LINE} (no ${TDIR})"; return; fi
 
-  cp "${TESTFILE}" "${TDIR}/"
-  [ -r "${RESULTFILE}" ] && [ -d "${RDIR}" ] && cp "${RESULTFILE}" "${RDIR}/"
-  [ -r "${CNFFILE}" ] && cp "${CNFFILE}" "${TDIR}/"
+  # The copy gets a name of its own, so it cannot overwrite a test of the build, and a
+  # sweep that runs beside this one cannot use it.
+  local COPY NAME MTRNAME EXTRA=
+  if ! COPY="$(mktemp -p "${TDIR}" --suffix=.test "${TEST}_XXXXXX")"; then
+    echo "SKIP ${LINE} (cannot create a file in ${TDIR})"; return
+  fi
+  echo "${COPY}" >> "${WORK}/copies"
+  NAME="$(basename "${COPY}" .test)"
+  MTRNAME="${NAME}"
+  [ -n "${SUITE}" ] && MTRNAME="${SUITE}.${NAME}"
+  cp "${TESTFILE}" "${COPY}"
+  if [ -r "${RESULTFILE}" ] && [ -d "${RDIR}" ]; then
+    # On a result mismatch MTR can write a .reject beside the .result.
+    printf '%s\n' "${RDIR}/${NAME}.result" "${RDIR}/${NAME}.reject" >> "${WORK}/copies"
+    cp "${RESULTFILE}" "${RDIR}/${NAME}.result"
+  elif grep -q 'Either create a result file or disable check-testcases' \
+      "${MTRDIR}/mysql-test-run.pl" 2>/dev/null; then
+    EXTRA=--nocheck-testcases
+  fi
+  if [ -r "${CNFFILE}" ]; then
+    echo "${TDIR}/${NAME}.cnf" >> "${WORK}/copies"
+    cp "${CNFFILE}" "${TDIR}/${NAME}.cnf"
+  fi
+  # InnoDB is always there in MySQL 8.0 and later, and the include is not. The line is
+  # left empty, not removed, so a failing line number still matches the testcase.
+  if [ ! -r "${MTRDIR}/include/have_innodb.inc" ]; then
+    sed -i -E 's@^[[:space:]]*(--)?source[[:space:]]+include/have_innodb\.inc;?[[:space:]]*$@@' "${COPY}"
+  fi
 
   # Each BASEDIR has its own var/, so parallel builds do not share it. MTR_BUILD_THREAD
   # is left on auto: MTR then takes a free port range under its own lock file, which is
@@ -140,7 +172,8 @@ run_one() {
   local VAR="${MTRDIR}/var"
   rm -rf "${VAR}"
   local OUT="${WORK}/out.${SLOT}.${LINE}"
-  ( cd "${MTRDIR}" && MTR_BUILD_THREAD=auto timeout 900 "${RUNNER}" "${MTRTEST}" ) > "${OUT}" 2>&1
+  ( cd "${MTRDIR}" && MTR_BUILD_THREAD=auto timeout 900 "${RUNNER}" ${EXTRA} "${MTRNAME}" ) > "${OUT}" 2>&1
+  rm -f "${COPY}" "${RDIR}/${NAME}.result" "${RDIR}/${NAME}.reject" "${TDIR}/${NAME}.cnf"
 
   # Verdict. A passing run is 'No' whatever the error log holds - a galera run always
   # logs a WSREP_WARNING at startup, and ~/t would report that as a UniqueID.

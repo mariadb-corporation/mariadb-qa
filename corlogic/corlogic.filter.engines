@@ -8,3 +8,9 @@
 # same holds for the row an ON DUPLICATE KEY clause rewrites.
 ^[[:space:]]*replace[[:space:]]
 on[[:space:]]+duplicate[[:space:]]+key
+
+# A rolled-back statement leaves its rows in place on a non-transactional engine and takes them
+# back on a transactional one, so every later read differs by design. Dropping ROLLBACK leaves
+# the work committed on both sides. This covers ROLLBACK, ROLLBACK WORK, ROLLBACK AND CHAIN and
+# ROLLBACK TO SAVEPOINT.
+^[[:space:]]*rollback([[:space:]]|;|$)
