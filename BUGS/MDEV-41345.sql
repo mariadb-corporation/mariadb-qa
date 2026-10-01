@@ -1,0 +1,4 @@
+INSTALL PLUGIN mroonga SONAME 'ha_mroonga';
+CREATE TABLE t1 (c TIME(1)) ENGINE=Mroonga;
+INSERT INTO t1 VALUES (-0.1);
+SELECT * FROM t1;

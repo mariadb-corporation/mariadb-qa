@@ -256,6 +256,31 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+is_valid_value_slow()|SIGABRT|Time::adjust_time_range_or_invalidate|Time::make_from_time|Time::Time|Time::Time                                                                 ## MDEV-41345
+my_charset_same(args[0]->collation.collation, collation.collation) || (args[0]->collation.repertoire == MY_REPERTOIRE_ASCII && !(collation.collation->state & 8192))|SIGABRT|Item_func_set_collation::val_str|Item_str_func::val_real|Item_func_plus::real_op|Item_func_hybrid_field_type::val_real_from_real_op ## MDEV-41341
+my_charset_same(args[0]->collation.collation, collation.collation) || (args[0]->collation.repertoire == MY_REPERTOIRE_ASCII && !(collation.collation->state & 8192))|SIGABRT|Item_func_set_collation::val_str|Type_handler::Item_send_str|Type_handler_string_result::Item_send|Item::send ## MDEV-41341
+my_charset_same(args[0]->collation.collation, collation.collation) || (args[0]->collation.repertoire == MY_REPERTOIRE_ASCII && !(collation.collation->state & 8192))|SIGABRT|Item_func_set_collation::val_str|Type_handler::Item_send_str|Protocol::send_result_set_row|select_send::send_data ## MDEV-41341
+SIGSEGV|BJSON::GetArray|BJSON::SetArrayValue|BTUTIL::MakeTopTree|TDBBSON::MakeNewDoc                                                                                           ## MDEV-41339
+SIGSEGV|__strlen_evex|my_b_vprintf|my_b_printf|MYSQL_QUERY_LOG::write                                                                                                          ## MDEV-41338
+!table_list->vers_conditions.need_setup() || !*conds || thd->stmt_arena->is_stmt_execute()|SIGABRT|mysql_prepare_update|mysql_update|mysql_execute_command|mysql_parse         ## MDEV-41332
+to <= end|SIGABRT|my_vsnprintf_ex|my_vsnprintf|my_snprintf|log_query                                                                                                           ## MENT-2911
+*type >= TRX_UNDO_RENAME_TABLE|SIGABRT|trx_undo_rec_get_pars|trx_undo_prev_version|trx_undo_prev_version_build|row_check_index                                                 ## MDEV-41336
+INNODB_ERROR|Table X.X contains unrecognizable instant ALTER metadata                                                                                                          ## MDEV-41331
+index->n_fields >= index->n_core_fields || index->in_instant_init|SIGABRT|rec_get_offsets_func|btr_estimate_number_of_different_key_vals|dict_stats_update_transient_for_index|dict_stats_update_transient ## MDEV-41331
+SIGSEGV|engine_option_value::engine_option_value|merge_engine_options|parse_engine_part_options|open_table_from_share                                                          ## MDEV-41325
+!index->is_dummy|SIGABRT|rec_get_offsets_func|page_validate|ibuf_merge_or_delete_for_page|buf_page_ibuf_merge_try                                                              ## MDEV-37919
+s|SIGABRT|buf_page_get_gen|btr_copy_blob_prefix|btr_copy_externally_stored_field_prefix_low|btr_copy_externally_stored_field                                                   ## MDEV-37967
+s|SIGABRT|buf_page_get_low|buf_page_get_gen|btr_copy_blob_prefix|btr_copy_externally_stored_field_prefix_low                                                                   ## MDEV-37967
+"no ha_innopart in MariaDB" == 0|SIGABRT|row_sel_store_mysql_rec|InnoDBPolicy<true, true>::output_record|row_search_mvcc<InnoDBPolicy<true, true> >|ha_innobase::index_read    ## MDEV-39794
+"no ha_innopart in MariaDB" == 0|SIGABRT|row_sel_store_mysql_rec|row_search_mvcc|ha_innobase::index_read|ha_innobase::index_first                                              ## MDEV-39794
+from_deadlock || trx->lock.wait_thr|SIGABRT|lock_wait_end<false>|lock_cancel_waiting_and_release<false, true>|lock_sys_t::cancel<false>|innobase_kill_query                    ## MDEV-40473
+current_lsn < archive_header_was_reset|SIGABRT|log_t::write_checkpoint|log_checkpoint_low|log_checkpoint|buf_flush_page_cleaner                                                ## MDEV-41310
+!recv_sys.rpo|SIGABRT|mtr_t::commit|innobase_binlog_write_direct_ordered|MYSQL_BIN_LOG::open_engine|init_server_components                                                     ## MDEV-41300
+!silent|SIGABRT|recv_sys_t::find_checkpoint_archived|recv_sys_t::find_checkpoint|srv_start|innodb_init                                                                         ## MDEV-41296
+val > 0x7F|SIGABRT|mach_read_next_much_compressed|trx_undo_rec_get_pars|trx_undo_prev_version|trx_undo_prev_version_build                                                      ## MDEV-41290
+update->n_fields > 2|SIGABRT|btr_cur_trim|btr_cur_pessimistic_update|row_undo_mod_clust_low|row_undo_mod_clust                                                                 ## MDEV-39709
+INNODB_ERROR|Flagged corruption of `iv` in table X.X in CHECK TABLE; Wrong count                                                                                               ## MDEV-41272
+SIGSEGV|Item_field::Item_field|Aggregator_distinct::setup|Item_sum::aggregator_setup|setup_sum_funcs                                                                           ## MDEV-41269
 open_tables == 0 && temporary_tables == 0 && derived_tables == 0 && lock == 0 && locked_tables_mode == LTM_NONE && m_reprepare_observer == __null|SIGABRT|THD::restore_backup_open_tables_state|get_all_tables|get_schema_tables_result|JOIN::exec_inner ## MDEV-41241
 SIGSEGV|SQL_SELECT::cleanup|SQL_SELECT::~SQL_SELECT|st_join_table::cleanup|JOIN::cleanup                                                                                       ## MDEV-41240
 SIGSEGV|sec_part_shift|Field_time_hires::Field_time_hires|new_Field_time|Type_handler_time2::make_table_field                                                                  ## MDEV-41225
