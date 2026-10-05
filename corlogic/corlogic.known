@@ -1,4 +1,4 @@
-# corlogic known-difference filter. One entry per line; a matching finding is muted.
+# CorLogic known-difference filter. One entry per line; a matching finding is muted.
 #
 # Two forms:
 #   CATEGORY|MECHANISM|CONSTRUCTS|STATEMENT   a UID pattern. A field of * matches
@@ -14,6 +14,11 @@
 # matches when that token happens to sort first, so it silently misses most statements.
 # The wrapped form is anchored on the commas there, so *IN* is the token IN and never the
 # IN inside INSERT.
+#
+# A star only works at the two ends of a field. The text between the stars is looked for as
+# it is written, so *IN (SELECT* finds that text anywhere, and SELECT*FROM t* asks for a
+# field that starts with the eight characters "SELECT*F". Pick one piece of the statement
+# that names the family and wrap that.
 #
 # The UID of a finding is the "UID:" line of its bugN.report, and `pr` in the workdir
 # prints it as well.

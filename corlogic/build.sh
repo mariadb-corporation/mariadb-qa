@@ -1,6 +1,6 @@
 #!/bin/bash
 # Created by Roel Van de Paar, MariaDB
-# Build script for corlogic. Clang + libc++ is the canonical toolchain.
+# Build script for CorLogic. Clang + libc++ is the canonical toolchain.
 #
 # Usage:  ./build.sh           # release build -> corlogic
 #         ./build.sh debug     # -O0 -g3      -> corlogic_dbg
@@ -30,7 +30,7 @@ CXX="${CXX:-clang++}"
 # (via gendirs.sh where present, else a plain glob), so standalone boxes work too.
 # MSAN wants an instrumented client library, so that mode takes an MSAN basedir where /test
 # holds one. Every byte the client library hands over is otherwise uninstrumented, and the
-# reports name that library rather than corlogic.
+# reports name that library rather than CorLogic.
 pick_mariadb_basedir() {
   if [ -n "${MARIADB_BASEDIR:-}" ]; then printf '%s\n' "${MARIADB_BASEDIR}"; return; fi
   local best=""

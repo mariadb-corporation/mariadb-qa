@@ -49,3 +49,73 @@ f05f2e49fd1f//RESULT|content|PLAIN|SELECT GREATEST(cX,cX,N) AS r0 FROM tX WHERE 
 # MySQL returns the packed sort key. Over a string column both return collation weights, so
 # only a temporal argument differs. As described in corlogic.known.INFO.
 424985bb422a//RESULT|content|PLAIN|SELECT WEIGHT_STRING(cX) AS r0 FROM tX
+
+# COMPRESSION= as a table option. MySQL carries it for InnoDB page compression and takes
+# the statement, MariaDB has no such option and answers ER_UNKNOWN_OPTION. MariaDB asks for
+# page compression through PAGE_COMPRESSED instead. As described in corlogic.known.INFO.
+ERROR|0v1911|*|*COMPRESSION=*
+ERROR|1911v0|*|*COMPRESSION=*
+
+# A temporary table named twice in one statement: MySQL refuses it with
+# ER_CANT_REOPEN_TABLE, MariaDB opens it again.
+ERROR|0v1137|*|*
+ERROR|1137v0|*|*
+
+# ONLY_FULL_GROUP_BY: MySQL reads functional dependence and checks ORDER BY against the
+# GROUP BY its own way, so each vendor refuses statements the other takes.
+ERROR|0v1055|*|*
+ERROR|1055v0|*|*
+
+# A string compared with a DATE value that is not a date: MySQL fails the statement with
+# ER_WRONG_VALUE, MariaDB warns and compares.
+ERROR|0v1525|*|*
+ERROR|1525v0|*|*
+
+# MySQL refuses a JSON function argument that is not valid JSON with ER_INVALID_JSON_TEXT_IN_PARAM;
+# MariaDB returns NULL with a warning.
+ERROR|0v3141|*|*
+ERROR|3141v0|*|*
+
+# A number outside the TIME range: MariaDB clamps it to 838:59:59 with a warning, MySQL returns NULL.
+RESULT|content|*CAST*|*CAST(N AS TIME*
+
+# ORDER BY a plain column in a query with an aggregate and no GROUP BY: MariaDB refuses it with
+# ER_MIX_OF_GROUP_FUNC_AND_FIELDS in every sql_mode, MySQL returns the one row.
+ERROR|1140v0|*ORDERBY*|*
+ERROR|0v1140|*ORDERBY*|*
+
+# GREATEST and LEAST over a string and a number: MariaDB compares them as numbers, MySQL as
+# strings, so the two return different values.
+RESULT|content|*|*GREATEST(*
+RESULT|content|*|*LEAST(*
+
+# CAST of an out-of-range DOUBLE expression to an integer: MariaDB clamps it with a warning,
+# MySQL fails the statement with ER_DATA_OUT_OF_RANGE.
+ERROR|0v1690|*CAST*|*AS SIGNED*
+ERROR|0v1690|*CAST*|*AS UNSIGNED*
+
+# An SRID that MySQL does not hold in its spatial reference system catalog: MySQL fails with
+# ER_SRS_NOT_FOUND, MariaDB takes any SRID.
+ERROR|0v3548|*|*
+
+# A value outside the range of the target type, reached through any expression: MariaDB clamps it
+# and warns, MySQL fails the statement with ER_DATA_OUT_OF_RANGE.
+ERROR|0v1690|*|*
+
+# A foreign key whose referenced column has no index: MariaDB creates the index, MySQL refuses the
+# constraint with ER_FK_NO_INDEX_PARENT.
+ERROR|0v1822|*|*
+
+# A string compared with a number in a DELETE or an UPDATE: MariaDB warns and carries on, MySQL
+# stops the statement with ER_TRUNCATED_WRONG_VALUE.
+ERROR|0v1292|*DELETE*|*
+ERROR|0v1292|*UPDATE*|*
+
+# MySQL has a JSON column type and refuses a JSON function over a plain string with
+# ER_INVALID_TYPE_FOR_JSON. MariaDB stores JSON as text, so the same call succeeds.
+ERROR|0v3146|*|*
+
+# The column width of a recursive CTE comes from its first branch in MariaDB, so a growing value
+# hits ER_DATA_TOO_LONG. MySQL widens a JSON column, and a plain string grows the same way in
+# both. As described in MDEV-29318.
+ERROR|1406v0|*CTE*|*

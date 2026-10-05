@@ -1,0 +1,7 @@
+CREATE TABLE t1(a INT PRIMARY KEY AUTO_INCREMENT, b VARCHAR(200)) ENGINE=InnoDB;
+SET GLOBAL innodb_log_archive=1;
+INSERT INTO t1(b) SELECT REPEAT('y',180) FROM seq_1_to_3000;
+SET GLOBAL innodb_log_checkpoint_now=ON;
+SELECT COUNT(*) FROM t1;
+DROP TABLE t1;
+SET GLOBAL innodb_log_archive=0;
