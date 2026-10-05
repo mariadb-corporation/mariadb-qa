@@ -6,6 +6,22 @@ Extended by Susil
 Sample Usages:
 os.path.basename(__file__) --test-name 'galera.*' --from-date 2026-08-03 --until-date 2026-07-26 --format json
 os.path.basename(__file__) --test-name 'rpl.*,binlog.*,multi_source.*,binlog_encryption.*' --from-date 2026-08-03 --until-date 2026-07-26 --format json
+
+The report printed at the end is one JSON object with, at the same level:
+  top_fail_tests_all_suites  the most failing tests, with a breakdown per release branch,
+                             except the ones in not_merged_to_all_yet
+  not_merged_to_all_yet      the tests among the top failing ones that already have an MDEV
+                             (jira.mariadb.org) with a fix commit (GitHub) that is merged to
+                             some release branches but has not reached a branch the test still
+                             fails on. A record is the entry the test would have had in the
+                             ranking, and the MDEV, the fix commit and which branches have the
+                             fix and which do not. The ranking is not refilled, so it can come
+                             up short of the number of tests asked for. The merge state is the
+                             one at the time of the run, whatever date range was asked for.
+An MDEV is taken to be about a test when the test name, suite included, is in its summary.
+GitHub allows 60 requests an hour to anonymous clients, which a run with several fixed MDEVs
+can use up: set GITHUB_TOKEN (or GH_TOKEN) to a GitHub token to lift that. Nothing else is
+needed, and nothing is written to Jira or GitHub.
 """
 
 from __future__ import annotations
@@ -14,14 +30,16 @@ import argparse
 import csv
 import html
 import json
+import os
 import re
 import sys
 import time
 from datetime import datetime, timedelta, timezone
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
-from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+from urllib.parse import parse_qsl, quote, urlencode, urlsplit, urlunsplit
 from urllib.request import Request, urlopen
 from collections import Counter
 from difflib import SequenceMatcher
@@ -31,7 +49,7 @@ DEFAULT_BASE_URL = "http://buildbot.mariadb.org/cr/api/testfailures/"
 # Endpoint the reported 'fail_url' links point at, independent of --base-url
 FAIL_URL_BASE = "https://buildbot.mariadb.org/cr/api/testfailures/"
 MAX_LIMIT = 200
-TOP_FAIL_TESTS_COUNT = 5
+TOP_FAIL_TESTS_COUNT = 10
 # The cross-reference API is slow and occasionally stalls outright, in particular on the
 # unbounded fail_url queries, so every request gets a few attempts with a growing timeout
 # and a backoff in between before it is given up on.
@@ -62,6 +80,33 @@ WORKER_VARDIR_REGEX = re.compile(r"/var/\d+/")
 # each show up as a distinct failure. Only a similarity of 60% or less makes two failures
 # distinct.
 SIMILARITY_THRESHOLD = 0.60
+# A fix is pushed to the oldest branch it applies to and merged up from there (10.11 -> 11.4
+# -> ... -> main), which can lag by weeks. Until a branch has merged it, a test keeps failing
+# on that branch although the MDEV that fixed it is closed. The 'not_merged_to_all_yet' report
+# finds those tests, and takes them out of the ranking of the top failing tests: Jira says which
+# MDEV fixed a test, GitHub says which branches have the fix.
+JIRA_URL = "https://jira.mariadb.org"
+GITHUB_API_URL = "https://api.github.com"
+GITHUB_REPO = "MariaDB/server"
+JIRA_MAX_RESULTS = 50
+GITHUB_PAGE_SIZE = 100
+# Only MDEVs resolved this recently are looked at. It bounds how many tickets, and with them
+# GitHub requests (60 an hour without a token), one run spends. It assumes that a merge-up
+# takes less than this: it has been seen to take over four weeks, not four months.
+MERGE_LOOKBACK_DAYS = 120
+# A fix is pushed around the time its MDEV is resolved, a few days either side, so its commit is
+# searched for from FIX_COMMIT_LOOKBACK_DAYS before the resolution (never before the MDEV was
+# created) until FIX_COMMIT_SLACK_DAYS after it. Measured from the creation instead, an MDEV
+# that sat open for years before it was fixed would have the search cover all of them.
+FIX_COMMIT_LOOKBACK_DAYS = 30
+FIX_COMMIT_SLACK_DAYS = 14
+# Pages of GITHUB_PAGE_SIZE commits searched per branch for the fix commit. The window above
+# is small enough for this to be plenty; hitting it is reported rather than taken for "no fix".
+FIX_COMMIT_PAGES = 5
+# 10.11.20 -> 10.11. Fix Version/s that name no release branch ('N/A', '10.4(EOL)') do not match.
+FIX_VERSION_REGEX = re.compile(r"^(\d+\.\d+)(?:\.\d+)?$")
+# What a test name may be made of to go into a JQL phrase as is: suite.test, as MTR names it
+TEST_NAME_REGEX = re.compile(r"^[\w.+-]+$")
 OUTPUT_FORMATS = ("csv", "html", "json", "both", "all")
 CSV_FIELDS = [
     "dt",
@@ -108,7 +153,8 @@ def parse_args() -> argparse.Namespace:
             "Test name filter accepted by the API, e.g. main.sp-error, rpl.*, galera.*. "
             "May be repeated, and/or given as a comma-separated list, to fetch several "
             "suites in one run; each filter is exported to its own set of files and all "
-            "of them feed the final 'top_fail_tests_all_suites' report."
+            "of them feed the final 'top_fail_tests_all_suites' and 'not_merged_to_all_yet' "
+            "reports."
         ),
     )
     parser.add_argument(
@@ -430,15 +476,34 @@ def top_fail_tests_list(
     ]
 
 
+class ApiError(RuntimeError):
+    """An API request the server answered with an error. Still a RuntimeError, like every
+    other failure of fetch_json(), so the callers' 'except RuntimeError' catches it; it also
+    keeps the HTTP status and whether the cause was a spent rate limit, for the callers that
+    act on those (a 404 from GitHub means there is no such branch, a spent quota means no
+    later request of the run will get through either)."""
+
+    def __init__(
+        self, message: str, status: int | None = None, rate_limited: bool = False
+    ) -> None:
+        super().__init__(message)
+        self.status = status
+        self.rate_limited = rate_limited
+
+
 def fetch_page(base_url: str, params: dict[str, Any]) -> list[dict[str, Any]]:
     return fetch_json(f"{base_url}?{urlencode(params)}")
 
 
-def fetch_json(url: str) -> list[dict[str, Any]]:
+def fetch_json(
+    url: str, headers: dict[str, str] | None = None, expect: type = list
+) -> Any:
     """One API request, retried on a timeout or a transport error. Every failure mode ends
     up as a RuntimeError: a bare TimeoutError from the socket read is not a URLError, so
-    without this it would escape the callers' 'except RuntimeError' and abort the report."""
-    request = Request(url, headers={"Accept": "application/json"})
+    without this it would escape the callers' 'except RuntimeError' and abort the report.
+    The buildbot API answers with a JSON list; Jira and GitHub's compare answer with an
+    object, which is what 'expect' is for."""
+    request = Request(url, headers={"Accept": "application/json", **(headers or {})})
     payload = None
 
     for attempt in range(1, REQUEST_ATTEMPTS + 1):
@@ -451,8 +516,13 @@ def fetch_json(url: str) -> list[dict[str, Any]]:
             break
         except HTTPError as exc:
             body = exc.read().decode("utf-8", errors="replace")
+            if exc.headers.get("X-RateLimit-Remaining") == "0":
+                # The quota is refilled on the hour; no backoff here gets a retry through
+                raise ApiError(
+                    f"API rate limit exhausted ({url}): {body}", exc.code, rate_limited=True
+                ) from exc
             if exc.code not in RETRYABLE_HTTP_CODES or attempt == REQUEST_ATTEMPTS:
-                raise RuntimeError(f"API returned HTTP {exc.code}: {body}") from exc
+                raise ApiError(f"API returned HTTP {exc.code}: {body}", exc.code) from exc
             print(
                 f"API returned HTTP {exc.code}, retrying in {RETRY_BACKOFF}s "
                 f"[attempt {attempt}/{REQUEST_ATTEMPTS}]",
@@ -486,10 +556,275 @@ def fetch_json(url: str) -> list[dict[str, Any]]:
     except json.JSONDecodeError as exc:
         raise RuntimeError(f"API returned invalid JSON: {exc}") from exc
 
-    if not isinstance(data, list):
-        raise RuntimeError(f"Expected a JSON list from API, got {type(data).__name__}")
+    if not isinstance(data, expect):
+        raise RuntimeError(
+            f"Expected a JSON {expect.__name__} from API, got {type(data).__name__}"
+        )
 
     return data
+
+
+def parse_jira_date(value: str) -> datetime:
+    """A Jira timestamp (2026-09-03T09:23:38.000+0000) as UTC. strptime rather than
+    fromisoformat, which only takes a zone offset without a colon from Python 3.11 on."""
+    return datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%f%z").astimezone(timezone.utc)
+
+
+def github_date(value: datetime) -> str:
+    return value.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def branch_sort_key(branch: str) -> tuple[int, int, int]:
+    """Orders version-like branches the way a fix travels through them: oldest release first
+    and 'main', which everything is merged up into, last."""
+    if branch == "main":
+        return (1, 0, 0)
+    major, minor = branch.split(".")
+    return (0, int(major), int(minor))
+
+
+def fix_version_branches(fix_versions: list[str]) -> list[str]:
+    """The release branches the Fix Version/s of a ticket point at, oldest first:
+    ['10.11.20', '11.4.14', 'N/A'] -> ['10.11', '11.4']."""
+    branches = set()
+    for version in fix_versions:
+        match = FIX_VERSION_REGEX.match(version)
+        if match and VERSION_REGEX.match(match.group(1)):
+            branches.add(match.group(1))
+    return sorted(branches, key=branch_sort_key)
+
+
+def jira_fixed_tickets(test_name: str) -> list[dict[str, Any]]:
+    """The MDEVs resolved as Fixed in the last MERGE_LOOKBACK_DAYS that name a test in their
+    summary, most recently resolved first. The name is searched as an exact phrase: JQL's
+    plain 'text ~' splits it on the dots and underscores and ORs the pieces, which matches
+    every ticket that merely shares a common word with it. Anonymous, read-only: MDEV is a
+    public project.
+
+    Precision matters more than recall here, as a test taken to have a fix leaves the ranking.
+    So the summary only: a description that lists the test (an umbrella such as 'Tests failing
+    on macOS') says nothing about whether the fix is for this test's failure. And the whole
+    suite.test name only: the bare test name matches unrelated tickets, and the same test name
+    in other suites. Measured on the most frequent failures of five suites, the description
+    only added matches through one umbrella ticket (MDEV-33616), and the bare name only
+    unrelated tickets: rename and partition matched on the common word, and tmp_space_usage
+    matched a ticket about main.tmp_space_usage for galera.tmp_space_usage."""
+    if not TEST_NAME_REGEX.match(test_name):
+        # Not a name MTR would produce; keep it out of the query rather than escape it
+        return []
+    phrase = f'"\\"{test_name}\\""'
+    jql = (
+        f"project = MDEV AND resolution = Fixed AND resolved >= -{MERGE_LOOKBACK_DAYS}d "
+        f"AND summary ~ {phrase} ORDER BY resolutiondate DESC"
+    )
+    params = {
+        "jql": jql,
+        "fields": "summary,created,resolutiondate,fixVersions",
+        "maxResults": JIRA_MAX_RESULTS,
+    }
+    data = fetch_json(f"{JIRA_URL}/rest/api/2/search?{urlencode(params)}", expect=dict)
+
+    tickets = []
+    for issue in data.get("issues", []):
+        fields = issue["fields"]
+        if not fields.get("resolutiondate"):
+            continue
+        tickets.append(
+            {
+                "key": issue["key"],
+                "summary": fields["summary"],
+                "created": parse_jira_date(fields["created"]),
+                "resolved": parse_jira_date(fields["resolutiondate"]),
+                "fix_versions": [version["name"] for version in fields["fixVersions"]],
+            }
+        )
+    return tickets
+
+
+def github_json(path: str, params: dict[str, Any], expect: type) -> Any:
+    """One request to the MariaDB/server repository. GITHUB_TOKEN (or GH_TOKEN) is optional
+    and only there to lift the 60 requests an hour that anonymous clients get."""
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "mariadb-qa-build_mtr_test_failures_report",
+    }
+    token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    url = f"{GITHUB_API_URL}/repos/{GITHUB_REPO}/{path}?{urlencode(params)}"
+    return fetch_json(url, headers=headers, expect=expect)
+
+
+@lru_cache(maxsize=None)
+def find_fix_commit(key: str, branch: str, since: str, until: str) -> dict[str, str] | None:
+    """The newest commit on a branch, committed between since and until, whose subject line
+    names the MDEV key; None if there is none. GitHub lists newest first, so the first hit is
+    the last commit of the fix (a ticket can have follow-ups): a branch has the whole fix once
+    it has that one. The subject only: a body that mentions a key is usually about something
+    else, and 'MDEV-41017' must not match 'MDEV-410170', hence the lookahead."""
+    key_regex = re.compile(rf"(?<![\w-]){re.escape(key)}(?!\d)")
+    for page in range(1, FIX_COMMIT_PAGES + 1):
+        commits = github_json(
+            "commits",
+            {
+                "sha": branch,
+                "since": since,
+                "until": until,
+                "per_page": GITHUB_PAGE_SIZE,
+                "page": page,
+            },
+            list,
+        )
+        for commit in commits:
+            subject = commit["commit"]["message"].split("\n", 1)[0]
+            if key_regex.search(subject):
+                return {
+                    "branch": branch,
+                    "sha": commit["sha"],
+                    "date": commit["commit"]["committer"]["date"],
+                    "url": f"https://github.com/{GITHUB_REPO}/commit/{commit['sha']}",
+                    "subject": subject,
+                }
+        if len(commits) < GITHUB_PAGE_SIZE:
+            return None
+    raise RuntimeError(
+        f"More than {FIX_COMMIT_PAGES * GITHUB_PAGE_SIZE} commits on {branch} between "
+        f"{since} and {until}; the commit of {key} was not looked for any further"
+    )
+
+
+@lru_cache(maxsize=None)
+def branch_contains(sha: str, branch: str) -> bool | None:
+    """Whether a commit has been merged to a branch, i.e. is in its history. Comparing the
+    commit with the branch tells: 'ahead' (the branch has gone on from the commit) and
+    'identical' mean it is, 'diverged' (the branch went its own way) and 'behind' mean it is
+    not. Jira's Fix Version/s cannot answer this: they are filled in when the fix is pushed,
+    for every branch it is meant to reach, merged or not. None if there is no such branch."""
+    try:
+        comparison = github_json(
+            f"compare/{sha}...{quote(branch, safe='')}", {"per_page": 1}, dict
+        )
+    except ApiError as exc:
+        if exc.status == 404:
+            return None
+        raise
+    return comparison.get("status") in ("ahead", "identical")
+
+
+def fix_merge_state(
+    ticket: dict[str, Any], failing_branches: set[str]
+) -> dict[str, Any] | None:
+    """Where the fix of a ticket has got to, for a test failing on failing_branches. None
+    unless the fix is merged to some branches and the test fails on one that is yet to get it.
+
+    The fix commit is searched for on the oldest branch of the ticket's Fix Version/s only: a
+    fix is pushed there and merged up from there, and it is also the quietest branch to search.
+    A fix with no commit under the MDEV's key there (a Galera library update, say) cannot be
+    followed, and that is all the search costs. The branches that count are the Fix Version/s
+    branches and the ones the test fails on, from that oldest one upwards, as a merge never
+    goes down."""
+    fix_branches = fix_version_branches(ticket["fix_versions"])
+    if not fix_branches:
+        return None
+    origin = fix_branches[0]
+    since = github_date(
+        max(ticket["created"], ticket["resolved"] - timedelta(days=FIX_COMMIT_LOOKBACK_DAYS))
+    )
+    until = github_date(ticket["resolved"] + timedelta(days=FIX_COMMIT_SLACK_DAYS))
+
+    try:
+        fix_commit = find_fix_commit(ticket["key"], origin, since, until)
+    except ApiError as exc:
+        if exc.status == 404:
+            return None  # the branch no longer exists
+        raise
+    if fix_commit is None:
+        return None
+
+    branches = sorted(
+        {
+            branch
+            for branch in (*fix_branches, *failing_branches)
+            if branch_sort_key(branch) > branch_sort_key(origin)
+        },
+        key=branch_sort_key,
+    )
+    if not branches:
+        return None
+    # A fix is merged up one branch at a time, so the highest branch having it means they all
+    # do. That one request settles most tickets: the fix is old news, nothing is pending.
+    if branch_contains(fix_commit["sha"], branches[-1]):
+        return None
+
+    merged, not_merged = [origin], []
+    for branch in branches:
+        has_fix = branch_contains(fix_commit["sha"], branch)
+        if has_fix is None:
+            continue  # no such branch
+        (merged if has_fix else not_merged).append(branch)
+    # A failure on a branch that has the fix is not explained by a merge still to come
+    if not set(not_merged) & failing_branches:
+        return None
+    return {"fix_commit": fix_commit, "merged_to": merged, "not_merged_to": not_merged}
+
+
+def not_merged_to_all_yet(
+    entries: list[dict[str, Any]], sleep_seconds: float
+) -> list[dict[str, Any]]:
+    """The ranked tests whose MDEV is fixed but not merged to every branch yet: still failing
+    on a branch the fix has not reached. One record per test and MDEV, made of the ranking
+    entry of the test and what is known about the fix: the caller takes these tests out of
+    the ranking, so the record keeps everything the entry had. A lookup that fails is reported
+    and skipped, as with the per-branch lookups: it must not cost us the report."""
+    reported: list[dict[str, Any]] = []
+    for entry in entries:
+        failing = set(entry["branches"])
+        if not failing:
+            continue
+        try:
+            tickets = jira_fixed_tickets(entry["test_name"])
+        except RuntimeError as exc:
+            print(f"Could not look up MDEVs for {entry['test_name']}: {exc}", file=sys.stderr)
+            continue
+
+        for ticket in tickets:
+            try:
+                state = fix_merge_state(ticket, failing)
+            except RuntimeError as exc:
+                print(
+                    f"Could not check whether {ticket['key']} is merged to all branches "
+                    f"yet: {exc}",
+                    file=sys.stderr,
+                )
+                if isinstance(exc, ApiError) and exc.rate_limited:
+                    print(
+                        "Not checking any further; set GITHUB_TOKEN (or GH_TOKEN) to a "
+                        "GitHub token to lift the limit",
+                        file=sys.stderr,
+                    )
+                    return reported
+                continue
+            if state is None:
+                continue
+            reported.append(
+                {
+                    "test_name": entry["test_name"],
+                    "fail_count": entry["fail_count"],
+                    "fail_url": entry["fail_url"],
+                    "mdev": {
+                        "key": ticket["key"],
+                        "url": f"{JIRA_URL}/browse/{ticket['key']}",
+                        "summary": ticket["summary"],
+                        "fix_versions": ticket["fix_versions"],
+                    },
+                    "fix_commit": state["fix_commit"],
+                    "merged_to": state["merged_to"],
+                    "not_merged_to": state["not_merged_to"],
+                    "branches": entry["branches"],
+                }
+            )
+        time.sleep(sleep_seconds)
+    return reported
 
 
 def row_identity(row: dict[str, Any]) -> tuple[Any, ...]:
@@ -937,7 +1272,28 @@ def main() -> int:
             print(f"Could not fetch {entry['fail_url']}: {exc}", file=sys.stderr)
             entry['branches'] = {}
         time.sleep(args.sleep)
-    print(json.dumps({'top_fail_tests_all_suites': top_all_suites}, indent=4))
+    try:
+        not_merged = not_merged_to_all_yet(top_all_suites, args.sleep)
+    except Exception as exc:
+        # The ranking took the whole run to build: an unexpected reply from Jira or GitHub
+        # must not cost us that. Nothing is taken out of it then.
+        print(f"Could not work out not_merged_to_all_yet: {exc!r}", file=sys.stderr)
+        not_merged = []
+    # A test with a fix on its way is reported as that, not as one of the top failing tests.
+    # The ranking is not refilled: it is the top tests minus these, so it can come up short.
+    not_merged_tests = {record['test_name'] for record in not_merged}
+    top_all_suites = [
+        entry for entry in top_all_suites if entry['test_name'] not in not_merged_tests
+    ]
+    print(
+        json.dumps(
+            {
+                'top_fail_tests_all_suites': top_all_suites,
+                'not_merged_to_all_yet': not_merged,
+            },
+            indent=4,
+        )
+    )
     return 0
 
 
