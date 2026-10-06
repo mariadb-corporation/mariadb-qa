@@ -14,6 +14,12 @@ For a start guide to the Framework (PQuery + MariaDB's implementation of the Squ
 * https://github.com/mariadb-corporation/mariadb-qa/blob/master/fuzzer/SETUP
 * https://github.com/mariadb-corporation/mariadb-qa/blob/master/fuzzer/PROCEDURE
 
+CorLogic (ref corlogic/ dir) runs the same SQL on two or more servers and reports where the results differ. See:
+* https://github.com/mariadb-corporation/mariadb-qa/blob/master/corlogic/README.md
+
+Omnium, in its own repository, is one binary for the whole pipeline: build, test, reduce, report, and file in Jira. It uses the known-bug lists, filters, SQL generators and reducer from this repository. See:
+* https://github.com/mariadb-corporation/omnium
+
 Please Note: 
 * For a number of the scripts to run successfully, it is required that sudo is enabled and working and should not request a password.
 * Please contact Roel or Ramesh (ref commits) if you have any questions, or for information.
