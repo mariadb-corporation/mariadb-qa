@@ -256,6 +256,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+0|SIGABRT|handler::index_type|get_schema_stat_record|fill_schema_table_by_open|get_all_tables                                                                                  ## MDEV-41397
 is_valid_value_slow()|SIGABRT|Time::adjust_time_range_or_invalidate|Time::make_from_time|Time::Time|Time::Time                                                                 ## MDEV-41345
 my_charset_same(args[0]->collation.collation, collation.collation) || (args[0]->collation.repertoire == MY_REPERTOIRE_ASCII && !(collation.collation->state & 8192))|SIGABRT|Item_func_set_collation::val_str|Item_str_func::val_real|Item_func_plus::real_op|Item_func_hybrid_field_type::val_real_from_real_op ## MDEV-41341
 my_charset_same(args[0]->collation.collation, collation.collation) || (args[0]->collation.repertoire == MY_REPERTOIRE_ASCII && !(collation.collation->state & 8192))|SIGABRT|Item_func_set_collation::val_str|Type_handler::Item_send_str|Type_handler_string_result::Item_send|Item::send ## MDEV-41341
