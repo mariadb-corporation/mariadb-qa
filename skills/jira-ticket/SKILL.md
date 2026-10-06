@@ -56,7 +56,7 @@ Verify with `~/jira --whoami`.
 - Every testcase SQL statement stays on ONE unbroken line - in `log_jira_ticket.body`, the eb file, the `.test`, AND in any chat display. Wrapping/splitting a line breaks pquery/reducer/MTR replay. When presenting CLI + MTR testcases, stack them as separate full-width blocks; never side-by-side (it wraps lines).
 - NEVER post a comment (`~/jira --comment`) on the user's behalf without BOTH (a) the user's explicit instruction to comment AND (b) the user's review and approval of the EXACT, literal comment text. Comments are outward-facing - draft it, show the verbatim text, wait for sign-off; never auto-post.
 - A comment on a ticket pings every watcher plus the creator, so it interrupts real people who did not ask to be interrupted. That sets the bar: post when the comment carries something they need, and never when it only restates or tidies what is there.
-- **Read the whole ticket before you draft a comment, and add to it.** Pull the description, every comment and the links with the PAT, and read them. Then write only what the ticket does not already hold. A sweep row that repeats a test the reporter already ran, or a restatement of a conclusion already in the description, is not a contribution - it reads as redoing their work, and worse as correcting it. Say what you bring and stop: a version the ticket does not cover, an additional different testcase, a case it has not seen, a measurement nobody took. Where your finding narrows something already there, say only what is new about it. If it turns out you cannot answer a question the ticket asks, say so in one line and give the bound you did establish; do not restate the part already known as if it were the answer.
+- **Read the whole ticket before you draft a comment, and add to it.** Pull the description, every comment, the work log (`/rest/api/2/issue/<KEY>/worklog`, where anyone may have left additional comments) and the links with the PAT, and read them. Then write only what the ticket does not already hold. A sweep row that repeats a test the reporter already ran, or a restatement of a conclusion already in the description, is not a contribution - it reads as redoing their work, and worse as correcting it. Say what you bring and stop: a version the ticket does not cover, an additional different testcase, a case it has not seen, a measurement nobody took. Where your finding narrows something already there, say only what is new about it. If it turns out you cannot answer a question the ticket asks, say so in one line and give the bound you did establish; do not restate the part already known as if it were the answer.
 - All deliverable prose is timeless and literal (CLAUDE.md). No "fixed in", "re-scored", build-internal paths, or `MD<DDMMYY>`/`EMD` shorthand in the Jira body - use CS/ES + version.
 - If a voice profile or comments-prose skill is installed (for example `voice-profile-comments-prose`), load it and follow it for the ticket prose.
 
@@ -297,12 +297,12 @@ that went through the gates, byte for byte.
    other gate result:
 
 ```bash
-( cd <affected basedir> \
-  && source ~/mariadb-qa/version_chk_helper.source \
-  && echo "${SERVER_VERSION} ${SOURCE_CODE_REV}" )
-( cd <unaffected basedir> \
-  && source ~/mariadb-qa/version_chk_helper.source \
-  && echo "${SERVER_VERSION} ${SOURCE_CODE_REV}" )
+cd <affected basedir>
+source ~/mariadb-qa/version_chk_helper.source
+echo "$SERVER_VERSION $SOURCE_CODE_REV"
+cd <unaffected basedir>
+source ~/mariadb-qa/version_chk_helper.source
+echo "$SERVER_VERSION $SOURCE_CODE_REV"
 ```
 
    Two different lines means gates 1 and 2 compare apples with oranges and prove nothing.
@@ -346,10 +346,20 @@ own command, so the paste fails.
 The terminal wraps any line past its width on its own, and that wrap carries no backslash,
 so a line the reader copies off the screen is already broken. Keep every line in the block
 at 80 characters or under, and split anything longer yourself with a trailing `\`, indenting
-the continuation two spaces. Gate 3 `diff` and gate 4 both need this: the `diff` has two long
-paths, and each gate 4 line holds a path, a `source` and an `echo`. Gate 4 splits before each
-`&&`, so the `cd`, the `source` and the `echo` sit on their own lines inside the subshell.
+the continuation two spaces. Split between two words only, never inside a path.
 Count the characters on every line of the block before you post it.
+
+**Gate 3 is one plain `diff` of the two test files, as in the template below.** The first
+full path ends the first line with a trailing `\`, and the second full path is the whole
+second line. Those two lines may run past 80 characters, because a path is never split.
+No `cd` per side, no `md5sum`, no `cmp` and no variable in gate 3.
+
+**Never put a parenthesised subshell in the block.** A multi-line `( cd ... \` construct
+does not survive a paste: the terminal mangles it and bash answers
+`syntax error near unexpected token '('`. Gate 4 therefore uses six plain lines, `cd`,
+`source`, `echo` per side, each one a complete command with no backslash and no brackets.
+The helper reassigns both variables every time it is sourced, so the second side cannot show
+a stale value from the first.
 
 **Each gate stands on its own.** Any variable a gate uses is assigned under that gate's own
 header, so one header plus the lines below it can be copied and run by itself. A gate
@@ -372,12 +382,12 @@ diff <affected basedir>/mariadb-test/main/test_claude.test \
      <unaffected basedir>/mariadb-test/main/test_claude.test
 
 # Base (gate 4, must be identical):
-( cd <affected basedir> \
-  && source ~/mariadb-qa/version_chk_helper.source \
-  && echo "${SERVER_VERSION} ${SOURCE_CODE_REV}" )
-( cd <unaffected basedir> \
-  && source ~/mariadb-qa/version_chk_helper.source \
-  && echo "${SERVER_VERSION} ${SOURCE_CODE_REV}" )
+cd <affected basedir>
+source ~/mariadb-qa/version_chk_helper.source
+echo "$SERVER_VERSION $SOURCE_CODE_REV"
+cd <unaffected basedir>
+source ~/mariadb-qa/version_chk_helper.source
+echo "$SERVER_VERSION $SOURCE_CODE_REV"
 ```
 
 The test directory is `mariadb-test` on 11.4 and newer and `mysql-test` on 10.11, so use the
@@ -419,7 +429,10 @@ plain shell assignment, which `./mtr` does not inherit. The run reports
 `[ fail ]` or `[ pass ]` and not `[ skipped ]`.
 
 Once given, the four-gate block goes in every later reply about the same run, unchanged and
-complete, so the reader can re-run all four gates from the reply in front of them.
+complete, so the reader can re-run all four gates from the reply in front of them. A reply
+about anything else leaves it out, such as a side bug found on the way or a ticket filed for
+it. Those gates do not test that work, so there the block reads as the gates for the wrong
+bug. Once the ticket or comment is posted, later replies leave the block out as well.
 
 Never a `.result` file: do not record one, do not gate on one, do not deliver one.
 
