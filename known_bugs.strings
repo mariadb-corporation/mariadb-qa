@@ -256,6 +256,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+hdr->name - hdr->nmpool < (long) 0x10000L|SIGABRT|put_header_entry_named|dynamic_new_column_store|dynamic_column_create_many_internal_fmt|mariadb_dyncol_create_many_named     ## MDEV-41417   
+hdr->name - hdr->nmpool < (long) 0x10000L|SIGABRT|put_header_entry_named|dynamic_new_column_store|dynamic_column_create_many_internal_fmt|Item_func_dyncol_create::val_str     ## MDEV-41417
+name|SIGABRT|THD::push_warning_truncated_value_for_field|Type_handler_fbt<Inet6, Type_collection_fbt<Inet6> >::Field_fbt::store_warning|Type_handler_fbt<Inet6, Type_collection_fbt<Inet6> >::Field_fbt::set_min_value_with_warn|Type_handler_fbt<Inet6, Type_collection_fbt<Inet6> >::Field_fbt::store ## MDEV-41412
+name|SIGABRT|THD::push_warning_truncated_value_for_field|Type_handler_fbt<Inet6, Type_collection_inet>::Field_fbt::store_warning|Type_handler_fbt<Inet6, Type_collection_inet>::Field_fbt::set_min_value_with_warn|Type_handler_fbt<Inet6, Type_collection_inet>::Field_fbt::store ## MDEV-41412
 0|SIGABRT|handler::index_type|get_schema_stat_record|fill_schema_table_by_open|get_all_tables                                                                                  ## MDEV-41397
 is_valid_value_slow()|SIGABRT|Time::adjust_time_range_or_invalidate|Time::make_from_time|Time::Time|Time::Time                                                                 ## MDEV-41345
 my_charset_same(args[0]->collation.collation, collation.collation) || (args[0]->collation.repertoire == MY_REPERTOIRE_ASCII && !(collation.collation->state & 8192))|SIGABRT|Item_func_set_collation::val_str|Item_str_func::val_real|Item_func_plus::real_op|Item_func_hybrid_field_type::val_real_from_real_op ## MDEV-41341
