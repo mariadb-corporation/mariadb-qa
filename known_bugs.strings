@@ -195,6 +195,7 @@ INNODB_ERROR|Operating system error number 36 in a file operation ## MDEV-19849
 INNODB_ERROR|Unable to import tablespace X because it already exists.  Please DISCARD the tablespace before IMPORT  ## Presumed non-issue (import of a tablespace which already exists)
 INNODB_ERROR|Cannot add field in table because after adding it, the row size is greater than the maximum allowed size for a record on index leaf page ## SPECIAL-46
 INNODB_ERROR|Transaction was aborted due to Record changed     ## MDEV-38278
+INNODB_ERROR|Failed to load table X.X which has a foreign key constraint withX.X ## MDEV-41427
 #INNODB_ERROR|Requested lock  on record    RECORD   LOCK_X      ## MDEV-41012 (filtered; too generic; may mask other bugs)
 ERROR. Can.t open and lock privilege tables: Cannot load from mysql.host. The table is probably corrupted ## SPECIAL-48 (non-issue)
 ERROR. mysql_ha_read: Got error 146 when reading table .t1                                               ## MDEV-37523
@@ -256,6 +257,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|THD::cleanup_after_query|sp_head::execute|sp_head::execute_procedure|do_execute_sp                                                                                     ## MDEV-41426
 hdr->name - hdr->nmpool < (long) 0x10000L|SIGABRT|put_header_entry_named|dynamic_new_column_store|dynamic_column_create_many_internal_fmt|mariadb_dyncol_create_many_named     ## MDEV-41417   
 hdr->name - hdr->nmpool < (long) 0x10000L|SIGABRT|put_header_entry_named|dynamic_new_column_store|dynamic_column_create_many_internal_fmt|Item_func_dyncol_create::val_str     ## MDEV-41417
 name|SIGABRT|THD::push_warning_truncated_value_for_field|Type_handler_fbt<Inet6, Type_collection_fbt<Inet6> >::Field_fbt::store_warning|Type_handler_fbt<Inet6, Type_collection_fbt<Inet6> >::Field_fbt::set_min_value_with_warn|Type_handler_fbt<Inet6, Type_collection_fbt<Inet6> >::Field_fbt::store ## MDEV-41412

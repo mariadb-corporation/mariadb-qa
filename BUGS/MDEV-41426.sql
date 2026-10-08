@@ -1,0 +1,8 @@
+CREATE TABLE t1 (c1 INT PRIMARY KEY);
+CREATE TEMPORARY TABLE t1 (c1 INT PRIMARY KEY,c2 INT,c3 INT) ENGINE=MyISAM;
+CREATE PROCEDURE sp1() SELECT c1,c2 FROM t1;
+CALL sp1;
+BINLOG '';
+SET @@max_statement_time=0.0001;
+SET @@session.server_id=36;
+CALL sp1;   # repeated 300 times
