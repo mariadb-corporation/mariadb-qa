@@ -196,6 +196,7 @@ INNODB_ERROR|Operating system error number 36 in a file operation ## MDEV-19849
 INNODB_ERROR|Unable to import tablespace X because it already exists.  Please DISCARD the tablespace before IMPORT  ## Presumed non-issue (import of a tablespace which already exists)
 INNODB_ERROR|Cannot add field in table because after adding it, the row size is greater than the maximum allowed size for a record on index leaf page ## SPECIAL-46
 INNODB_ERROR|Transaction was aborted due to Record changed     ## MDEV-38278
+INNODB_ERROR|Failed to load table X.X which has a foreign key constraint withX.X ## MDEV-41427
 #INNODB_ERROR|Requested lock  on record    RECORD   LOCK_X      ## MDEV-41012 (filtered; too generic; may mask other bugs)
 ERROR. Can.t open and lock privilege tables: Cannot load from mysql.host. The table is probably corrupted ## SPECIAL-48 (non-issue)
 ERROR. mysql_ha_read: Got error 146 when reading table .t1                                               ## MDEV-37523
@@ -260,6 +261,12 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 length < 0xFFFFFFFFUL|SIGABRT|Binary_string::real_alloc|Binary_string::alloc|String::copy|String_copier_for_item::copy_with_warn                                               ## MDEV-41409
 length < 0xFFFFFFFFUL|SIGABRT|Binary_string::real_alloc|Binary_string::alloc|Field_blob::store|Item::save_str_in_field                                                         ## MDEV-41409
 SIGSEGV|_ma_unpin_all_pages|_ma_search|maria_rkey|ha_maria::get_auto_increment                                                                                                 ## MDEV-41396
+SIGSEGV|THD::cleanup_after_query|sp_head::execute|sp_head::execute_procedure|do_execute_sp                                                                                     ## MDEV-41426
+hdr->name - hdr->nmpool < (long) 0x10000L|SIGABRT|put_header_entry_named|dynamic_new_column_store|dynamic_column_create_many_internal_fmt|mariadb_dyncol_create_many_named     ## MDEV-41417   
+hdr->name - hdr->nmpool < (long) 0x10000L|SIGABRT|put_header_entry_named|dynamic_new_column_store|dynamic_column_create_many_internal_fmt|Item_func_dyncol_create::val_str     ## MDEV-41417
+name|SIGABRT|THD::push_warning_truncated_value_for_field|Type_handler_fbt<Inet6, Type_collection_fbt<Inet6> >::Field_fbt::store_warning|Type_handler_fbt<Inet6, Type_collection_fbt<Inet6> >::Field_fbt::set_min_value_with_warn|Type_handler_fbt<Inet6, Type_collection_fbt<Inet6> >::Field_fbt::store ## MDEV-41412
+name|SIGABRT|THD::push_warning_truncated_value_for_field|Type_handler_fbt<Inet6, Type_collection_inet>::Field_fbt::store_warning|Type_handler_fbt<Inet6, Type_collection_inet>::Field_fbt::set_min_value_with_warn|Type_handler_fbt<Inet6, Type_collection_inet>::Field_fbt::store ## MDEV-41412
+0|SIGABRT|handler::index_type|get_schema_stat_record|fill_schema_table_by_open|get_all_tables                                                                                  ## MDEV-41397
 is_valid_value_slow()|SIGABRT|Time::adjust_time_range_or_invalidate|Time::make_from_time|Time::Time|Time::Time                                                                 ## MDEV-41345
 my_charset_same(args[0]->collation.collation, collation.collation) || (args[0]->collation.repertoire == MY_REPERTOIRE_ASCII && !(collation.collation->state & 8192))|SIGABRT|Item_func_set_collation::val_str|Item_str_func::val_real|Item_func_plus::real_op|Item_func_hybrid_field_type::val_real_from_real_op ## MDEV-41341
 my_charset_same(args[0]->collation.collation, collation.collation) || (args[0]->collation.repertoire == MY_REPERTOIRE_ASCII && !(collation.collation->state & 8192))|SIGABRT|Item_func_set_collation::val_str|Type_handler::Item_send_str|Type_handler_string_result::Item_send|Item::send ## MDEV-41341
