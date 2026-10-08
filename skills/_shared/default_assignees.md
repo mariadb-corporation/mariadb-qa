@@ -17,7 +17,7 @@ Jira usernames: Sanja/Oleksandr Byelkin=`sanja`, Aleksey Midenkov=`midenok`, Mon
 | Character sets, collations | Raghunandan Bhat |
 | Client programs | Sanja Byelkin |
 | Compressed columns | Sanja Byelkin |
-| Connect storage engine | Unassigned, or Sanja Byelkin (runtime) |
+| Connect storage engine | Sanja Byelkin |
 | Data types | Raghunandan Bhat |
 | Diagnostics area | Rucha Deodhar |
 | DDL (generic) | Sanja Byelkin |
@@ -43,6 +43,7 @@ Jira usernames: Sanja/Oleksandr Byelkin=`sanja`, Aleksey Midenkov=`midenok`, Mon
 | Locking (generic) | Aleksey Midenkov |
 | MariaBackup | Thiru Balathandayuthapani |
 | Memroot | Raghunandan Bhat |
+| MyISAM storage engine | Sanja Byelkin |
 | Optimizer (generic) | Sergei Petrunia |
 | Optimizer CTE | Sergei Petrunia |
 | Packaging bintar | Sergei Golubchik |
@@ -51,7 +52,7 @@ Jira usernames: Sanja/Oleksandr Byelkin=`sanja`, Aleksey Midenkov=`midenok`, Mon
 | Packaging Windows | Vladislav Vaintroub |
 | PAM plugin | Sergei Golubchik |
 | Parser | Raghunandan Bhat |
-| Partitioning (generic) | Alexey Botchkov |
+| Partitioning (generic) | Yuchen Pei |
 | Performance schema | Sergei Golubchik |
 | PL/SQL | Alexander Barkov |
 | Plugins (generic / not listed) | Sanja Byelkin |

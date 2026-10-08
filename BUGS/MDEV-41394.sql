@@ -39,3 +39,26 @@ FLUSH TABLES;
 LOAD DATA LOCAL INFILE '/tmp/t1.txt' INTO TABLE t1 PARTITION (p1);
 SELECT GROUP_CONCAT(pk ORDER BY pk) FROM t1;
 #CLI: Warning 167 Out of range value for column 'pk' at row 1; the row is not loaded: 2,4; expected 2,4,5
+
+CREATE TABLE t1 (pk INT AUTO_INCREMENT PRIMARY KEY) PARTITION BY HASH(pk) PARTITIONS 2;
+INSERT INTO t1 VALUES (2),(4);
+FLUSH TABLES;
+LOAD DATA INFILE '/tmp/t1.txt' IGNORE INTO TABLE t1 PARTITION (p1);
+SELECT GROUP_CONCAT(pk ORDER BY pk) FROM t1;
+#CLI: Warning 167 Out of range value for column 'pk' at row 1; the row is not loaded: 2,4; expected 2,4,5
+
+CREATE TABLE t1 (pk INT AUTO_INCREMENT PRIMARY KEY) PARTITION BY HASH(pk) PARTITIONS 2;
+INSERT INTO t1 VALUES (2),(4);
+CREATE VIEW v1 AS SELECT * FROM t1 PARTITION (p1);
+FLUSH TABLES;
+LOAD DATA INFILE '/tmp/t1.txt' INTO TABLE v1;
+#CLI: ERROR 167 (22003): Out of range value for column 'pk' at row 1
+#ERR: - (no error)
+
+# Requires /tmp/t1.xml holding one line, <resultset><row><field name="a">7</field></row></resultset>
+CREATE TABLE t1 (pk INT AUTO_INCREMENT PRIMARY KEY, a INT) PARTITION BY HASH(pk) PARTITIONS 2;
+INSERT INTO t1 VALUES (2,0),(4,0);
+FLUSH TABLES;
+LOAD XML INFILE '/tmp/t1.xml' INTO TABLE t1 PARTITION (p1) (a);
+#CLI: ERROR 167 (22003): Out of range value for column 'pk' at row 1
+#ERR: - (no error)

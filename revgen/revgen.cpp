@@ -2134,7 +2134,7 @@ void usage() {
       "                  every eighth, the rest every thirty-second\n"
       "  --coldefs PATH  column definitions the t1-t4 shapes are built from, one per\n"
       "                  line (default: sibling of --yacc, e.g. 13.1_coldefs.txt;\n"
-      "                  written by yacc/harvest_coldefs.sh). Missing: plain shapes\n"
+      "                  written by revgen/harvest_coldefs.sh). Missing: plain shapes\n"
       "  --wild-cols N   percent of columns whose type is derived from the grammar\n"
       "                  rather than taken from --coldefs (default 12, 0 off)\n"
       "  --start SYM     start symbol (default verb_clause)\n"
@@ -2580,7 +2580,7 @@ int main(int argc, char **argv) {
     if (coldefs.empty())
       std::cerr << "revgen: no column definitions at " << coldefs_path
                 << "\n  t1-t4 keep their plain shapes; write the file with "
-                << (home ? home : "$HOME") << "/mariadb-qa/yacc/harvest_coldefs.sh\n";
+                << (home ? home : "$HOME") << "/mariadb-qa/revgen/refresh_grammars.sh\n";
   }
 
   // One schema for the whole process, built before any thread starts: the threads
