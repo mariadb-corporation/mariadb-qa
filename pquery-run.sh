@@ -8,7 +8,7 @@
 # ========================================= User configurable variables
 # Note: if an option is passed to this script, it will use that option as the configuration file instead, for example ./pquery-run.sh pquery-run-MD105.conf
 CONFIGURATION_FILE=pquery-run.conf # Do not use any path specifiers, the .conf file should be in the same path as pquery-run.sh
-ADV_FILTER_LIST="debug_dbug|debug_|_debug|debug[ \t]*=|'\+d,|shutdown|release|kill|aria_encrypt_tables|_size|length_|_length|timer|schedule|event|csv|recursive|oracle|track_system_variables|^#|^\-\-|set.*ndb_|^let|^[ \t]*$"  # The advanced filter, applied to the per-trial SQL when a configuration file sets ADV_FILTER_SQL=1, and to the all-disk SQL pool always. Keep ADV_FILTER_SQL=0 for a purpose-built input file, whose own queries this list would remove, a debug_dbug statement for example. FILTER_SQL=1 is the separate, lighter filter in mariadb-qa/filter.sql, and the two can be combined. This list is a global variable of this script, not bound to a configuration file # TODO: consider moving it to config files
+ADV_FILTER_LIST="debug_dbug|debug_|_debug|debug[ \t]*=|'\+d,|shutdown|release|kill|aria_encrypt_tables|_size|length_|_length|timer|schedule|event|csv|recursive|oracle|track_system_variables|^#|^\-\-|set.*ndb_|^let|^[ \t]*$"  # The advanced filter, applied to the per-trial SQL when a configuration file sets ADV_FILTER_SQL=1, and to the all-disk SQL pool and the AUTOMATIC_INTERLEAVE picks from the disk always. Keep ADV_FILTER_SQL=0 for a purpose-built input file, whose own queries this list would remove, a debug_dbug statement for example. FILTER_SQL=1 is the separate, lighter filter in mariadb-qa/filter.sql, and the two can be combined. This list is a global variable of this script, not bound to a configuration file # TODO: consider moving it to config files
 
 # ========================================= Improvement ideas
 # * SAVE_TRIALS_WITH_BUGS_ONLY=0 (These likely include some of the 'SIGKILL' issues - no core but terminated)
@@ -184,6 +184,10 @@ TRIAL_SQL_DIR=${TRIAL_SQL_DIR:-"/dev/shm/trial_sql"}
 INTERLEAVE=${INTERLEAVE:-0}
 INTERLEAVE_SQL=${INTERLEAVE_SQL:-""}
 INTERLEAVE_LINES=${INTERLEAVE_LINES:-100}
+AUTOMATIC_INTERLEAVE=${AUTOMATIC_INTERLEAVE:-0}  # Adds SQL lines randomly picked from INFILE, or from the SQL files on the disk, to the interleaved SQL, also with INTERLEAVE=0. Ref auto_interleave_pick() and AUTOMATIC_INTERLEAVE.md
+AUTOMATIC_INTERLEAVE_SQL_COUNT=${AUTOMATIC_INTERLEAVE_SQL_COUNT:-5}  # SQL lines per set
+AUTOMATIC_INTERLEAVE_NEW_SQL_EVERY_X_TRIALS=${AUTOMATIC_INTERLEAVE_NEW_SQL_EVERY_X_TRIALS:-50}  # A new set at trial 1 and every x trials after
+AUTOMATIC_INTERLEAVE_FROM_ALL_DISK_SQL=${AUTOMATIC_INTERLEAVE_FROM_ALL_DISK_SQL:-0}  # 1: pick from any *.sql file on the disk instead of INFILE
 REVGEN_OPTIONS=${REVGEN_OPTIONS:-"--depth 10"}  # Measured best balance of parse-valid SQL against grammar reach; see pquery-run-MD-revgen.conf
 REVGEN_YACC=${REVGEN_YACC:-${SCRIPT_PWD}/yacc/13.1_sql_yacc.yy}
 # The keyword table revgen pairs with the grammar. It is the version-matched sibling of REVGEN_YACC,
@@ -338,7 +342,7 @@ done
 RETIRED_VAR=
 # Each of these must be 0 or 1: any other value makes the numeric tests further down fail silently,
 # which would leave a source switched off without saying so
-for SQL_TOGGLE in USE_GENERATOR USE_REVGEN USE_INFILE USE_ALL_DISK_SQL ADV_FILTER_SQL FILTER_SQL; do
+for SQL_TOGGLE in USE_GENERATOR USE_REVGEN USE_INFILE USE_ALL_DISK_SQL ADV_FILTER_SQL FILTER_SQL AUTOMATIC_INTERLEAVE AUTOMATIC_INTERLEAVE_FROM_ALL_DISK_SQL; do
   if ! [[ "${!SQL_TOGGLE}" =~ ^[01]$ ]]; then
     echoit "Assert: ${SQL_TOGGLE} must be 0 or 1 (current value: '${!SQL_TOGGLE}')"
     exit 1
@@ -369,6 +373,14 @@ if [ ! -z "${INTERLEAVE_LINES}" ] && { ! [[ "${INTERLEAVE_LINES}" =~ ^[0-9]{1,10
   echoit "Assert: INTERLEAVE_LINES must be a positive integer of at most 10 digits (current value: '${INTERLEAVE_LINES}')"
   exit 1
 fi
+if ! [[ "${AUTOMATIC_INTERLEAVE_SQL_COUNT}" =~ ^[0-9]{1,10}$ ]] || [ "${AUTOMATIC_INTERLEAVE_SQL_COUNT}" -lt 1 ]; then
+  echoit "Assert: AUTOMATIC_INTERLEAVE_SQL_COUNT must be a positive integer of at most 10 digits (current value: '${AUTOMATIC_INTERLEAVE_SQL_COUNT}')"
+  exit 1
+fi
+if ! [[ "${AUTOMATIC_INTERLEAVE_NEW_SQL_EVERY_X_TRIALS}" =~ ^[0-9]{1,10}$ ]] || [ "${AUTOMATIC_INTERLEAVE_NEW_SQL_EVERY_X_TRIALS}" -lt 1 ]; then
+  echoit "Assert: AUTOMATIC_INTERLEAVE_NEW_SQL_EVERY_X_TRIALS must be a positive integer of at most 10 digits (current value: '${AUTOMATIC_INTERLEAVE_NEW_SQL_EVERY_X_TRIALS}')"
+  exit 1
+fi
 
 # When revgen is in use, both files it reads must be in place before we start. revgen walks the grammar
 # (REVGEN_YACC) to derive SQL and takes the text of each keyword from the table beside it (REVGEN_LEX).
@@ -394,9 +406,9 @@ if [ "${USE_REVGEN}" -eq 1 ]; then
   echoit "revgen keyword table (REVGEN_LEX): ${REVGEN_LEX} (${REVGEN_SYMS} SYM( entries)"
 fi
 
-# Input file (INFILE) tarball preflight, for USE_INFILE=1: extract it here if it is a .tar.* archive
+# Input file (INFILE) tarball preflight, for USE_INFILE=1, or AUTOMATIC_INTERLEAVE=1 picking from INFILE: extract it here if it is a .tar.* archive
 # (the tar may also need extracting on a fresh clone or for multi-threaded runs).
-if [ "${USE_INFILE}" -eq 1 ]; then
+if [ "${USE_INFILE}" -eq 1 ] || { [ "${AUTOMATIC_INTERLEAVE}" -eq 1 ] && [ "${AUTOMATIC_INTERLEAVE_FROM_ALL_DISK_SQL}" -eq 0 ]; }; then
   if [ ! -r ${INFILE} ]; then
     echo "Assert! \$INFILE (${INFILE}) cannot be read? Check file existence and privileges!"
     exit 1
@@ -647,18 +659,18 @@ assemble_abort(){  # $1=message. Stops the run on an assert from the SQL assembl
   exit 1
 }
 
-all_disk_sql_index(){  # Builds ALL_DISK_SQL_INDEX: every *.sql file on disk, one path per line, tagged with the set it belongs to
+all_disk_sql_index(){  # Builds ALL_DISK_SQL_INDEX: every *.sql file on disk, one path per line, tagged with the set it belongs to. $1=the setting that needs it, for the log
   # Two sets, tagged P and A, are indexed. Each collection uses one of them, so the two searches keep
   # giving the SQL mix they always did, at the cost of one walk per run instead of one per collection.
   local IDX_START="${EPOCHREALTIME}"
-  echoit "USE_ALL_DISK_SQL=1: indexing all SQL files on the disk, into ${ALL_DISK_SQL_INDEX}. This is done once per run"
+  echoit "${1}: indexing all SQL files on the disk, into ${ALL_DISK_SQL_INDEX}. This is done once per run"
   { find ${HOME} /*/SQL /*/TESTCASES -maxdepth 3 -name '*.sql' -type f 2>/dev/null | grep --binary-files=text -hvi 'newbugs_dups' | sed 's|^|P\t|'
     find / -maxdepth 5 -name '*.sql' -type f 2>/dev/null | grep --binary-files=text -hviE '/test/TESTCASES|newbugs_dups' | sed 's|^|A\t|'
   } > ${ALL_DISK_SQL_INDEX}
   if [ ! -s "${ALL_DISK_SQL_INDEX}" ]; then
-    assemble_abort "USE_ALL_DISK_SQL=1, yet no SQL file was found on the disk. The index (${ALL_DISK_SQL_INDEX}) is empty"
+    assemble_abort "${1}, yet no SQL file was found on the disk. The index (${ALL_DISK_SQL_INDEX}) is empty"
   fi
-  echoit "USE_ALL_DISK_SQL=1: indexing took $(duration ${IDX_START})s. The index holds $(grep -c '^P' ${ALL_DISK_SQL_INDEX}) paths in the home/SQL/TESTCASES set and $(grep -c '^A' ${ALL_DISK_SQL_INDEX}) in the whole-disk set"
+  echoit "${1}: indexing took $(duration ${IDX_START})s. The index holds $(grep -c '^P' ${ALL_DISK_SQL_INDEX}) paths in the home/SQL/TESTCASES set and $(grep -c '^A' ${ALL_DISK_SQL_INDEX}) in the whole-disk set"
 }
 
 all_disk_sql_collect(){  # $1=output file, $2=lines to collect. Randomly samples SQL from the files in ALL_DISK_SQL_INDEX
@@ -717,6 +729,115 @@ emit_trial_sources(){  # Every active source's SQL on stdout, in the order the l
   fi
   [ ${USE_ALL_DISK_SQL} -eq 1 ] && emit_file "${ALL_DISK_SQL_POOL}"
   return 0
+}
+
+auto_interleave_check(){  # $1=SQL file, $2=lines wanted. Keeps the first $2 lines of $1 which the server under test can parse
+  # A server of BASEDIR on an empty datadir runs PREPARE on each line, which parses it without running it, with the
+  # default sql_mode. A line which crashes or hangs the server is dropped, and a new server checks the lines after it,
+  # up to 3 servers. Lines the check could not reach, as when the server does not start, fill any shortfall unchecked
+  local AIC_START="${EPOCHREALTIME}" AIC_DIR="${RUNDIR}/syntax_check" AIC_SOCK AIC_USER= AIC_PID AIC_X AIC_UP AIC_RC AIC_LAST AIC_BAD AIC_HOW AIC_WHY AIC_SERVERS=0 AIC_CHECKED=0 AIC_PARSED AIC_FILL
+  AIC_SOCK="${AIC_DIR}/data/socket.sock"
+  [ "$(whoami)" == "root" ] && AIC_USER="--user=root"
+  rm -Rf "${AIC_DIR}"
+  mkdir -p "${AIC_DIR}"
+  mv "${1}" "${AIC_DIR}/todo"
+  > "${AIC_DIR}/ok"
+  while [ -s "${AIC_DIR}/todo" ] && [ "$(wc -l < "${AIC_DIR}/ok")" -lt "${2}" ]; do
+    if [ ${AIC_SERVERS} -eq 3 ]; then AIC_WHY="the syntax check stopped early on 3 servers"; break; fi
+    AIC_SERVERS=$(( AIC_SERVERS + 1 ))
+    rm -Rf "${AIC_DIR}/data"
+    mkdir "${AIC_DIR}/data"
+    ( ulimit -c 0; exec ${BIN} --no-defaults --basedir=${BASEDIR} --datadir=${AIC_DIR}/data --tmpdir=${AIC_DIR}/data --socket=${AIC_SOCK} --pid-file=${AIC_DIR}/data/pid.pid --log-error=${AIC_DIR}/data/error.log --skip-networking --skip-grant-tables --innodb-buffer-pool-size=8M --innodb-log-file-size=10M ${AIC_USER} > /dev/null 2>&1 ) &
+    AIC_PID=$!
+    disown ${AIC_PID}  # No job notice when the server crashes or is killed
+    AIC_UP=0
+    for AIC_X in $(seq 1 $(( MYSQLD_START_TIMEOUT * 5 ))); do
+      if ${BASEDIR}/bin/mysqladmin -uroot -S${AIC_SOCK} ping > /dev/null 2>&1; then AIC_UP=1; break; fi
+      kill -0 ${AIC_PID} 2>/dev/null || break
+      sleep 0.2
+    done
+    if [ ${AIC_UP} -eq 0 ]; then
+      AIC_WHY="the server for the syntax check did not start within ${MYSQLD_START_TIMEOUT}s"
+      AIC_X="$(grep --binary-files=text -m1 '\[ERROR\]' "${AIC_DIR}/data/error.log" 2>/dev/null | cut -c1-200)"
+      [ -n "${AIC_X}" ] && AIC_WHY="${AIC_WHY} (${AIC_X})"
+    else
+      # Script line 1 sets a current database. Each later script line holds one SQL line: PREPARE on it, then its number,
+      # which marks how far the check got. With every backslash and quote escaped, the SQL line stays whole in the string
+      { echo 'CREATE DATABASE IF NOT EXISTS test; USE test;'
+        LC_ALL=C sed "s/\\\\/\\\\\\\\/g;s/'/\\\\'/g;s/\x00/\\\\0/g;s/^/PREPARE s FROM '/;s/\$/';/" "${AIC_DIR}/todo" | LC_ALL=C awk '{print $0 " SELECT " NR ";"}'
+      } > "${AIC_DIR}/check.sql"
+      { timeout --signal=9 ${MYSQLD_START_TIMEOUT} ${BASEDIR}/bin/mysql -uroot -S${AIC_SOCK} -N --batch --force --unbuffered < "${AIC_DIR}/check.sql" > "${AIC_DIR}/check.out" 2> "${AIC_DIR}/check.err"; } 2>/dev/null  # No job notice when the timeout kills the client
+      AIC_RC=$?
+      AIC_LAST="$(tail -n 1 "${AIC_DIR}/check.out")"
+      [[ "${AIC_LAST}" =~ ^[0-9]+$ ]] || AIC_LAST=0
+      if [ ${AIC_LAST} -lt "$(wc -l < "${AIC_DIR}/todo")" ]; then  # Ahead of the kill below, as a ping tells a crash from a stopped client
+        if [ ${AIC_RC} -eq 137 ]; then AIC_HOW="the server gave no answer to this SQL line within ${MYSQLD_START_TIMEOUT}s"
+        elif ${BASEDIR}/bin/mysqladmin -uroot -S${AIC_SOCK} ping > /dev/null 2>&1; then AIC_HOW="the client stopped on this SQL line with exit code ${AIC_RC}"
+        else AIC_HOW="the server crashed on this SQL line"; fi
+      fi
+    fi
+    kill -9 ${AIC_PID} > /dev/null 2>&1
+    for AIC_X in $(seq 1 50); do kill -0 ${AIC_PID} 2>/dev/null || break; sleep 0.1; done
+    [ ${AIC_UP} -eq 0 ] && break
+    # A parse error (1064 ER_PARSE_ERROR, 1065 ER_EMPTY_QUERY, 1149 ER_SYNTAX_ERROR) at script line N is on SQL line N-1
+    AIC_BAD=" $(LC_ALL=C awk '/^ERROR (1064|1065|1149) / && match($0, / at line [0-9]+/) {print substr($0, RSTART + 9, RLENGTH - 9) - 1}' "${AIC_DIR}/check.err" | tr '\n' ' ')"
+    LC_ALL=C awk -v last=${AIC_LAST} -v bad="${AIC_BAD}" 'FNR > last {exit} !index(bad, " " FNR " ")' "${AIC_DIR}/todo" >> "${AIC_DIR}/ok"
+    AIC_CHECKED=$(( AIC_CHECKED + AIC_LAST ))
+    if [ ${AIC_LAST} -lt "$(wc -l < "${AIC_DIR}/todo")" ]; then
+      echoit "AUTOMATIC_INTERLEAVE: In the syntax check, ${AIC_HOW}, which is dropped: $(sed -n "$(( AIC_LAST + 1 ))p" "${AIC_DIR}/todo")" ORANGE
+      AIC_CHECKED=$(( AIC_CHECKED + 1 ))
+      tail -n +$(( AIC_LAST + 2 )) "${AIC_DIR}/todo" > "${AIC_DIR}/todo.next"
+      mv "${AIC_DIR}/todo.next" "${AIC_DIR}/todo"
+    else
+      > "${AIC_DIR}/todo"
+    fi
+  done
+  AIC_PARSED="$(wc -l < "${AIC_DIR}/ok")"
+  if [ ${AIC_CHECKED} -gt 0 ]; then
+    echoit "AUTOMATIC_INTERLEAVE: The server under test parsed ${AIC_PARSED} of the ${AIC_CHECKED} SQL lines the syntax check reached, in $(duration ${AIC_START})s" DIM
+  fi
+  if [ -s "${AIC_DIR}/todo" ] && [ ${AIC_PARSED} -lt ${2} ]; then
+    AIC_FILL="$(head -n $(( ${2} - AIC_PARSED )) "${AIC_DIR}/todo" | tee -a "${AIC_DIR}/ok" | wc -l)"
+    echoit "Warning: AUTOMATIC_INTERLEAVE: ${AIC_WHY}, so ${AIC_FILL} SQL lines of this set are not syntax-checked" ORANGE
+  fi
+  head -n ${2} "${AIC_DIR}/ok" > "${1}"
+  rm -Rf "${AIC_DIR}"
+}
+
+auto_interleave_pick(){  # Writes AUTO_INTERLEAVE_SET: up to AUTOMATIC_INTERLEAVE_SQL_COUNT distinct SQL lines, randomly picked from INFILE, or from the SQL files on the disk. Ref AUTOMATIC_INTERLEAVE.md
+  # The interleave step comes after the clean-up and the filters of the per-trial SQL, so the picks pass the same
+  # ones here. A line over 4096 bytes is skipped: the set is inserted every INTERLEAVE_LINES lines, so one very long
+  # line would grow each trial's SQL by hundreds of megabytes. shuf samples a hundred times the count, and ten times
+  # the count goes on to auto_interleave_check(), which leaves enough lines once these checks drop theirs
+  local AIP_START="${EPOCHREALTIME}" AIP_DROP='^[[:space:];]*$' AIP_FILTER=/dev/null AIP_LINE AIP_NR=0 AIP_SRC="${INFILE}" AIP_SRC_TEXT="${INFILE}" AIP_FILE
+  if [ ${ADV_FILTER_SQL} -eq 1 ] || [ ${AUTOMATIC_INTERLEAVE_FROM_ALL_DISK_SQL} -eq 1 ]; then AIP_DROP="${ADV_FILTER_LIST}|${AIP_DROP}"; fi  # Any SQL can sit on the disk, so picks from there pass ADV_FILTER_LIST always, as the all-disk SQL pool does
+  [ ${FILTER_SQL} -eq 1 ] && AIP_FILTER="${SCRIPT_PWD}/filter.sql"  # /dev/null holds no patterns, so with FILTER_SQL=0 that grep keeps every line
+  if [ ${AUTOMATIC_INTERLEAVE_FROM_ALL_DISK_SQL} -eq 1 ]; then
+    if [ ! -s "${ALL_DISK_SQL_INDEX}" ]; then
+      assemble_abort "the SQL file index (${ALL_DISK_SQL_INDEX}) is missing or empty. It is written once per run by all_disk_sql_index()"
+    fi
+    # The sample: 5 random lines from each of twenty times the count random files, so the picks come from many files.
+    # The index lists a file once for each set it is in, so sort -u gives every file the same chance
+    AIP_SRC="${AUTO_INTERLEAVE_SET}.candidates"
+    AIP_SRC_TEXT="the SQL files on the disk"
+    cut -f2- "${ALL_DISK_SQL_INDEX}" | LC_ALL=C sort -u | shuf --random-source=<(${RANDOM_BIN} --raw) -n $(( AUTOMATIC_INTERLEAVE_SQL_COUNT * 20 )) | while IFS= read -r AIP_FILE; do
+      [ -r "${AIP_FILE}" ] && shuf --random-source=<(${RANDOM_BIN} --raw) -n 5 "${AIP_FILE}" 2>/dev/null
+    done > "${AIP_SRC}"
+  fi
+  shuf --random-source=<(${RANDOM_BIN} --raw) -n $(( AUTOMATIC_INTERLEAVE_SQL_COUNT * 100 )) "${AIP_SRC}" | sed "${TRIAL_SQL_CLEANUP_SED}" | grep --binary-files=text -hivE "${AIP_DROP}" | grep --binary-files=text -hvif "${AIP_FILTER}" | LC_ALL=C awk 'length($0) <= 4096 && !seen[$0]++' | head -n $(( AUTOMATIC_INTERLEAVE_SQL_COUNT * 10 )) > "${AUTO_INTERLEAVE_SET}"
+  [ ${AUTOMATIC_INTERLEAVE_FROM_ALL_DISK_SQL} -eq 1 ] && rm -f "${AIP_SRC}"
+  auto_interleave_check "${AUTO_INTERLEAVE_SET}" ${AUTOMATIC_INTERLEAVE_SQL_COUNT}
+  AUTO_INTERLEAVE_SET_LINES="$(wc -l < "${AUTO_INTERLEAVE_SET}")"
+  if [ "${AUTO_INTERLEAVE_SET_LINES}" -eq 0 ]; then
+    assemble_abort "AUTOMATIC_INTERLEAVE=1, yet no SQL line could be picked from ${AIP_SRC_TEXT}. The source needs SQL lines of at most 4096 bytes which the filters in use (ADV_FILTER_LIST, filter.sql) keep and the server under test can parse"
+  elif [ "${AUTO_INTERLEAVE_SET_LINES}" -lt "${AUTOMATIC_INTERLEAVE_SQL_COUNT}" ]; then
+    echoit "Warning: AUTOMATIC_INTERLEAVE picked only ${AUTO_INTERLEAVE_SET_LINES} of AUTOMATIC_INTERLEAVE_SQL_COUNT=${AUTOMATIC_INTERLEAVE_SQL_COUNT} SQL lines from ${AIP_SRC_TEXT}: the filters in use, the 4096 byte line limit, the de-duplication and the syntax check left no more"
+  fi
+  echoit "AUTOMATIC_INTERLEAVE: Picked a new set of ${AUTO_INTERLEAVE_SET_LINES} SQL lines from ${AIP_SRC_TEXT} in $(duration ${AIP_START})s. A new set is picked every ${AUTOMATIC_INTERLEAVE_NEW_SQL_EVERY_X_TRIALS} trials"
+  while IFS= read -r AIP_LINE; do
+    AIP_NR=$(( AIP_NR + 1 ))
+    echoit "AUTOMATIC_INTERLEAVE: SQL ${AIP_NR}/${AUTO_INTERLEAVE_SET_LINES}: ${AIP_LINE}" DIM  # A set style, as a word in the SQL, WARNINGS for example, would otherwise colour the line
+  done < "${AUTO_INTERLEAVE_SET}"
 }
 
 assemble_trial_sql(){  # Builds TRIAL_SQL: the one SQL file this trial gives to pquery
@@ -816,13 +937,23 @@ assemble_trial_sql(){  # Builds TRIAL_SQL: the one SQL file this trial gives to 
     STORAGE_ENGINE_SWAP_DUR_START=
   fi
   # Interleave post-storage-engine-swap to ensure not modifying CREATE TABLE ... ENGINE=... statements in interleave SQL
-  if [ "${INTERLEAVE}" == "1" ]; then
+  if [ "${INTERLEAVE}" == "1" ] || [ ${AUTOMATIC_INTERLEAVE} -eq 1 ]; then
+    # A new automatic set at trial 1 and every AUTOMATIC_INTERLEAVE_NEW_SQL_EVERY_X_TRIALS trials after, and sooner when the set file was removed mid-run
+    if [ ${AUTOMATIC_INTERLEAVE} -eq 1 ] && { [ $(( ( TRIAL - 1 ) % AUTOMATIC_INTERLEAVE_NEW_SQL_EVERY_X_TRIALS )) -eq 0 ] || [ ! -s "${AUTO_INTERLEAVE_SET}" ]; }; then
+      auto_interleave_pick
+    fi
     INTERLEAVE_DUR_START="${EPOCHREALTIME}"
-    echoit "INTERLEAVE: Interleaving SQL in INTERLEAVE_SQL into the input file every ${INTERLEAVE_LINES}th line"
+    INTERLEAVE_SET_TEXT=
+    [ "${INTERLEAVE}" == "1" ] && INTERLEAVE_SET_TEXT="INTERLEAVE_SQL"
+    [ ${AUTOMATIC_INTERLEAVE} -eq 1 ] && INTERLEAVE_SET_TEXT="${INTERLEAVE_SET_TEXT}${INTERLEAVE_SET_TEXT:+ and }the AUTOMATIC_INTERLEAVE set (${AUTO_INTERLEAVE_SET_LINES} lines)"
+    echoit "INTERLEAVE: Interleaving SQL in ${INTERLEAVE_SET_TEXT} into the input file every ${INTERLEAVE_LINES}th line"
+    INTERLEAVE_SET_TEXT=
     mv ${TRIAL_SQL} ${TRIAL_SQL}.temp
 
     INTERLEAVE_SQL_TEMP_FILE="$(mktemp | tr -d '\n')"
-    echo -e "${INTERLEAVE_SQL}" > ${INTERLEAVE_SQL_TEMP_FILE}
+    # One set: INTERLEAVE_SQL first, then the automatic picks. The picks are copied as is, as echo -e would change any backslash in them
+    if [ "${INTERLEAVE}" == "1" ]; then echo -e "${INTERLEAVE_SQL}" > ${INTERLEAVE_SQL_TEMP_FILE}; fi
+    if [ ${AUTOMATIC_INTERLEAVE} -eq 1 ]; then cat "${AUTO_INTERLEAVE_SET}" >> ${INTERLEAVE_SQL_TEMP_FILE}; fi
     awk -v sql_file=${INTERLEAVE_SQL_TEMP_FILE} "NR%${INTERLEAVE_LINES}==0{while(getline line<sql_file) print line;close(sql_file)}{print}" ${TRIAL_SQL}.temp > ${TRIAL_SQL}
 
     rm -f ${TRIAL_SQL}.temp ${INTERLEAVE_SQL_TEMP_FILE}
@@ -1136,7 +1267,7 @@ ctrl-c() {
     rm -f ${SCRIPT_PWD}/generatorcpp/out${RANDOMD}*.sql ${SCRIPT_PWD}/generatorcpp/out${RANDOMD}.sql.part* ${SCRIPT_PWD}/revgen/outrev${RANDOMD}*.sql ${SCRIPT_PWD}/revgen/outrev${RANDOMD}.sql.part*
   fi
   echoit "Attempting to cleanup the per-trial SQL of this run..."
-  rm -f ${TRIAL_SQL_DIR}/${RANDOMD}_*  # The glob covers the per-trial SQL, the all-disk pool, and any part file a transform was writing
+  rm -f ${TRIAL_SQL_DIR}/${RANDOMD}_*  # The glob covers the per-trial SQL, the all-disk pool, the automatic interleave set, and any part file a transform was writing
   if [ "$PMM" == "1" ]; then
     echoit "Attempting to cleanup PMM client services..."
     sudo pmm-admin remove --all > /dev/null
@@ -3925,13 +4056,21 @@ if [ "${USE_INFILE}" -eq 1 ]; then
   fi
 fi
 
-# The all-disk source: index every SQL file on the disk now, so no trial has to search the disk again
+# The all-disk source, and the AUTOMATIC_INTERLEAVE picks from the disk: index every SQL file on the disk now, so no trial has to search the disk again
 ALL_DISK_SQL_INDEX="${WORKDIR}/all_disk_sql.index"
 ALL_DISK_SQL_POOL="${TRIAL_SQL_DIR}/${RANDOMD}_all_disk.sql"
 ALL_DISK_SQL_LINES=0
 if [ "${USE_ALL_DISK_SQL}" -eq 1 ]; then
-  all_disk_sql_index
+  all_disk_sql_index "USE_ALL_DISK_SQL=1"
+elif [ "${AUTOMATIC_INTERLEAVE}" -eq 1 ] && [ "${AUTOMATIC_INTERLEAVE_FROM_ALL_DISK_SQL}" -eq 1 ]; then
+  all_disk_sql_index "AUTOMATIC_INTERLEAVE_FROM_ALL_DISK_SQL=1"
 fi
+if [ "${AUTOMATIC_INTERLEAVE}" -eq 0 ] && [ "${AUTOMATIC_INTERLEAVE_FROM_ALL_DISK_SQL}" -eq 1 ]; then
+  echoit "Warning: AUTOMATIC_INTERLEAVE_FROM_ALL_DISK_SQL=1 has no effect while AUTOMATIC_INTERLEAVE=0, so no interleave SQL lines are picked from the disk"
+fi
+# The SQL lines AUTOMATIC_INTERLEAVE picked, kept for the trials up to the next pick
+AUTO_INTERLEAVE_SET="${TRIAL_SQL_DIR}/${RANDOMD}_auto_interleave.sql"
+AUTO_INTERLEAVE_SET_LINES=0
 
 SQL_INPUT_TEXT=
 if [ ${USE_GENERATOR} -eq 1 ]; then SQL_INPUT_TEXT="SQL Generator (${QUERIES_PER_GENERATOR_RUN} queries per trial)"; fi
@@ -4222,8 +4361,9 @@ else
 fi
 echoit "Done. Attempting to cleanup the pquery rundir ${RUNDIR}..."
 rm -Rf ${RUNDIR}
-# The last trial's SQL and the all-disk pool are the only ones left: every earlier trial's file was
-# deleted as the next was written, and the generated pools are deleted at the end of each trial
+# The last trial's SQL, the all-disk pool and the automatic interleave set are the only ones left: every
+# earlier trial's file was deleted as the next was written, and the generated pools are deleted at the end
+# of each trial
 echoit "Done. Attempting to cleanup the per-trial SQL of this run..."
 rm -f ${TRIAL_SQL_DIR}/${RANDOMD}_*
 echoit "The results of this run can be found in the workdir ${WORKDIR}..."
