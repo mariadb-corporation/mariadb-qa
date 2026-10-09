@@ -258,6 +258,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+!create_info->versioned() || (row_start_field && row_end_field)|SIGABRT|append_system_key_parts|init_key_info|mysql_prepare_create_table_finalize|mysql_create_frm_image       ## MDEv-41440
+!create_info->versioned() || (row_start_field && row_end_field)|SIGABRT|append_system_key_parts|init_key_info|mysql_prepare_create_table|mysql_create_frm_image                ## MDEV-41440
 SIGSEGV|Table_triggers_list::mark_fields_usedsql_trigger.cc|iterate_trigger_fields_and_run_func<Table_triggers_list::mark_fields_usedsql_trigger.cc|Table_triggers_list::mark_fields_used|TABLE::mark_columns_needed_for_delete ## MDEV-41439
 SIGSEGV|iterate_trigger_fields_and_run_func<Table_triggers_list::mark_fields_usedsql_trigger.cc|Table_triggers_list::mark_fields_used|TABLE::mark_columns_needed_for_delete|Sql_cmd_delete::delete_from_single_table ## MDEV-41439
 length < 0xFFFFFFFFUL|SIGABRT|Binary_string::real_alloc|Binary_string::alloc|String::copy|String_copier_for_item::copy_with_warn                                               ## MDEV-41409
