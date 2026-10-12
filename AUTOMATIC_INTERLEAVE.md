@@ -70,7 +70,7 @@ Other settings that affect the picks:
 2. Clean and filter. The sample gets the same clean-up as the trial SQL. Then:
    - `ADV_FILTER_LIST` applies when `ADV_FILTER_SQL=1`, and always to lines from the disk.
    - `filter.sql` applies when `FILTER_SQL=1`.
-   - Empty lines, lines over 4096 bytes and duplicates are dropped.
+   - Empty lines, lines of only comments, lines over 4096 bytes and duplicates are dropped.
    - The first 10 times the count lines go on to the syntax check.
 3. Syntax check. The first count lines that parse become the set. See the next section.
 4. The set is saved to `${TRIAL_SQL_DIR}/<RANDOMD>_auto_interleave.sql`, and each line is logged.
@@ -145,6 +145,9 @@ With the default interval, a pick happens once every 50 trials.
 - About 0.1% of the kept lines still hold a syntax error, which an earlier parse-time error hides,
   for example in a truncated `CREATE PROCEDURE ... BEGIN`.
 - Lines with `?` placeholders are kept. Lines with more than one statement are dropped.
+- A line of only comments parses as an empty statement, without an error, so step 2 drops such
+  lines instead. Step 2 counts an executable comment, `/*! ... */` or `/*M! ... */`, as SQL, so a
+  line of only an executable comment which the server skips, as `/*M!999999 SELECT 1 */`, is kept.
 - All lines of one check share one timeout, so on a very slow box a line that does not hang could
   be dropped as a hang.
 
