@@ -149,6 +149,7 @@ so revgen and `pquery-run.sh` both refuse to run when the keyword table has none
 |---|---|
 | `ADV_FILTER_SQL=1` | Removes any line matching `ADV_FILTER_LIST`, e.g. shutdown and kill |
 | `INTERLEAVE` / `INTERLEAVE_SQL` / `INTERLEAVE_LINES` | Inserts your SQL every n lines |
+| `AUTOMATIC_INTERLEAVE` (+`_SQL_COUNT`, `_NEW_SQL_EVERY_X_TRIALS`, `_FROM_ALL_DISK_SQL`) | Adds random lines from `INFILE` or the disk, which the server under test parses, to the interleaved SQL, also without `INTERLEAVE=1`. A new set every x trials. See `~/mariadb-qa/AUTOMATIC_INTERLEAVE.md` |
 | `STORAGE_ENGINE_SWAP` (+`_PERCENTAGE`) | Changes engine names |
 | `SWAP_ALL_TABLE_NAMES_TO_T1` / `SWAP_CREATE_TABLE_NAMES_TO_T1` | Collapses table names to `t1` |
 

@@ -1,0 +1,9 @@
+INSTALL SONAME 'simple_password_check';
+CREATE TABLE t1 (a INT); CREATE TABLE t2 (a INT);
+CREATE TRIGGER tr AFTER DELETE ON t1 FOR EACH ROW INSERT INTO t2 VALUES (OLD.a + @@simple_password_check_minimal_length);
+INSERT INTO t1 VALUES (1),(2);
+DELETE FROM t1 LIMIT 1;
+UNINSTALL SONAME 'simple_password_check';
+ALTER TABLE t2 FORCE;
+DELETE FROM t1; 
+DELETE FROM t1;
