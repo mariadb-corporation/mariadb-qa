@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-# Claude Code status line: cwd, session, context, usage bands, session name, model, clock
-# Example: ~/mariadb-qa  abc123de  235k/1M  5h: 25% 13:10  wk: 23% 07:00  f5: 3%   Fri  corlogic-cf  Opus 5 max  ↑1.2M ↓84k  11:02:32
+# Claude Code status line: cwd, session, context, usage bands, model, tokens, session name, clock
+# Example: ~/mariadb-qa abc123de 235k 5h: 25% 13:10 wk: 23% 07:00 f5: 3%    Fri o55-m ↑1.2M ↓84k ↻96% corlogic-cf 11:02
 # The 5h and weekly numbers arrive with every render, in the JSON Claude Code feeds
 # this script, so they cost nothing and are always current. The Fable weekly number
 # is not in that JSON. It is read from GET /api/oauth/usage by a detached background
@@ -23,7 +23,6 @@ CACHE = f'/tmp/.claude_usage_teams.{os.getuid()}.json'
 MARK = CACHE + '.pending'
 SEEN = f'/tmp/.claude_limits_teams.{os.getuid()}.json'
 CREDS = os.path.expanduser('~/.claude/.credentials.json')
-CHECK = os.path.expanduser('~/.claude/sanity_check.py')
 USAGE_URL = 'https://api.anthropic.com/api/oauth/usage'
 POLL = 300      # seconds between Fable-number reads
 STALE = 900     # seconds before the Fable number is drawn dimmed
@@ -73,11 +72,6 @@ def spent(n):
   return str(n)
 
 
-def bulk(n):
-  # the cache-read counter, whole units only
-  return f'{int(n / 1000000 + 0.5)}M' if n >= 1000000 else spent(n)
-
-
 def share(pct, seen):
   # how much of the input came out of the cache: green is good, red is not. With no
   # input counted yet the 0% stands for nothing, so it is drawn as plain line text
@@ -91,7 +85,7 @@ def share(pct, seen):
 
 
 def heat(n, scale=1):
-  # grey up to the first mark, then yellow, red, and bright red
+  # blue up to the first mark, then yellow, red, and bright red
   if n >= HEAT[2] * scale:
     return '\033[1;31m'
   if n >= HEAT[1] * scale:
@@ -304,7 +298,8 @@ def limits(rate):
     keep = {}
   now = time.time()
   # an idle session replays the last numbers it saw, so a window whose reset time has
-  # already passed is left out, and a kept window is never replaced by an older one.
+  # already passed is left out, and a kept window is never replaced by an older one,
+  # nor by a lower number for the same window, since use only climbs within one.
   # Without that, one idle session wipes the band for every session, since all of them
   # read and write this one file
   fresh = {key: {'pct': one.get('used_percentage'),
@@ -313,7 +308,8 @@ def limits(rate):
            if isinstance(one, dict) and one.get('used_percentage') is not None
            and (one.get('resets_at') or 0) > now}
   fresh = {key: one for key, one in fresh.items()
-           if one['resets'] >= ((keep.get(key) or {}).get('resets') or 0)}
+           if (one['resets'], one['pct']) >= ((keep.get(key) or {}).get('resets') or 0,
+                                              (keep.get(key) or {}).get('pct') or 0)}
   keep.update(fresh)
   # Claude Code drops a window from its own JSON once the window has reset, so a kept
   # one goes the same way rather than showing a number that no longer stands
@@ -422,9 +418,10 @@ if used is not None:
   room = '' if not size or size >= 1000000 else f'/{tokens(size)}'
   parts.append(f'{color}{tokens(used)}{room}{RESET}')
 
-if os.path.exists(CHECK):
+check = os.path.expanduser('~/.claude/sanity_check.py')
+if os.path.exists(check):
   try:
-    said = subprocess.run([sys.executable, CHECK, '--segment'], input=json.dumps(data),
+    said = subprocess.run([sys.executable, check, '--segment'], input=json.dumps(data),
                           capture_output=True, text=True, timeout=3).stdout.strip()
   except Exception:
     said = ''
@@ -475,8 +472,7 @@ if session_id and transcript:
   hit = round(100 * red / (red + inp)) if red + inp else 0
   parts.append(f'{heat(inp, SCALE)}\u2191{spent(inp)}{RESET} '
                f'{heat(outp)}\u2193{spent(outp)}{RESET} '
-               f'{BOLD}{LINE}\u21bb{RESET}{LINE}{bulk(red)}{RESET} '
-               f'{share(hit, red + inp)}{hit}%{RESET}')
+               f'{BOLD}{LINE}\u21bb{RESET}{share(hit, red + inp)}{hit}%{RESET}')
 
 name = sname()
 if name:

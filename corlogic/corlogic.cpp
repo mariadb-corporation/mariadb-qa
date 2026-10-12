@@ -1655,8 +1655,10 @@ static void exec_stmt(Conn& c, std::string_view sql, QOutcome& o, bool want_warn
   o.ms = now_ms() - t0;
   if (o.state == QState::OK || o.state == QState::WARN) {
     if (want_warnings) fetch_warnings(c, o);
-    if (c.h && mysql_warning_count(c.h) > 0) o.state = QState::WARN;
-    else if (!o.warnings.empty()) o.state = QState::WARN;
+    // with the warnings read, SHOW WARNINGS is the record: a count with nothing behind it
+    // is not a difference. Without them, the count is the only signal there is.
+    if (want_warnings) { if (!o.warnings.empty()) o.state = QState::WARN; }
+    else if (c.h && mysql_warning_count(c.h) > 0) o.state = QState::WARN;
   }
 }
 
@@ -4423,6 +4425,7 @@ static std::atomic<long> g_side_diffs[MAX_SIDE_STATS];
 static std::atomic<long> g_side_revs[MAX_SIDE_STATS];
 static std::mutex g_uid_mtx;
 static std::map<string, long> g_uids_seen;             // UID -> candidate number (first sighting)
+static std::map<string, long> g_uid_dups;              // UID -> hits after the first sighting
 static std::map<string, long> g_uid1_seen;             // testcase id -> the trial that reported it
 // The UID's last field is the statement, so a generated column name or a different sibling
 // expression in the select list splits one root cause across many UIDs and many reports.
@@ -5097,8 +5100,13 @@ static bool handle_diff(long trial, int wid, const vector<StreamStmt>& stream, D
     auto it = g_uids_seen.find(uid);
     if (it != g_uids_seen.end()) {
       g_dup_diffs++;
-      append_seen("cand" + std::to_string(it->second), uid, trial);
-      logline("duplicate diff (this run): %s", uid.c_str());
+      // the same UID can repeat without limit, so keep the first few hits and then
+      // one per decade; the full count stays in g_dup_diffs and in the run summary
+      long n = ++g_uid_dups[uid];
+      if (n <= 3 || n == 10 || n == 100 || n == 1000 || n % 10000 == 0) {
+        append_seen("cand" + std::to_string(it->second), uid, trial);
+        logline("duplicate diff (this run), %ld so far: %s", n, uid.c_str());
+      }
       return true;
     }
     g_cands++;                                       // the trial number is the ID
