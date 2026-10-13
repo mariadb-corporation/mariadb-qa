@@ -21,6 +21,9 @@ task matches its description.
   file after approval. The three original/fixed/diff gates run only on request.
 - `loop-screens-cleanup` - sweep the reducer screens and end the finished ones, reaping
   each ended trial's processes and its `/dev/shm` workdir; leave screens still reducing.
+- `mtr-failure-create-bug` - pull an MTR test's buildbot failure history, filter by similarity to a
+  reference failure text and to real release branches, dedup-check jira.mariadb.org, and
+  file the MDEV bug after approval.
 - `mtr_matrix_claude` - run one `.test` against every build `gendirs.sh` lists (plain, `SAN`,
   `MSAN`, `TSAN`, `VAL`, `GAL`, `MDEV`, `ALL`) in parallel and write a Bug Detection Matrix.
 - `mtr_testcase` - craft and verify a `.test` from a CLI/pquery repro of any bug class: engine
@@ -68,8 +71,9 @@ assume the mariadb-qa framework is installed:
 - `/data/TARS` for tarball storage,
 - the reducer stack (`reducercpp`, `/test/loop_screens*`, `~/sr`, `/data/<workdir>` trials) for
   `loop-screens-cleanup`,
-- a jira.mariadb.org Personal Access Token for `jira-ticket` (`$JIRA_PAT` or
-  `~/.config/mariadb-qa/jira.pat`; the skill explains how to get one).
+- a jira.mariadb.org Personal Access Token for `jira-ticket` and `mtr-failure-create-bug`
+  (`$JIRA_PAT` or `~/.config/mariadb-qa/jira.pat`; each skill explains how to get one).
 
 The `email`, `claude-code`, and `jira-comment` skills are standalone and need none of the
-above.
+above. `mtr-failure-create-bug` only needs the Jira PAT above and Python 3 (stdlib only) - it does
+not need a `/test` build tree.
