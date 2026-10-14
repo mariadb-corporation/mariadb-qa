@@ -258,6 +258,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+share->hlindexes() == 1|SIGABRT|TABLE_SHARE::init_from_binary_frm_image|ha_create_table|mysql_alter_table|Sql_cmd_alter_table::execute                                         ## MDEV-41525
+SIGSEGV|st_key::options|TABLE_SHARE::init_from_binary_frm_image|ha_create_table|mysql_alter_table                                                                              ## MDEV-41525
 !table || (ignore_err & ~DICT_ERR_IGNORE_FK_NOKEY) || !table->is_readable() || !table->corrupted|SIGABRT|dict_load_table_one|dict_sys_t::load_table|dict_table_open_on_name|innodb_check_version     ## MDEV-41494
 !(*with_wild)|SIGABRT|setup_wild|setup_returning_fields|select_insert::prepare|JOIN::prepare                                                                                   ## MDEV-40561
 !create_info->versioned() || (row_start_field && row_end_field)|SIGABRT|append_system_key_parts|init_key_info|mysql_prepare_create_table_finalize|mysql_create_frm_image       ## MDEv-41440
