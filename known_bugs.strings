@@ -258,6 +258,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+is_mmap_writeable()|SIGABRT|log_t::persist|log_write_persist|log_write_up_to|buf_dblwr_t::flush_buffered_writes_completed                                                      ## MDEV-41565
 inited == NONE || table->open_by_handler|SIGABRT|handler::ha_external_lock|handler::ha_external_unlock|TABLE::unlock_hlindexes|handler::ha_external_lock                       ## MDEV-41533
 SIGSEGV|TABLE::unlock_hlindexes|handler::ha_external_lock|json_index::read_end|st_join_table::cleanup                                                                          ## MDEV-41533
 share->hlindexes() == 1|SIGABRT|TABLE_SHARE::init_from_binary_frm_image|ha_create_table|mysql_alter_table|Sql_cmd_alter_table::execute                                         ## MDEV-41525
