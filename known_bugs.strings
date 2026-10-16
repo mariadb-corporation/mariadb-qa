@@ -258,6 +258,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+field_charset() == cs|SIGABRT|Field_blob::handle_group_concat|Field_blob::store|Field_json::store|Item::save_str_in_field                                                      ## MDEV-41581
+0|SIGABRT|read_lowendian|Field_blob::get_length|Field_blob::unpack|Unpack_record_state::unpack_field                                                                           ## MDEV-41559
 size == rec_offs_size(*offsets)|SIGABRT|page_cur_tuple_insert|btr_cur_optimistic_insert|row_ins_clust_index_entry_low|row_ins_clust_index_entry                                ## MDEV-41569
 is_mmap_writeable()|SIGABRT|log_t::persist|log_write_persist|log_write_up_to|buf_dblwr_t::flush_buffered_writes_completed                                                      ## MDEV-41565
 inited == NONE || table->open_by_handler|SIGABRT|handler::ha_external_lock|handler::ha_external_unlock|TABLE::unlock_hlindexes|handler::ha_external_lock                       ## MDEV-41533
