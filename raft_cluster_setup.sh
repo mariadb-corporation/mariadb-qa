@@ -155,7 +155,7 @@ write_config() {
     run "$node" "sudo mkdir -p $CONF_DIR && sudo tee $CONF_DIR/$CONF >/dev/null"
 }
 
-# Step 3 @ AllNodes: purge old packages, install fresh, keep config aside as .bk
+# Step 3 @ AllNodes: purge old packages, wipe datadir, install fresh, keep config aside as .bk
 install_node() {
   local node=$1
   log "[$node] purge + install"
@@ -170,6 +170,9 @@ install_node() {
     sleep 5
     sudo apt -y autoremove
     sleep 5
+    # Wipe stale datadir/raft state (grastate.dat etc.) left by earlier clusters
+    sudo find /var/lib/mysql -mindepth 1 -delete 2>/dev/null || true
+    sudo rm -f /tmp/error.log /tmp/general.log
     sudo apt update -y
     sleep 5
     cd $CONF_DIR
