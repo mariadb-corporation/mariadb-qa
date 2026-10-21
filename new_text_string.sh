@@ -653,6 +653,15 @@ if [ -z "${LATEST_CORE}" ]; then
   fi
 fi
 
+# A core dumped by a tool the test ran (e.g. mariadb-backup via MTR --exec) is read with that tool's binary.
+# Its assertion is in the MTR log that captured the tool's stderr, not in a server error log
+CORE_EXE="$(file -bL "${LATEST_CORE}" 2>/dev/null | grep -o "execfn: '[^']*'" | sed "s|^execfn: '||;s|'$||")"
+if [ -f "${CORE_EXE}" -a -x "${CORE_EXE}" ] && [[ "${CORE_EXE}" != */mariadbd && "${CORE_EXE}" != */mysqld ]]; then
+  MYSQLD="${CORE_EXE}"
+  ERROR_LOGS="$(ls ${LOC}/var/log/mysqltest.log ${LOC}/var/*/log/mysqltest.log 2>/dev/null | tr '\n' ' ')"
+  ERROR_LOGS="${ERROR_LOGS:-/dev/null}"
+fi
+
 RANDF=$(${SCRIPT_PWD}/random --digits 10)  # Random 10 digits filenr
 
 rm -f /tmp/${RANDF}.gdb*
