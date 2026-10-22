@@ -268,3 +268,15 @@ else
   log "ERROR: expected ${#NODES[@]} nodes, got '$size'"
   exit 1
 fi
+
+log "Check wsrep_provider_name"
+provider=$(run "${NODES[0]}" "sudo mariadb -N -e \"show status like 'wsrep_provider_name'\"" | awk '{print $2}')
+echo "wsrep_provider_name=$provider"
+
+log "Check wsrep_cluster_address"
+nodes=$(run "${NODES[0]}" "sudo mariadb -N -e \"show variables like 'wsrep_cluster_address'\"" | awk '{print $2}')
+echo "wsrep_cluster_address=$nodes"
+
+log "Create sysbench db and user"
+run "${NODES[0]}" "sudo mariadb -N -e \"CREATE DATABASE IF NOT EXISTS sbtest;CREATE USER IF NOT EXISTS 'sbtest'@'%' IDENTIFIED BY 'Admin123$';GRANT ALL ON sbtest.* TO 'sbtest'@'%';\""
+echo "$provider Cluster Setup is ready."
