@@ -258,6 +258,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|Field_vector::store|Column_stat::get_stat_values|read_statistics_for_table|read_statistics_for_tables                                                                  ## MDEV-41717
+SIGSEGV|Field_vector::store|Field::store_text|Field::store_from_statistical_minmax_field|Column_stat::get_stat_values                                                          ## MDEV-41717
 SIGSEGV|dict_load_virtual_col|dict_load_virtual|dict_load_table_one|dict_sys_t::load_table                                                                                     ## MDEV-41719
 !((system_charset_info)->coll->strcasecmp((system_charset_info), (name), (field->field_name.str)))|SIGABRT|innobase_build_v_templ|ha_innobase::open|handler::ha_open|open_table_from_share  ## MDEV-41719
 index.table->instant|SIGABRT|btr_set_instant|innobase_instant_try|commit_try_norebuild|ha_innobase::commit_inplace_alter_table                                                 ## MDEV-41715
