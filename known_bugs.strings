@@ -258,6 +258,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+index.table->instant|SIGABRT|btr_set_instant|innobase_instant_try|commit_try_norebuild|ha_innobase::commit_inplace_alter_table                                                 ## MDEV-41715
 n_fields <= index->n_fields|SIGABRT|rec_init_offsets_comp_ordinary<false, false>|rec_init_offsets|rec_get_offsets_func|btr_cur_instant_init_low                                ## MDEV-41714
 n_fields + 1 >= entry->n_fields|SIGABRT|btr_cur_trim|btr_cur_optimistic_update|row_undo_mod_clust_low|row_undo_mod_clust                                                       ## MDEV-41713
 data_size < srv_sort_buf_size|SIGABRT|row_merge_buf_add|row_merge_read_clustered_index|row_merge_build_indexes|ha_innobase::inplace_alter_table                                ## MDEV-41589
