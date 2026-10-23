@@ -258,6 +258,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+!fts_lock_common_tables(ctx->trx, *ctx->new_table)|SIGABRT|ut_dbg_assertion_failed|rollback_inplace_alter_table|ha_innobase::commit_inplace_alter_table|handler::ha_commit_inplace_alter_table  ## MDEV-41739
 SIGSEGV|Field_vector::store|Column_stat::get_stat_values|read_statistics_for_table|read_statistics_for_tables                                                                  ## MDEV-41717
 SIGSEGV|Field_vector::store|Field::store_text|Field::store_from_statistical_minmax_field|Column_stat::get_stat_values                                                          ## MDEV-41717
 SIGSEGV|dict_load_virtual_col|dict_load_virtual|dict_load_table_one|dict_sys_t::load_table                                                                                     ## MDEV-41719
