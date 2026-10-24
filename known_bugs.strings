@@ -258,6 +258,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|sp_head::bind_input_param|sp_head::execute_procedure|do_execute_sp|Sql_cmd_call::execute                                                                               ## MDEV-41761
+m_sp == m_thd->spcont->m_sp|SIGABRT|Item_splocal::this_item|Item_sp_variable::is_null|Sql_cmd_common_signal::eval_signal_informations|Sql_cmd_common_signal::raise_condition   ## MDEV-41765
+SIGSEGV|Item_splocal::get_rcontext|Item_splocal::get_variable|Item_splocal::this_item|Item_sp_variable::is_null                                                                ## MDEV-41765
+marked_for_read()|SIGABRT|Field_long::val_int|Item_field::val_int|Item_trigger_field::val_int|Arg_comparator::compare_int_signed                                               ## MDEV-41766
 next_mrec == next_mrec_end|SIGABRT|row_log_table_apply_ops|row_log_table_apply|ha_innobase::inplace_alter_table|handler::ha_inplace_alter_table                                ## MDEV-41740
 !fts_lock_common_tables(ctx->trx, *ctx->new_table)|SIGABRT|ut_dbg_assertion_failed|rollback_inplace_alter_table|ha_innobase::commit_inplace_alter_table|handler::ha_commit_inplace_alter_table  ## MDEV-41739
 SIGSEGV|Field_vector::store|Column_stat::get_stat_values|read_statistics_for_table|read_statistics_for_tables                                                                  ## MDEV-41717
@@ -485,7 +489,7 @@ SIGSEGV|base_list_iterator::next_fast|List_iterator_fast<set_var_base>::operator
 SIGSEGV|base_list_iterator::next|List_iterator<Item_func_match>::operator++|cleanup_ftfuncs|st_select_lex::cleanup                                                             ## MDEV-40309
 SIGSEGV|cleanup_ftfuncs|st_select_lex::cleanup|st_select_lex_unit::cleanup|mysql_execute_command                                                                               ## MDEV-40309
 SIGSEGV|cleanup_order|st_select_lex::cleanup|st_select_lex_unit::cleanup|mysql_execute_command                                                                                 ## MDEV-40309
-SIGSEGV|Field_iterator_table::set_table|Item_trigger_row::populate_with_trigger_fields|Item_trigger_row::fix_fields|Item::fix_fields_if_needed                                 ## MDEV-40130
+SIGSEGV|Field_iterator_table::set_table|Item_trigger_row::populate_with_trigger_fields|Item_trigger_row::fix_fields|Item::fix_fields_if_needed                                 ## MDEV-40130>MDEV-41760
 SIGSEGV|Item_trigger_field::setup_field|Item_trigger_row::fix_fields|Item::fix_fields_if_needed|Item_trigger_row::set_value                                                    ## MDEV-40127
 m_sp == m_thd->spcont->m_sp|SIGABRT|Item_splocal::this_item|Item_splocal::element_index|cmp_row_type|Type_handler_hybrid_field_type::aggregate_for_comparison                  ## MDEV-40124
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|do_execute_sp|Sql_cmd_call::execute                                        ## MDEV-40299
