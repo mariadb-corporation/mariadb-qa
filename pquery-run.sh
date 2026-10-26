@@ -807,8 +807,10 @@ auto_interleave_check(){  # $1=SQL file, $2=lines wanted. Keeps the first $2 lin
 auto_interleave_pick(){  # Writes AUTO_INTERLEAVE_SET: up to AUTOMATIC_INTERLEAVE_SQL_COUNT distinct SQL lines, randomly picked from INFILE, or from the SQL files on the disk. Ref AUTOMATIC_INTERLEAVE.md
   # The interleave step comes after the clean-up and the filters of the per-trial SQL, so the picks pass the same
   # ones here. A line over 4096 bytes is skipped: the set is inserted every INTERLEAVE_LINES lines, so one very long
-  # line would grow each trial's SQL by hundreds of megabytes. shuf samples a hundred times the count, and ten times
-  # the count goes on to auto_interleave_check(), which leaves enough lines once these checks drop theirs
+  # line would grow each trial's SQL by hundreds of megabytes. A line of only comments is skipped too: the server
+  # parses it as an empty statement, without an error, so the syntax check would keep it. An executable comment,
+  # /*! */ or /*M! */, counts as SQL. shuf samples a hundred times the count, and ten times the count goes on to
+  # auto_interleave_check(), which leaves enough lines once these checks drop theirs
   local AIP_START="${EPOCHREALTIME}" AIP_DROP='^[[:space:];]*$' AIP_FILTER=/dev/null AIP_LINE AIP_NR=0 AIP_SRC="${INFILE}" AIP_SRC_TEXT="${INFILE}" AIP_FILE
   if [ ${ADV_FILTER_SQL} -eq 1 ] || [ ${AUTOMATIC_INTERLEAVE_FROM_ALL_DISK_SQL} -eq 1 ]; then AIP_DROP="${ADV_FILTER_LIST}|${AIP_DROP}"; fi  # Any SQL can sit on the disk, so picks from there pass ADV_FILTER_LIST always, as the all-disk SQL pool does
   [ ${FILTER_SQL} -eq 1 ] && AIP_FILTER="${SCRIPT_PWD}/filter.sql"  # /dev/null holds no patterns, so with FILTER_SQL=0 that grep keeps every line
@@ -824,7 +826,7 @@ auto_interleave_pick(){  # Writes AUTO_INTERLEAVE_SET: up to AUTOMATIC_INTERLEAV
       [ -r "${AIP_FILE}" ] && shuf --random-source=<(${RANDOM_BIN} --raw) -n 5 "${AIP_FILE}" 2>/dev/null
     done > "${AIP_SRC}"
   fi
-  shuf --random-source=<(${RANDOM_BIN} --raw) -n $(( AUTOMATIC_INTERLEAVE_SQL_COUNT * 100 )) "${AIP_SRC}" | sed "${TRIAL_SQL_CLEANUP_SED}" | grep --binary-files=text -hivE "${AIP_DROP}" | grep --binary-files=text -hvif "${AIP_FILTER}" | LC_ALL=C awk 'length($0) <= 4096 && !seen[$0]++' | head -n $(( AUTOMATIC_INTERLEAVE_SQL_COUNT * 10 )) > "${AUTO_INTERLEAVE_SET}"
+  shuf --random-source=<(${RANDOM_BIN} --raw) -n $(( AUTOMATIC_INTERLEAVE_SQL_COUNT * 100 )) "${AIP_SRC}" | sed "${TRIAL_SQL_CLEANUP_SED}" | grep --binary-files=text -hivE "${AIP_DROP}" | grep --binary-files=text -hvif "${AIP_FILTER}" | LC_ALL=C awk 'length($0) <= 4096 && !seen[$0]++ {s = $0; while (sub(/^[[:space:];]+/, "", s) || (s !~ /^\/\*M?!/ && sub(/^\/\*([^*]|\*+[^*\/])*\*+\//, "", s))); if (s != "" && s !~ /^(#|--([[:space:][:cntrl:]]|$))/) print}' | head -n $(( AUTOMATIC_INTERLEAVE_SQL_COUNT * 10 )) > "${AUTO_INTERLEAVE_SET}"
   [ ${AUTOMATIC_INTERLEAVE_FROM_ALL_DISK_SQL} -eq 1 ] && rm -f "${AIP_SRC}"
   auto_interleave_check "${AUTO_INTERLEAVE_SET}" ${AUTOMATIC_INTERLEAVE_SQL_COUNT}
   AUTO_INTERLEAVE_SET_LINES="$(wc -l < "${AUTO_INTERLEAVE_SET}")"

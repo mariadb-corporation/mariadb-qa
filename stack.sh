@@ -54,6 +54,14 @@ fi
 #echo "DEBUG: err: ${ERROR_LOG} | core: ${LATEST_CORE}"
 # TODO: MDG needs similar code for node1/2/3
 
+# A core dumped by a tool the test ran (e.g. mariadb-backup via MTR --exec) is read with that tool's binary.
+# Its assertion is in the MTR log that captured the tool's stderr, not in a server error log
+CORE_EXE="$(file -bL "${LATEST_CORE}" 2>/dev/null | grep -o "execfn: '[^']*'" | sed "s|^execfn: '||;s|'$||")"
+if [ -f "${CORE_EXE}" -a -x "${CORE_EXE}" ] && [[ "${CORE_EXE}" != */mariadbd && "${CORE_EXE}" != */mysqld ]]; then
+  BIN="${CORE_EXE}"
+  ERROR_LOG="$(ls --color=never var/log/mysqltest.log var/*/log/mysqltest.log 2>/dev/null | head -n1)"
+fi
+
 # Only collected here. It is printed further below, and ONLY when no *SAN or Valgrind report is
 # present: an assertion never belongs above a sanitizer stack. On a sanitizer build the assert is
 # the downstream abort of what the sanitizer already reported, and showing both reads as two bugs.

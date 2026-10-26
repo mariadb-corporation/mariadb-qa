@@ -107,9 +107,8 @@ while read LINE; do
   if [ -d "${LINE}/mariadb-test" ]; then MTR="${LINE}/mariadb-test";
   elif [ -d "${LINE}/mysql-test" ]; then MTR="${LINE}/mysql-test";
   else continue; fi
-  STR="$(cd "${MTR}" && ~/t 2>/dev/null)"  # ~/t exits 0 only when it produced a UniqueID (crash/assert/SAN)
   UID_STR='No bug found'
-  if [ $? -eq 0 ]; then
+  if STR="$(cd "${MTR}" && ~/t 2>/dev/null)"; then  # ~/t exits 0 only when it produced a UniqueID (crash/assert/SAN)
     STR="$(echo "${STR}" | grep -vEi 'no core file found|no relevant strings were found|no parsable frames|please add a typed prefix rule' | head -n1)"
     if [ -n "${STR}" ]; then
       UID_STR="${STR}"
@@ -152,6 +151,11 @@ echo '{noformat:title=Bug Detection Matrix}' | tee -a "${REPORT}"
 printf "%-3s %-6s %-4s %-7s %-41s %-30s\n" "" "Rel" "o/d" "Build" "Commit" "UniqueID observed" | tee -a "${REPORT}"
 sort -V "${BR_MATRIX}" | tee -a "${REPORT}"
 echo '{noformat}' | tee -a "${REPORT}"
+if [ -s "${BR_CRASH}" ]; then  # ~/tt (known-bug scan, JIRA search URLs), one per distinct signature, from its crashing m*test dir
+  while IFS="$(printf '\t')" read -r SIG MTR; do
+    ( cd "${MTR}" && ~/tt 2>/dev/null ) | tee -a "${REPORT}"
+  done < "${BR_CRASH}"
+fi
 if [ -s "${BR_RAW}" ]; then
   echo '----- All NEW (not known yet) strings merged (for adding to ~/kb) -----' | tee -a "${REPORT}"
   sort -u "${BR_RAW}" | grep -v '^[[:space:]]*$' | tr '\n' '\0' | xargs -0 -I{} ~/kbs REVERSE "{}" | tee -a "${REPORT}"
