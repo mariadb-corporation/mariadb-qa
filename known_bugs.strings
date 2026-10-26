@@ -258,6 +258,11 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|Item_trigger_row::check_if_settable|Table_triggers_list::mark_fields_usedsql_trigger.cc|iterate_trigger_row_and_run_func<Table_triggers_list::mark_fields_usedsql_trigger.cc|Table_triggers_list::mark_fields_used ## MDEV-41826
+value|SIGABRT|Field::sp_prepare_and_store_item|Virtual_tmp_table::sp_set_all_fields_from_item|Field_row::sp_prepare_and_store_item|THD::sp_eval_expr                           ## MDEV-41825
+SIGSEGV|THD::sp_fix_func_item|THD::sp_fix_func_item_for_assignment|Field::sp_prepare_and_store_item|Virtual_tmp_table::sp_set_all_fields_from_item                             ## MDEV-41825
+SIGSEGV|Item_trigger_row::cleanup|Item::delete_self|sp_instr_cursor_copy_struct::~sp_instr_cursor_copy_struct|sp_instr_cursor_copy_struct::~sp_instr_cursor_copy_struct        ## MDEV-41815
+argp[arg_no]->fixed()|SIGABRT|sp_head::execute_function|Item_sp::execute_impl|Item_sp::execute|Item_func_sp::execute                                                           ## MDEV-41814
 SIGSEGV|sp_head::bind_input_param|sp_head::execute_procedure|do_execute_sp|Sql_cmd_call::execute                                                                               ## MDEV-41761
 m_sp == m_thd->spcont->m_sp|SIGABRT|Item_splocal::this_item|Item_sp_variable::is_null|Sql_cmd_common_signal::eval_signal_informations|Sql_cmd_common_signal::raise_condition   ## MDEV-41765
 SIGSEGV|Item_splocal::get_rcontext|Item_splocal::get_variable|Item_splocal::this_item|Item_sp_variable::is_null                                                                ## MDEV-41765
