@@ -38,8 +38,10 @@ DEV_ONLY=0
 SEC_LEVEL_ID="${JIRA_SEC_LEVEL_ID:-10400}"
 SEC_LEVEL_NAME="${JIRA_SEC_LEVEL_NAME:-Developers}"
 SEC_ROLE="${JIRA_SEC_ROLE:-Developers}"
+DEDUP_SINCE=""
+DEDUP_SINCE_S=""
 
-declare -a AFFECTS=() FIXINS=() COMPONENTS=() LABELS=() RELATES=() ESVERS=() SEC_COMMENTS=()
+declare -a AFFECTS=() FIXINS=() COMPONENTS=() LABELS=() RELATES=() ESVERS=() SEC_COMMENTS=() DEDUP_JQL=()
 declare -a AFFECTS_DEL=() FIXINS_DEL=() ESVERS_DEL=()
 
 die() { echo "ERROR: $*" >&2; exit 1; }
@@ -129,8 +131,16 @@ Create options:
       --assignee USER      Assignee Jira username (e.g. psergei)
       --environment TEXT   Environment field
       --json-extra FILE    Merge extra "fields" JSON (custom fields)
+      --dedup-jql JQL      A duplicate search, run again right before the create
+                           (repeatable, at least one required). A search URL, as
+                           ~/tt prints it, works too. An ORDER BY clause is dropped.
+      --dedup-since TIME   When those searches were last read in full, with its
+                           time zone, as date --iso-8601=seconds prints it
+                           (required). A ticket created since then that a search
+                           finds stops the create, and nothing is posted.
       --dry-run            Print the payload/preview, do not POST. No auth needed,
                            except --link, which reads the link types from the server.
+                           With a stored token it runs the duplicate searches too.
   -y, --yes                Skip the 3x confirmation (for automation)
   -h, --help               This help
 
@@ -184,6 +194,8 @@ while [ $# -gt 0 ]; do
     --json-extra) need "$@"; EXTRA_FILE="$2"; shift ;;
     --security-bug) SEC_BUG=1 ;;
     --sec-comment) need "$@"; SEC_COMMENTS+=("$2"); shift ;;
+    --dedup-jql) need "$@"; DEDUP_JQL+=("$2"); shift ;;
+    --dedup-since) need "$@"; DEDUP_SINCE="$2"; shift ;;
     --dev-only) DEV_ONLY=1 ;;
     --oneline) ONELINE=1 ;;
     --dry-run) DRY_RUN=1 ;;
@@ -206,6 +218,8 @@ fi
 if [ "$MODE" != "create" ]; then
   [ "$SEC_BUG" = 0 ]              || die "--security-bug is only valid when creating an issue"
   [ "${#SEC_COMMENTS[@]}" -eq 0 ] || die "--sec-comment is only valid when creating an issue"
+  [ "${#DEDUP_JQL[@]}" -eq 0 ]    || die "--dedup-jql is only valid when creating an issue"
+  [ -z "$DEDUP_SINCE" ]           || die "--dedup-since is only valid when creating an issue"
 fi
 
 command -v jq >/dev/null || die "jq is required"
@@ -371,6 +385,48 @@ To take a stale value off a ticket use --remove-affects-version or
 --remove-fix-version."
 }
 
+# A search URL, as ~/tt prints it, is cut down to its jql= part and decoded.
+# ORDER BY cannot sit inside the brackets the time limit adds, so it is dropped
+dedup_jql() {
+  local q="$1"
+  if [[ "$q" == http* ]]; then
+    q="${q#*jql=}"; q="${q%%&*}"
+    q="$(printf '%b' "${q//%/\\x}")"
+  fi
+  printf '%s' "$q" | sed -E "s/[[:space:]]+ORDER[[:space:]]+BY[[:space:]][^\"']*\$//I"
+}
+
+# Run each duplicate search again, limited to tickets created since the searches
+# were last read in full. Approval can come days after that read, and a ticket
+# filed in between is one it could not see. The limit is in relative minutes, so
+# time zones and clock skew between this machine and the server play no part.
+# Returns 1 when any search finds a ticket
+dedup_check() {
+  local started mins q jql resp code body found=0
+  started="$(date --iso-8601=seconds)"
+  mins=$(( ($(date +%s) - DEDUP_SINCE_S) / 60 + 2 ))
+  echo "=== Duplicate searches: tickets created since $DEDUP_SINCE ===" >&2
+  for q in "${DEDUP_JQL[@]}"; do
+    jql="$(dedup_jql "$q")"
+    resp="$(jira_curl -G -H 'Accept: application/json' -w $'\n%{http_code}' \
+      --data-urlencode "jql=($jql) AND created >= -${mins}m" \
+      --data-urlencode 'fields=summary,status' --data-urlencode 'maxResults=50' \
+      "$JIRA_URL/rest/api/2/search")" || die "Duplicate search failed: $jql"
+    code="${resp##*$'\n'}"; body="${resp%$'\n'*}"
+    [ "$code" = "200" ] || die "Duplicate search failed (HTTP $code): $jql
+$(printf '%s' "$body" | jq -r '.errorMessages[]?' 2>/dev/null)"
+    echo "  $jql" >&2
+    if [ "$(printf '%s' "$body" | jq -r '.total')" = "0" ]; then
+      echo "    none" >&2
+    else
+      found=1
+      printf '%s' "$body" | jq -r '.issues[]? | "    \(.key) [\(.fields.status.name)] \(.fields.summary)"' >&2
+    fi
+  done
+  echo "Searched at $started" >&2
+  return $found
+}
+
 case "$MODE" in
   login)   require_auth; echo "Login OK: $WHOAMI"; exit 0 ;;
   whoami)  require_auth; echo "Authenticated as: $WHOAMI"; exit 0 ;;
@@ -531,6 +587,12 @@ fi
 if [ -n "$DESCRIPTION" ]; then check_body "The description" "$DESCRIPTION"; fi
 if [ -z "$DESCRIPTION" ] && [ "$SEC_BUG" = 1 ]; then DESCRIPTION="$SUMMARY"; fi
 [ -n "$DESCRIPTION" ] || die "--description or --description-file is required"
+[ "${#DEDUP_JQL[@]}" -gt 0 ] && [ -n "$DEDUP_SINCE" ] \
+  || die "A new ticket needs --dedup-jql and --dedup-since: the duplicate searches run again right before the create (see --help)"
+[[ "$DEDUP_SINCE" =~ (Z|UTC|GMT|[+-][0-9][0-9]:?[0-9][0-9])$ ]] \
+  || die "--dedup-since needs its time zone, as date --iso-8601=seconds prints it: $DEDUP_SINCE"
+DEDUP_SINCE_S="$(date -d "$DEDUP_SINCE" +%s 2>/dev/null)" || die "--dedup-since is not a time: $DEDUP_SINCE"
+[ "$DEDUP_SINCE_S" -le "$(date +%s)" ] || die "--dedup-since is in the future: $DEDUP_SINCE"
 
 if load_pat; then reject_eol_versions "$PROJECT"; fi
 
@@ -585,6 +647,11 @@ if [ "$DRY_RUN" = 1 ]; then
     echo "[dry-run] would post as $SEC_ROLE-only comments, in order:" >&2
     printf '  %s\n' "${SEC_COMMENTS[@]}" >&2
   fi
+  if load_pat; then
+    dedup_check || echo "[dry-run] a ticket created since --dedup-since matches: the create would stop here." >&2
+  else
+    echo "[dry-run] duplicate searches not run: no stored token." >&2
+  fi
   exit 0
 fi
 
@@ -601,6 +668,8 @@ if [ "$ASSUME_YES" != 1 ]; then
   read -rp "2x... " _ < /dev/tty
   read -rp "3x... " _ < /dev/tty
 fi
+
+dedup_check || die "Not created. A ticket created since --dedup-since matches a duplicate search. Read each one listed above."
 
 resp="$(jira_curl -X POST \
   -H 'Content-Type: application/json' -H 'Accept: application/json' \

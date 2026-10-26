@@ -45,7 +45,7 @@ if [ -z "$PATTERN" ]; then
 fi
 
 python3 - "$PROJECTS_DIR" "$PATTERN" "$SHOW_ALL" <<'PYEOF'
-import datetime, json, os, re, subprocess, sys, time
+import datetime, io, json, os, re, subprocess, sys, time, traceback
 
 projects_dir = sys.argv[1]
 pattern_str = sys.argv[2]
@@ -333,30 +333,87 @@ def first_user_prompt(path):
         pass
     return cwd, text
 
-def count_matches(path):
+CHUNK = 4 << 20  # bytes per search task, so a large log is spread over several cores
+
+def count_matches(path, start, end):
+    """Matching lines among those that begin in [start, end) of a log."""
     hits = 0
     try:
-        with open(path, "r", encoding="utf-8", errors="replace") as fh:
-            for line in fh:
-                if pattern.search(line):
-                    hits += 1
-                    continue
-                try:
-                    obj = json.loads(line)
-                except Exception:
-                    continue
-                txt = extract_text(obj)
-                if txt and pattern.search(txt):
-                    hits += 1
+        with open(path, "rb") as fh:
+            if start:
+                fh.seek(start - 1)
+                fh.readline()  # the line that runs over start belongs to the task before
+            if end is None:
+                data = fh.read()
+            else:
+                pos = fh.tell()
+                if pos >= end:
+                    return 0
+                data = fh.read(end - pos)
+                if not data.endswith(b"\n"):
+                    data += fh.readline()
     except OSError:
-        pass
+        return 0
+    for line in io.TextIOWrapper(io.BytesIO(data), encoding="utf-8", errors="replace"):
+        if pattern.search(line):
+            hits += 1
+            continue
+        try:
+            obj = json.loads(line)
+        except Exception:
+            continue
+        txt = extract_text(obj)
+        if txt and pattern.search(txt):
+            hits += 1
+    return hits
+
+def count_all(paths):
+    """Hits per log. The logs are cut into CHUNK tasks, shared over one child per core."""
+    tasks = []
+    for i, path in enumerate(paths):
+        try:
+            size = os.path.getsize(path)
+        except OSError:
+            size = 0
+        starts = list(range(0, size, CHUNK)) or [0]
+        ends = starts[1:] + [None]  # the last task reads on to the end of the log
+        tasks += [(i, s, e) for s, e in zip(starts, ends)]
+    n = max(1, min(len(os.sched_getaffinity(0)), len(tasks)))
+    kids = []
+    for k in range(n):
+        r, w = os.pipe()
+        pid = os.fork()
+        if pid == 0:
+            try:
+                os.close(r)
+                with os.fdopen(w, "w") as fh:
+                    fh.write("".join(f"{i} {count_matches(paths[i], s, e)}\n"
+                                     for i, s, e in tasks[k::n]))
+                os._exit(0)
+            except KeyboardInterrupt:
+                pass  # the parent reports the Ctrl-C
+            except BaseException:
+                traceback.print_exc()
+            os._exit(1)
+        os.close(w)
+        kids.append((pid, r))
+    hits, failed = [0] * len(paths), False
+    for pid, r in kids:
+        with os.fdopen(r) as fh:
+            for line in fh:
+                i, h = line.split()
+                hits[int(i)] += int(h)
+        if os.waitpid(pid, 0)[1]:
+            failed = True
+    if failed:
+        print("clf: a search worker failed", file=sys.stderr)
+        sys.exit(1)
     return hits
 
 screens = live_screens(sessions)
 
 rows = []
-for mtime, sid, path in sessions:
-    hits = count_matches(path)
+for (mtime, sid, path), hits in zip(sessions, count_all([p for _, _, p in sessions])):
     if hits == 0:
         continue
     cwd, prompt = first_user_prompt(path)

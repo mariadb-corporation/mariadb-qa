@@ -71,7 +71,7 @@ still holding it.
 | File | Holds |
 |---|---|
 | `bugN.report` | the finding, in Jira syntax: title, testcase, both outcomes, the version matrix |
-| `bugN.log.sh` | a ready `~/jira` call that files `bugN.report` |
+| `bugN.log.sh` | a `~/jira` call that files `bugN.report`, once it carries `--dedup-jql` and `--dedup-since` |
 | `bugN.sql` `bugN.core` `bugN.master.err` | a crash finding only |
 | `bugs.seen` | every candidate and bug, with its UID |
 | `corlogic-<id>.log` | the run log |

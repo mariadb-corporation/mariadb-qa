@@ -1,0 +1,8 @@
+SET timestamp= UNIX_TIMESTAMP('2026-05-02 00:00:00');
+CREATE TABLE t1 (a INT) ENGINE=Aria ROW_FORMAT=FIXED WITH SYSTEM VERSIONING PARTITION BY SYSTEM_TIME INTERVAL 1 HOUR AUTO PARTITIONS 3;
+INSERT INTO t1 VALUES (1),(2);
+SET timestamp= UNIX_TIMESTAMP('2026-05-02 05:00:00');
+DELETE FROM t1 WHERE a= 1;
+SELECT * FROM t1 FOR SYSTEM_TIME ALL;
+#CLI: ERROR 1030 (HY000): Got error 174 "Fatal error during initialization of handler" from storage engine Aria, on the DELETE and on the SELECT; expected no error
+#ERR: - (no error)

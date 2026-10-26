@@ -1,0 +1,15 @@
+CREATE TABLE t1 (a INT, b INT, KEY k(b, a)) PARTITION BY RANGE (a) (PARTITION p0 VALUES LESS THAN (10), PARTITION p1 VALUES LESS THAN (20));
+INSERT INTO t1 VALUES (5,1),(12,1);
+HANDLER t1 OPEN;
+HANDLER t1 READ k = (1);
+HANDLER t1 READ k NEXT;
+#CLI: returns no row on dbg, and a = 12 on opt; expected a = 12
+#ERR: - (no error)
+
+CREATE TABLE t1 (a INT, b INT, KEY k(b, a)) PARTITION BY RANGE (a) (PARTITION p0 VALUES LESS THAN (10), PARTITION p1 VALUES LESS THAN (20));
+INSERT INTO t1 VALUES (5,1),(12,1),(7,2);
+HANDLER t1 OPEN;
+HANDLER t1 READ k = (1);
+HANDLER t1 READ k NEXT;
+#CLI: returns a = 7; expected a = 12
+#ERR: - (no error)

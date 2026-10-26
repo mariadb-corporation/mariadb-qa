@@ -134,6 +134,7 @@ GOT_ERROR|Got error 1032|when trying to execute action for entry 1 of type 'rena
 GOT_ERROR|Got error 1032|when trying to execute action for entry 2 of type 'rename table' ## MDEV-34660
 GOT_ERROR|Got error 1032|when trying to execute action for entry 4 of type 'rename table' ## MDEV-34660
 GOT_ERROR|Got error 1032|when trying to execute action for entry 5 of type 'rename table' ## MDEV-34660
+GOT_ERROR|Got error 1050|when trying to execute action for entry 1 of type 'rename table'                                                                                      ## MDEV-41809
 GOT_ERROR|Got error 1054|when reading table                    ## MDEV-29663 and MDEV-29430
 GOT_ERROR|Got error 1056|when reading table                    ## MDEV-34638
 GOT_ERROR|Got error 1064|when reading table                    ## MDEV-33042 (Spider)
@@ -257,6 +258,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|munmap_chunk|std::__shared_count<shared_ptr_base.h                                                                                      ## MDEV-21799
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
+err != DB_DUPLICATE_KEY|SIGABRT|row_rename_table_for_mysql|innobase_rename_table|ha_innobase::rename_table|handler::ha_rename_table                                            ## MDEV-41809
 ##### CURRENT BUGS (Search key: Mac) #####
 !(*with_wild)|SIGABRT|setup_wild|setup_returning_fields|select_insert::prepare|JOIN::prepare                                                                                   ## MDEV-40561
 !create_info->versioned() || (row_start_field && row_end_field)|SIGABRT|append_system_key_parts|init_key_info|mysql_prepare_create_table_finalize|mysql_create_frm_image       ## MDEv-41440
@@ -3916,3 +3918,5 @@ SIGSEGV|Sql_path::from_text|Sys_var_path::from_item|Sys_var_path::do_check|sys_v
 SIGABRT|ut_dbg_assertion_failed|wsrep_assert_valid_bf_bf_wait|wsrep_BF_has_to_wait|lock_rec_has_to_wait_wsrep                                                                  ## MDEV-41028
 SIGSEGV|ha_myisam::get_auto_increment|ha_partition::get_auto_increment|handler::update_auto_increment|ha_partition::write_row                                                  ## MDEV-41394
 SIGSEGV|ha_maria::get_auto_increment|ha_partition::get_auto_increment|handler::update_auto_increment|ha_partition::write_row                                                   ## MDEV-41394
+!m_prebuilt->table || table->versioned() == m_prebuilt->table->versioned()|SIGABRT|ha_innobase::open|handler::ha_open|ha_partition::open_read_partitions|ha_partition::open    ## MDEV-41582
+((hash)->blength != 0)|SIGABRT|my_hash_first|my_hash_search|Native_functions_hash::find|Schema::find_native_function_builder                                                   ## MDEV-39837

@@ -22,6 +22,9 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|get_new_start_alter_info|Query_log_event::handle_split_alter_query_log_event                                               ## MDEV-37770 (needs testcase)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|use-after-poison|storage/myisam/mi_key.c|_mi_pack_key|mi_rkey|handler::ha_index_read_map|ha_partition::handle_unordered_scan_next_partition                               ## MDEV-41764
+ASAN|use-after-poison|storage/innobase/row/row0sel.cc|row_sel_convert_mysql_key_to_innobase|ha_innobase::index_read|handler::ha_index_read_map|ha_partition::handle_unordered_scan_next_partition ## MDEV-41764
+ASAN|use-after-poison|storage/maria/ma_key.c|_ma_pack_key|maria_rkey|handler::ha_index_read_map|ha_partition::handle_unordered_scan_next_partition                             ## MDEV-41764
 UBSAN|member access within null pointer of type 'struct st_ma_transaction'|storage/maria/ma_key_recover.c|_ma_unpin_all_pages|_ma_search|maria_rkey|ha_maria::get_auto_increment ## MDEV-41396
 UBSAN|member access within null pointer of type 'struct _jvalue'|storage/connect/bson.h|BJSON::GetArray|BJSON::SetArrayValue|BTUTIL::MakeTopTree|TDBBSON::MakeNewDoc           ## MDEV-41339
 UBSAN|index X out of bounds for type 'ulonglong[20]' (aka 'unsigned long long[20]')|include/my_time.h|sec_part_shift|Field_time_hires::Field_time_hires|new_Field_time|Type_handler_time2::make_table_field   ## MDEV-41225

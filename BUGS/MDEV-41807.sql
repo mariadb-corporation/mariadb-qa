@@ -1,0 +1,7 @@
+CREATE TABLE t1 (i INT);
+INSERT INTO t1 VALUES (10), (20);
+CREATE TABLE t2 (y YEAR, KEY (y));
+INSERT INTO t2 VALUES (1999), (2000), (2001), (2002), (2003);
+SELECT COUNT(*) FROM t1 STRAIGHT_JOIN t2 WHERE t2.y > t1.i;
+#CLI: 0; expected 10 (as with IGNORE INDEX (y))
+#ERR: - (no error)
