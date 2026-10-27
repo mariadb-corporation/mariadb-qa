@@ -258,6 +258,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+!thd->is_fatal_error|SIGABRT|Sp_handler::find_package_spec|is_package_public_routine|Sql_path::try_resolve_in_schema|Sql_path::resolve                                         ## MDEV-41838
 SIGSEGV|Item_trigger_row::check_if_settable|Table_triggers_list::mark_fields_usedsql_trigger.cc|iterate_trigger_row_and_run_func<Table_triggers_list::mark_fields_usedsql_trigger.cc|Table_triggers_list::mark_fields_used ## MDEV-41826
 value|SIGABRT|Field::sp_prepare_and_store_item|Virtual_tmp_table::sp_set_all_fields_from_item|Field_row::sp_prepare_and_store_item|THD::sp_eval_expr                           ## MDEV-41825
 SIGSEGV|THD::sp_fix_func_item|THD::sp_fix_func_item_for_assignment|Field::sp_prepare_and_store_item|Virtual_tmp_table::sp_set_all_fields_from_item                             ## MDEV-41825
