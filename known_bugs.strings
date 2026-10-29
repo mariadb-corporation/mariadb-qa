@@ -258,6 +258,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+!((system_charset_info)->coll->strcasecmp((system_charset_info), (dict_table_get_col_name( ib_table, j)), (field->field_name.str)))|SIGABRT|innobase_build_v_templ|ha_innobase::open|handler::ha_open|open_table_from_share           ## MDEV-41254
+field->field_name.streq( dict_table_get_col_name(ib_table, j))|SIGABRT|innobase_build_v_templ|ha_innobase::open|handler::ha_open|open_table_from_share                         ## MDEV-41254
 !check_name_with_error(name)|SIGABRT|Lex_ident_routine::Lex_ident_routine|sp_package::LexList::find_qualified|sp_package::LexList::check_dup_qualified|sp_package::LexList::check_dup_qualified ## MDEV-41816
 SIGABRT|__libc_message_impl|malloc_printerr|_int_free_merge_chunk|_int_free                                                                                                    ## MDEV-41880
 pkg == pkg->m_top_level_lex->sphead|SIGABRT|LEX::cleanup_lex_after_parse_error|parse_sql|sp_lex_instr::parse_expr|sp_lex_keeper::validate_lex_and_exec_core                    ## MDEV-41880
