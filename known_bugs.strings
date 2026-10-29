@@ -259,6 +259,13 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 
 ##### CURRENT BUGS (Search key: Mac) #####
 SIGSEGV|create_table_impl|mysql_create_table_no_lock|mysql_create_table|Sql_cmd_create_table_like::execute                                                                     ## MDEV-41875
+SIGSEGV|THD::in_stored_procedure|THD::reset_slow_query_state|sp_instr_stmt::execute|sp_head::execute                                                                           ## MDEV-41874
+SIGSEGV|THD::is_error|Item::save_in_field|fill_record|fill_record_n_invoke_before_triggers                                                                                     ## MENT-3190
+0|SIGABRT|Item_composite::illegal_method_call|Item_composite::val_int|Item::to_longlong_null|Item::to_longlong_hybrid_null                                                     ## MENT-3188
+is_valid_ident()|SIGABRT|Lex_ident<Compare_ident_ci>::streq|Virtual_tmp_table::sp_find_field_by_name|Virtual_tmp_table::sp_find_field_by_name_or_error|Type_handler_row::get_item_index ## MENT-3185
+SIGSEGV|Dbms_sql_common::RContext_package_body::store_assoc0_elem|Item_func_dbms_sql_parse::to_bool_null_core|Handler_bool_using_core<Item_func_dbms_sql_parse>::to_bool_null|Item_handled_func::Handler_bool::val_bool ## MENT-3184
+!is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|do_execute_sp|mysql_execute_command                                        ## MENT-3183
+!is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_do|Sql_cmd_call_plugin::execute                                      ## MENT-3183
 SIGSEGV|end_io_cache|close_cached_file|Unique::~Unique|Item_func_group_concat::cleanup                                                                                         ## MDEV-41859
 SIGSEGV|sec_part_shift|Field_time_hires::Field_time_hires|new_Field_time|Type_handler_time2::make_table_field                                                                  ## MDEV-41847
 dec <= 6|SIGABRT|Field_time_with_dec::Field_time_with_dec|Field_time_hires::Field_time_hires|new_Field_time|Type_handler_time2::make_table_field                               ## MDEV-41847
