@@ -22,6 +22,7 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|get_new_start_alter_info|Query_log_event::handle_split_alter_query_log_event                                               ## MDEV-37770 (needs testcase)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|member access within null pointer of type 'transaction_participant'|sql/sql_table.cc|create_table_impl|mysql_create_table_no_lock|mysql_create_table|Sql_cmd_create_table_like::execute  ## MDEV-41875
 ASAN|use-after-poison|include/my_sys.h|my_b_inited|close_cached_file|Unique::~Unique|Item_func_group_concat::cleanup                                                           ## MDEV-41859
 UBSAN|member access within null pointer of type 'struct st_ma_transaction'|storage/maria/ma_key_recover.c|_ma_unpin_all_pages|_ma_search|maria_rkey|ha_maria::get_auto_increment ## MDEV-41396
 UBSAN|member access within null pointer of type 'struct _jvalue'|storage/connect/bson.h|BJSON::GetArray|BJSON::SetArrayValue|BTUTIL::MakeTopTree|TDBBSON::MakeNewDoc           ## MDEV-41339

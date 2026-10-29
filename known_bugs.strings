@@ -258,6 +258,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|create_table_impl|mysql_create_table_no_lock|mysql_create_table|Sql_cmd_create_table_like::execute                                                                     ## MDEV-41875
 SIGSEGV|end_io_cache|close_cached_file|Unique::~Unique|Item_func_group_concat::cleanup                                                                                         ## MDEV-41859
 SIGSEGV|sec_part_shift|Field_time_hires::Field_time_hires|new_Field_time|Type_handler_time2::make_table_field                                                                  ## MDEV-41847
 dec <= 6|SIGABRT|Field_time_with_dec::Field_time_with_dec|Field_time_hires::Field_time_hires|new_Field_time|Type_handler_time2::make_table_field                               ## MDEV-41847
