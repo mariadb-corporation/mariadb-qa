@@ -261,6 +261,9 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|Item_cache_row::store|sp_rcontext::set_case_expr|sp_instr_set_case_expr::exec_core|sp_lex_keeper::reset_lex_and_exec_core                                              ## MDEV-41983
+SIGABRT|Type_handler_composite::Item_val_bool|Item::val_bool|Item_cond_and::val_bool|Item_bool_func::val_int                                                                   ## MDEV-41982
+SIGABRT|Type_handler_composite::Item_val_bool|Item_cond_and::val_bool|Item_bool_func::val_int|Item_func_set_user_var::check                                                    ## MDEV-41982
 err != DB_DUPLICATE_KEY|SIGABRT|row_rename_table_for_mysql|innobase_rename_table|ha_innobase::rename_table|handler::ha_rename_table                                            ## MDEV-41809
 !((system_charset_info)->coll->strcasecmp((system_charset_info), (dict_table_get_col_name( ib_table, j)), (field->field_name.str)))|SIGABRT|innobase_build_v_templ|ha_innobase::open|handler::ha_open|open_table_from_share           ## MDEV-41254
 field->field_name.streq( dict_table_get_col_name(ib_table, j))|SIGABRT|innobase_build_v_templ|ha_innobase::open|handler::ha_open|open_table_from_share                         ## MDEV-41254
