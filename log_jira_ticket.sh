@@ -95,12 +95,13 @@ Modes:
                        Valid --link-type values: Blocks, Duplicate, "Issue split", PartOf,
                        Problem/Incident ("is caused by" / "causes"), Relates. An unknown
                        value is rejected; the list is read back from the server.
-  --edit KEY         Change versions and/or labels on an EXISTING issue. Adding is additive,
+  --edit KEY         Change versions, labels and/or the title on an EXISTING issue. Adding is additive,
                      so what is already there stays; a --remove- option takes one value off:
                        --edit KEY --affects-version 13.0 [--affects-version 13.1] [--fix-version 13.0] [--es-version 13.0]
                        --edit KEY --label corruption [--label security]
                        --edit KEY --label corruption --affects-version 13.1   (versions + labels combinable)
                        --edit KEY --remove-fix-version N/A --fix-version 13.0  (replace a placeholder)
+                       --edit KEY -s 'New title'                               (set the title)
                        --remove-affects-version V / --remove-es-version V / --remove-fix-version V
                      Use mainline X.Y names only (13.0, not 13.0.1).
                      An out-of-support version is refused for Affects CS and Fix, see below.
@@ -537,7 +538,8 @@ case "$MODE" in
        + (if ($ev|length) > 0 then {customfield_13204: $ev}   else {} end)
        + (if ($lb|length) > 0 then {labels: $lb}              else {} end)')"
     if [ -n "$ASSIGNEE" ]; then fld_json="$(jq -n --arg a "$ASSIGNEE" '{assignee:{name:$a}}')"; else fld_json='{}'; fi
-    [ "$(printf '%s' "$upd" | jq 'length')" -gt 0 ] || [ "$(printf '%s' "$fld_json" | jq 'length')" -gt 0 ] || die "--edit needs at least one --affects-version/--fix-version/--es-version/--label/--assignee, or the --remove- form of a version option"
+    if [ -n "$SUMMARY" ]; then fld_json="$(printf '%s' "$fld_json" | jq --arg s "$SUMMARY" '. + {summary: $s}')"; fi
+    [ "$(printf '%s' "$upd" | jq 'length')" -gt 0 ] || [ "$(printf '%s' "$fld_json" | jq 'length')" -gt 0 ] || die "--edit needs at least one --affects-version/--fix-version/--es-version/--label/--assignee/--summary, or the --remove- form of a version option"
     payload="$(jq -n --argjson u "$upd" --argjson f "$fld_json" \
       '(if ($u|length) > 0 then {update: $u} else {} end)
        + (if ($f|length) > 0 then {fields: $f} else {} end)')"

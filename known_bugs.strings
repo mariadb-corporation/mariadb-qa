@@ -42,6 +42,7 @@ MARIADBD_ERROR|mariadbd: Got an error writing communication packets  ## Occassio
 MARIADBD_ERROR|mariadbd: file-key-management-filename is not set  ## SPECIAL-45 (non-issue; attempt to install file_key_management without correct setup)
 MARIADBD_ERROR|mariadbd: Cannot load from mysql.procs_priv. The table is probably corrupted  ## SPECIAL-47 (mysql.* table corruption non-issue)
 MARIADBD_ERROR|mariadbd: Cannot load from mysql.host. The table is probably corrupted  ## SPECIAL-50 (mysql.host table corruption non-issue)
+MARIADBD_ERROR|Table '                                                                                                                                                                                              t1' corrupted: row in wrong partition: (2 != 1) a:3Please REPAIR the table!  ## MDEV-41873
 MARIADB_ERROR_CODE|MariaDB error code: 0     ## MDEV-33359
 MARIADB_ERROR_CODE|MariaDB error code: 1017
 MARIADB_ERROR_CODE|MariaDB error code: 1030  ## MDEV-22936
@@ -156,6 +157,7 @@ GOT_ERROR|Got error 1969|when trying to execute action for entry 1 of type 'rena
 GOT_ERROR|Got error 1969|when trying to execute action for entry 2 of type 'rename table'  ## MDEV-33196 (Spider)
 GOT_ERROR|Got error 1969|when trying to execute action for entry 3 of type 'rename table'  ## MDEV-33196 (Spider)
 GOT_ERROR|Got error 1969|when trying to execute action for entry 4 of type 'rename table'  ## MDEV-33196 (Spider)
+GOT_ERROR|Got error 4091|when trying to execute action for entry 3 of type 'create table'  ## MDEV-41811
 GOT_ERROR|Got error 12524|when reading table                   ## MDEV-33196
 GOT_ERROR|Got error 12524|when trying to execute action for entry 1 of type 'rename table'  ## MDEV-33196 (Spider)
 GOT_ERROR|Got error 12524|when trying to execute action for entry 2 of type 'rename table'  ## MDEV-33196 (Spider)
@@ -876,6 +878,7 @@ SIGSEGV|spider_string::length|spider_link_get_key|my_hash_key|hashcmp           
 m_lock_type == 2|SIGABRT|handler::ha_close|closefrm|THD::close_temporary_table|THD::free_temporary_table                                                                       ## MDEV-35014
 len_arg > 0|SIGABRT|Field_varstring_compressed::Field_varstring_compressed|Type_handler_varchar::make_table_field_from_def|Column_definition_attributes::make_field|Column_definition::make_field ## MDEV-35013
 !is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_insert|mysql_execute_command                                         ## MDEV-35008
+!is_set() || (m_status == DA_OK_BULK && is_bulk_op())|SIGABRT|Diagnostics_area::set_ok_status|my_ok|mysql_insert|mysql_execute_command                                         ## MDEV-41877
 SIGSEGV|spider_db_rollback|spider_rollback|ha_rollback_trans|trans_rollback_stmt                                                                                               ## MDEV-34997
 SIGSEGV|spider_tree_first|spider_rollback|ha_rollback_trans|trans_rollback_stmt                                                                                                ## MDEV-34997
 fts_id_index->fields[1].col->vers_sys_end()|SIGABRT|fts_add_doc_by_id|fts_add|fts_commit_table|fts_commit                                                                      ## MDEV-34982
