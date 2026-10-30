@@ -25,6 +25,10 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 ASAN|use-after-poison|storage/myisam/mi_key.c|_mi_pack_key|mi_rkey|handler::ha_index_read_map|ha_partition::handle_unordered_scan_next_partition                               ## MDEV-41764
 ASAN|use-after-poison|storage/innobase/row/row0sel.cc|row_sel_convert_mysql_key_to_innobase|ha_innobase::index_read|handler::ha_index_read_map|ha_partition::handle_unordered_scan_next_partition ## MDEV-41764
 ASAN|use-after-poison|storage/maria/ma_key.c|_ma_pack_key|maria_rkey|handler::ha_index_read_map|ha_partition::handle_unordered_scan_next_partition                             ## MDEV-41764
+ASAN|heap-use-after-free|storage/perfschema/pfs.cc|__asan_memcpy|pfs_set_thread_info_v1|sp_instr_stmt::execute|sp_head::execute                                                ## MDEV-41881
+UBSAN|member access within null pointer of type 'transaction_participant'|sql/sql_table.cc|create_table_impl|mysql_create_table_no_lock|mysql_create_table|Sql_cmd_create_table_like::execute  ## MDEV-41875
+UBSAN|applying non-zero offset X to null pointer|storage/maria/ma_blockrec.c|_ma_scan_remember_block_record|Materialized_cursor::try_fetch|sp_cursor::try_fetch|Item_func_dbms_sql_fetch_rows::to_longlong_null_core ## MENT-3187
+ASAN|use-after-poison|include/my_sys.h|my_b_inited|close_cached_file|Unique::~Unique|Item_func_group_concat::cleanup                                                           ## MDEV-41859
 UBSAN|member access within null pointer of type 'struct st_ma_transaction'|storage/maria/ma_key_recover.c|_ma_unpin_all_pages|_ma_search|maria_rkey|ha_maria::get_auto_increment ## MDEV-41396
 UBSAN|member access within null pointer of type 'struct _jvalue'|storage/connect/bson.h|BJSON::GetArray|BJSON::SetArrayValue|BTUTIL::MakeTopTree|TDBBSON::MakeNewDoc           ## MDEV-41339
 UBSAN|member access within null pointer of type 'ROLE_GRANT_PAIR'|sql/sql_acl.cc|show_role_grants|mysql_show_grants|mysql_execute_command|mysql_parse                          ## MDEV-41123
@@ -50,7 +54,6 @@ UBSAN|member access within null pointer of type 'struct ha_table_option_struct'|
 ASAN|stack-buffer-overflow|storage/connect/plugutil.cpp|strcpy|PlugSetPath|TDBDIR::Path|TDBDIR::OpenDB                                                                         ## MDEV-40858
 UBSAN|addition of unsigned offset to X overflowed to Y|storage/connect/bson.cpp|BDOC::ParseValue|BDOC::ParseJson|TDBBSON::MakeDocument|TDBBSON::Cardinality                    ## MDEV-40858
 ASAN|heap-buffer-overflow|storage/connect/tabfmt.cpp|TDBCSV::ReadBuffer|CntReadNext|ha_connect::rnd_next|handler::ha_rnd_next                                                  ## MDEV-40856
-MSAN|use-of-uninitialized-value|storage/federated/ha_federated.cc|ha_federated::end_bulk_insert|mysql_insert|mysql_execute_command|mysql_parse                                 ## MDEV-40854
 ASAN|global-buffer-overflow|sql/sql_type.h|Type_handler_datetime::hires_bytes|Field_datetime_hires::pack_length|Create_tmp_table::add_field|Create_tmp_table::add_fields       ## MDEV-40836
 UBSAN|member call on address X which does not point to an object of type 'TDB'|storage/connect/ha_connect.cc|ha_connect::rnd_pos|handler::ha_rnd_pos|rr_from_pointers|Sql_cmd_delete::delete_from_single_table  ## MDEV-40842
 UBSAN|index X out of bounds for type 'uint[7]' (aka 'unsigned int[7]')|sql/sql_type.h|Type_handler_datetime::hires_bytes|Field_datetime_hires::pack_length|Create_tmp_table::add_field|Create_tmp_table::add_fields ## MDEV-40836
@@ -62,7 +65,6 @@ UBSAN|load of value X, which is not a valid value for type 'bool'|storage/connec
 MSAN|use-of-uninitialized-value|sql/sql_lex.cc|LEX::find_type_def|MYSQLparse|parse_sql|mysql_parse                                                                             ## MDEV-40654
 pkg|SIGABRT|is_package_public_routine_quick|Sp_handler::sp_resolve_package_routine_implicit|Create_sp_func::create_with_db|Create_qfunc::create_func                           ## MDEV-40654
 MSAN|use-of-uninitialized-value|storage/innobase/handler/ha_innodb.cc|create_index|create_table_info_t::create_table|ha_innobase::create|handler::ha_create                    ## MDEV-40734
-MSAN|use-of-uninitialized-value|sql/item_timefunc.cc|extract_date_time|Item_func_str_to_date::get_date_common|Type_handler_temporal_with_date::Item_update_null_value|Item_func::is_null  ## MDEV-40616
 UBSAN|member call on null pointer of type 'Item'|sql/filesort.cc|sortlength|filesort|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner                    ## MDEV-33121
 MSAN|use-of-uninitialized-value|sql/opt_range_mrr.cc|sel_arg_range_seq_next|trace_ranges|get_best_group_min_max|SQL_SELECT::test_quick_select                                  ## MDEV-40607
 MSAN|use-of-uninitialized-value|storage/connect/connect.cc|CntReadNext|ha_connect::rnd_next|handler::ha_rnd_next|ha_partition::rnd_next                                        ## MDEV-40599
@@ -111,7 +113,6 @@ MSAN|use-of-uninitialized-value|sql/item_subselect.h|subselect_uniquesubquery_en
 MSAN|use-of-uninitialized-value|storage/connect/xindex.cpp|XFILE::Write|XINDEX::SaveIndex|XINDEX::Make|TDBDOS::MakeIndex                                                       ## MDEV-40310
 MSAN|use-of-uninitialized-value|storage/heap/hp_hash.c|hp_rec_hashnr|hp_write_key|heap_write|ha_heap::write_row                                                                ## MDEV-40302
 UBSAN|member call on null pointer of type 'dict_table_t'|storage/innobase/handler/ha_innodb.cc|innobase_copy_frm_flags_from_table_share|ha_innobase::commit_inplace_alter_table|mysql_inplace_alter_table|mysql_alter_table   ## MDEV-40274
-UBSAN|member access within null pointer of type 'HASH_INFO' (aka 'struct st_hp_hash_info')|storage/heap/hp_hash.c|hp_movelink|hp_delete_key|heap_delete|ha_heap::delete_row    ## MDEV-40232
 UBSAN|member access within null pointer of type 'MARIA_STATE_HISTORY' (aka 'struct st_state_history')|storage/maria/ma_state.c|_ma_reset_history|_ma_trnman_end_trans_hook|trnman_end_trn|ma_commit  ## MDEV-40202
 ASAN|heap-use-after-free|sql/sql_class.cc|THD::set_sent_row_count|select_export::~select_export|select_export::~select_export|sp_lex_keeper::~sp_lex_keeper                    ## MDEV-40119
 ASAN|use-after-poison|asan_interceptors_memintrinsics.cpp|__asan_memcpy|my_strnxfrm_8bit_bin|charset_info_st::strnxfrm|Field_varstring::sort_string                            ## MDEV-40339
@@ -1247,3 +1248,6 @@ UBSAN|load of value X, which is not a valid value for type 'geometry_type'|sql/u
 # UBSAN|load of value X, which is not a valid value for type 'bool'|sql/sql_delete.cc|multi_delete::send_data|select_result_sink::send_data_with_check|end_send|evaluate_join_record ## Fixed ## MDEV-40573
 # ASAN|stack-buffer-overflow|crtstuff.c|scanf_common|__isoc23_sscanf|TDBTBL::TestFil|TDBTBL::InitTableList                                                            ## Fixed ## MDEV-40867
 # UBSAN|index X out of bounds for type 'ulonglong[20]' (aka 'unsigned long long[20]')|include/my_time.h|sec_part_shift|Field_time_hires::Field_time_hires|new_Field_time|Type_handler_time2::make_table_field   ## Fixed ## MDEV-41225
+# UBSAN|member access within null pointer of type 'HASH_INFO' (aka 'struct st_hp_hash_info')|storage/heap/hp_hash.c|hp_movelink|hp_delete_key|heap_delete|ha_heap::delete_row    ## Fixed ## MDEV-40232
+# MSAN|use-of-uninitialized-value|sql/item_timefunc.cc|extract_date_time|Item_func_str_to_date::get_date_common|Type_handler_temporal_with_date::Item_update_null_value|Item_func::is_null  ## Fixed ## MDEV-40616
+# MSAN|use-of-uninitialized-value|storage/federated/ha_federated.cc|ha_federated::end_bulk_insert|mysql_insert|mysql_execute_command|mysql_parse                      ## Fixed ## MDEV-40854
