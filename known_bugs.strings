@@ -261,6 +261,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGABRT|__cxa_throw|std::__throw_out_of_range_fmt|std::vector<PageBulk*, ut_allocator<PageBulk*, true> >::_M_range_check|std::vector<PageBulk*, ut_allocator<PageBulk*, true> >::at  ## MDEV-42001
+m_root_level + 1 == m_page_bulks.size()|SIGABRT|BtrBulk::release|row_merge_read_clustered_index|row_merge_build_indexes|ha_innobase::inplace_alter_table                       ## MDEV-42001
 SIGSEGV|Dep_analysis_context::dbug_print_deps|check_func_dependency|eliminate_tables_for_list|eliminate_tables_for_list                                                        ## MDEV-41997
 trx->error_state == DB_SUCCESS|SIGABRT|ut_dbg_assertion_failed|que_eval_sql|trx_t::drop_table|fts_drop_table                                                                   ## MDEV-37833
 !node->table->skip_alter_undo|SIGABRT|row_upd_clust_rec|row_upd_clust_step|row_upd|row_upd_step                                                                                ## MDEV-41994
