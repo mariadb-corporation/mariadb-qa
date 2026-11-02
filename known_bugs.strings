@@ -261,6 +261,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+trx->error_state == DB_SUCCESS|SIGABRT|ut_dbg_assertion_failed|que_eval_sql|trx_t::drop_table|fts_drop_table                                                                   ## MDEV-37833
 !node->table->skip_alter_undo|SIGABRT|row_upd_clust_rec|row_upd_clust_step|row_upd|row_upd_step                                                                                ## MDEV-41994
 SIGSEGV|Item_cache_row::store|sp_rcontext::set_case_expr|sp_instr_set_case_expr::exec_core|sp_lex_keeper::reset_lex_and_exec_core                                              ## MDEV-41983
 SIGABRT|Type_handler_composite::Item_val_bool|Item::val_bool|Item_cond_and::val_bool|Item_bool_func::val_int                                                                   ## MDEV-41982
