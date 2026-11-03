@@ -261,6 +261,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+field->col->mtype == type|SIGABRT|ut_dbg_assertion_failed|row_sel_convert_mysql_key_to_innobase|ha_innobase::records_in_range|handler::multi_range_read_info_const             ## MDEV-42010
 page_dir_get_n_heap(new_page) == 2U|SIGABRT|PageBulk::init|BtrBulk::finish|row_fts_merge_insert|fts_parallel_merge                                                             ## MDEV-37458
 page_dir_get_n_heap(new_page) == 2U|SIGABRT|PageBulk::init|BtrBulk::finish|row_fts_merge_insert|tpool::task::execute                                                           ## MDEV-37458
 !err|SIGABRT|ha_innobase::truncate|handler::ha_truncate|Sql_cmd_truncate_table::handler_truncate|Sql_cmd_truncate_table::truncate_table                                        ## MDEV-42006
