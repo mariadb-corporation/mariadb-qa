@@ -261,6 +261,10 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+locale == my_locales[locale->number]|SIGABRT|my_locale_by_number|check_locale|sys_var::check|set_var::check                                                                    ## MDEV-42168
+sp_params->elements == thd->lex->prepared_stmt.param_count()|SIGABRT|Protocol_text::send_out_parameters|Prepared_statement::execute|Prepared_statement::execute_loop|mysql_sql_stmt_execute ## MENT-3217
+0|SIGABRT|Item_param::save_in_field|fill_record|select_unit::send_data|select_result_sink::send_data_with_check                                                                ## MENT-3216
+inited == NONE || table->open_by_handler|SIGABRT|handler::ha_external_lock|handler::ha_external_unlock|unlock_external|mysql_unlock_tables                                     ## MENT-3215
 index->table->get_ref_count() || !index->table->can_be_evicted|SIGABRT|lock_rec_create_low|lock_rec_lock|lock_clust_rec_read_check_and_lock|row_ins_set_shared_rec_lock        ## MDEV-42119
 index->table->get_ref_count() || !index->table->can_be_evicted|SIGABRT|lock_rec_create|lock_rec_lock|lock_clust_rec_read_check_and_lock|row_ins_set_shared_rec_lock            ## MDEV-42119
 !return_error || thd->is_error() || thd->killed|SIGABRT|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner|Sql_cmd_dml::execute|mysql_execute_command      ## MDEV-42085

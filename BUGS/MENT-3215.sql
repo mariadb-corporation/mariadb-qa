@@ -1,0 +1,5 @@
+CREATE TABLE t1 (a INT);
+INSERT INTO t1 VALUES (1),(2);
+DELIMITER $$
+BEGIN NOT ATOMIC  SELECT sys.dbms_sql.fetch_rows(0) FROM t1; END; $$
+DELIMITER ;
