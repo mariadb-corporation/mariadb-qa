@@ -261,6 +261,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+0|SIGABRT|btr_search_hash_table_validate|btr_search_validate|ha_innobase::check|handler::ha_check                                                                              ## MDEV-42174
 locale == my_locales[locale->number]|SIGABRT|my_locale_by_number|check_locale|sys_var::check|set_var::check                                                                    ## MDEV-42168
 sp_params->elements == thd->lex->prepared_stmt.param_count()|SIGABRT|Protocol_text::send_out_parameters|Prepared_statement::execute|Prepared_statement::execute_loop|mysql_sql_stmt_execute ## MENT-3217
 0|SIGABRT|Item_param::save_in_field|fill_record|select_unit::send_data|select_result_sink::send_data_with_check                                                                ## MENT-3216
