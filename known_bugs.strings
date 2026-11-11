@@ -261,6 +261,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+0|SIGABRT|ha_partition::can_skip_merging_scans|ha_partition::multi_range_read_next|JOIN_TAB_SCAN_MRR::next|JOIN_CACHE::join_matching_records                                   ## MDEV-42183
+bit < map->n_bits|SIGABRT|bitmap_is_set|ha_partition::handle_ordered_index_scan|ha_partition::multi_range_read_next|JOIN_TAB_SCAN_MRR::next                                    ## MDEV-42183 
 0|SIGABRT|btr_search_hash_table_validate|btr_search_validate|ha_innobase::check|handler::ha_check                                                                              ## MDEV-42174
 locale == my_locales[locale->number]|SIGABRT|my_locale_by_number|check_locale|sys_var::check|set_var::check                                                                    ## MDEV-42168
 sp_params->elements == thd->lex->prepared_stmt.param_count()|SIGABRT|Protocol_text::send_out_parameters|Prepared_statement::execute|Prepared_statement::execute_loop|mysql_sql_stmt_execute ## MENT-3217
