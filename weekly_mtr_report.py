@@ -11,8 +11,25 @@ so it needs no Claude login and no token:
      builder verdict (every failure on one builder = likely builder/environment problem).
   3. Looks every test up on jira.mariadb.org (anonymous, read-only, exact-phrase JQL; a test named after
      its own MDEV is fetched by key) and sorts it into "needs a bug", "fixed in Jira but still failing",
-     "known, open MDEV" or "only closed tickets".
-  4. Writes report.md and report.html, and the rows of every failing run (gzipped), to the run folder.
+     "fixed in Jira, failed only before the fix reached the branch", "known, open MDEV" or "only closed
+     tickets". A ticket whose title names the test is the link only when
+     its text holds the failure line; a namesake about another failure is listed as "only mentioned". When
+     the failures follow a rarely mentioned builder platform (all on Fedora 45 and Ubuntu 26.10 builders) the
+     platform is looked up too, for a ticket fixed shortly before the failures began that still fails on its
+     fix branches. For such a fixed ticket GitHub says which release branches have the fix ("Fixed only in 11.8
+     and below"): Jira's Fix Version/s are filled in for every branch the fix is meant for, merged or not.
+     GitHub also says which of the failing builds had the fix. A failure dated after the ticket was resolved is
+     "still failing after the fix" only when its build's commit contains the fix commit (compare: ahead or
+     identical): a fix reaches a branch by a merge-up, often days after the ticket is closed, so a failure on a
+     build without it is "failed before the fix reached the branch" (the branch has it now) or "failing on a
+     branch that does not have the fix yet" (the merge-up is still to come).
+     For a test named after its own MDEV (galera.MDEV-40727) the fix that counts is that of the Closed/Fixed ticket whose
+     text holds the failure line, the one resolved last: the test's own ticket, a follow-up found by the test name, or a
+     Closed ticket that the own ticket relates to (a follow-up filed after the own fix, for a result file that went stale
+     in a merge-up say, has a fix of its own). Only when no ticket holds the line is it the own ticket's fix.
+     GitHub gives anonymous clients 60 requests an hour; set GITHUB_TOKEN (or GH_TOKEN) in the crontab to lift it.
+  4. Writes report.md and report.html, and the rows of every failing run (gzipped), to the run folder. The
+     report opens with a "Single-slide summary": the top SLIDE_TESTS tests as plain lines to paste onto a slide.
   5. Emails RECIPIENT the report: report.html is the HTML body of the email and the plain-text part holds the
      report location and a short headline. When a step failed a failure notice is sent instead.
 Nothing is written to Jira, GitHub or this repository.
@@ -35,6 +52,7 @@ import argparse
 import fcntl
 import gzip
 import html
+import importlib.util
 import json
 import re
 import shutil
@@ -64,8 +82,28 @@ EMAIL_SCRIPT = Path.home() / ".claude" / "skills" / "email" / "send_email.py"
 PULL_TIMEOUT_SECONDS = 240 * 60
 WINDOW_DAYS = 7
 TOP_BUILDERS = 3
+# Tests listed in the single-slide summary at the top of the report
+SLIDE_TESTS = 10
 JIRA_URL = "https://jira.mariadb.org"
 JIRA_SLEEP_SECONDS = 1.0
+# A test whose failures sit (nearly) all on a few platforms, e.g. the new Fedora 45 and Ubuntu 26.10 builders, is also
+# looked up by platform: PLATFORM_SHARE of its failures must sit on at most PLATFORM_MAX platforms, the ticket must have
+# been fixed no more than PLATFORM_FIX_DAYS before the first failure of the test, and no more than PLATFORM_MAX_HITS
+# tickets may mention the platform (a phrase like Debian 12 or Ubuntu 22.04 is in hundreds and points at nothing)
+PLATFORM_SHARE = 0.9
+PLATFORM_MAX = 3
+PLATFORM_FIX_DAYS = 60
+PLATFORM_MAX_HITS = 10
+# GitHub failures (a quota spent counts at once; a fix commit that is simply not there does not count) after which the
+# run stops asking which branches have a fix
+GIT_MAX_FAILURES = 2
+# The failing builds of a fixed ticket are compared with its fix commit, one GitHub request per different commit (the
+# answers are kept for the run, so a commit that ten tests failed on costs one). With more commits than this they are
+# not compared, and the failures keep Jira's wording
+GIT_MAX_COMMIT_CHECKS = 40
+# A test named after its own MDEV (galera.MDEV-40727) also looks at the closed tickets that its own ticket relates to, as a
+# follow-up of the test is filed as an MDEV of its own and linked to it. At most this many linked tickets are read per test
+LINKED_MAX = 5
 
 # ---------------------------------------------------------------------------------------------
 # Internal, do not change
@@ -76,7 +114,10 @@ POOLED_MARKER = "Top failing tests pooled across every suite fetched in this run
 VERSION_REGEX = re.compile(r"^(((10|11|12|13)\.\d+)|main)$")
 FIX_VERSION_REGEX = re.compile(r"^(\d+\.\d+)(?:\.\d+)?$")
 KEY_IN_NAME_REGEX = re.compile(r"(?i)(?:^|[._])mdev[-_](\d+)")
-JIRA_FIELDS = "summary,status,resolution,resolutiondate,fixVersions,issuelinks"
+# Builder names read <arch>-<os>-<version>[-<flavour>]: amd64-fedora-45, aarch64-ubuntu-2610, x86-debian-12-fulltest
+BUILDER_PLATFORM_REGEX = re.compile(r"^(?:amd64|aarch64|ppc64le|s390x|x86)-(fedora|ubuntu|debian|rhel|freebsd|centos|almalinux|rocky|opensuse|alpine)-(\d+)\b")
+PLATFORM_NAMES = {"rhel": "RHEL", "freebsd": "FreeBSD", "almalinux": "AlmaLinux", "opensuse": "openSUSE"}
+JIRA_FIELDS = "summary,status,resolution,resolutiondate,created,fixVersions,issuelinks"
 # MTR framing that says nothing about what failed; never used as a search fragment
 GENERIC_FRAGMENTS = {
     "result length mismatch",
@@ -86,9 +127,18 @@ GENERIC_FRAGMENTS = {
 WORKER_REGEX = re.compile(r"\bw\d+\b")
 TIME_REGEX = re.compile(r"\d{4}-\d\d-\d\d[ T]\d\d:\d\d:\d\d(?:\.\d+)?(?:Z| ?[+-]\d{4})?")
 FRAMING_REGEX = re.compile(
-    r"^(?:\S+\s+(?:'[\w-]+'\s+)?wN\s+\[\s*[\w-]+\s*\]|\s*Test ended at|CURRENT_TEST:|--- |\+\+\+ |@@ )"
+    r"^(?:\S+\s+(?:'[^']+'\s+)?wN\s+\[\s*[\w-]+\s*\]|\s*Test ended at|CURRENT_TEST:|--- |\+\+\+ |@@ )"
 )
 RUN_LOG: Path | None = None
+# platform -> (tickets that mention it, those that are Closed/Fixed); the same platform comes up for every test of a
+# platform-wide failure, so each question goes to Jira once per run
+PLATFORM_TICKETS: dict[str, tuple[int, list[dict]]] = {}
+# The pull script as a module (its GitHub helpers), loaded on first use; and why GitHub is not asked any more this run
+PULL_MODULE = None
+GIT_BLOCKED = ""
+GIT_FAILURES = 0
+# Said after a 'still failing after the fix' that rests on the dates alone: GitHub could not compare all failing builds with the fix commit
+UNCHECKED = "the failing builds were not all compared with the fix commit"
 
 
 class StepError(Exception):
@@ -97,6 +147,10 @@ class StepError(Exception):
 
 class JiraError(Exception):
     """A Jira lookup failed (HTTP error, timeout, bad JSON)."""
+
+
+class GitError(Exception):
+    """The branches that have a fix could not be worked out (no fix commit found, no Fix Version/s branch)."""
 
 
 def log(message: str) -> None:
@@ -211,6 +265,34 @@ def compress_rows(run_dir: Path) -> list[str]:
 # ---------------------------------------------------------------------------------------------
 # Per-test analysis (no network)
 # ---------------------------------------------------------------------------------------------
+def builder_platform(name: str) -> str | None:
+    """The platform the way a ticket writes it: 'Fedora 45' for amd64-fedora-45, 'Ubuntu 26.10' for aarch64-ubuntu-2610."""
+    match = BUILDER_PLATFORM_REGEX.match(name)
+    if not match:
+        return None
+    distro, version = match.groups()
+    if distro == "ubuntu" and len(version) == 4:
+        version = f"{version[:2]}.{version[2:]}"
+    return f"{PLATFORM_NAMES.get(distro, distro.capitalize())} {version}"
+
+
+def failing_platforms(builders: Counter) -> list[str]:
+    """The few platforms that hold PLATFORM_SHARE of the failures; none when they are spread wider or on unnamed builders."""
+    total = sum(builders.values())
+    per_platform: Counter = Counter()
+    for name, count in builders.items():
+        per_platform[builder_platform(name)] += count
+    chosen, covered = [], 0
+    for platform, count in per_platform.most_common(PLATFORM_MAX):
+        if platform is None:
+            return []
+        chosen.append(platform)
+        covered += count
+        if covered >= PLATFORM_SHARE * total:
+            return chosen
+    return []
+
+
 def analyse(entry: dict, rows_by_test: dict[str, list[dict]]) -> dict:
     test = entry["test_name"]
     release = [r for r in rows_by_test.get(test, []) if VERSION_REGEX.match(r["branch"])]
@@ -246,6 +328,8 @@ def analyse(entry: dict, rows_by_test: dict[str, list[dict]]) -> dict:
         "last": last,
         "builders": builders,
         "top_builders": top,
+        "platforms": failing_platforms(builders),
+        "onset": min((parse_time(r["dt"]) for r in release), default=None),
         "text": text,
         "excerpt": excerpt(text),
         "verdict": verdict,
@@ -284,13 +368,16 @@ def issue_row(issue: dict) -> dict:
     for link in fields.get("issuelinks") or []:
         direction = "outward" if "outwardIssue" in link else "inward"
         other = link.get(direction + "Issue") or {}
-        links.append({"type": (link.get("type") or {}).get("name", ""), "direction": direction, "key": other.get("key", "")})
+        # Jira gives the status of the linked ticket in the link: a closed one can be told from an open one without a request
+        status = ((other.get("fields") or {}).get("status") or {}).get("name", "")
+        links.append({"type": (link.get("type") or {}).get("name", ""), "direction": direction, "key": other.get("key", ""), "status": status})
     return {
         "key": issue["key"],
         "summary": fields.get("summary") or "",
         "status": (fields.get("status") or {}).get("name") or "?",
         "resolution": (fields.get("resolution") or {}).get("name") or "",
         "resolutiondate": fields.get("resolutiondate") or "",
+        "created": fields.get("created") or "",
         "fixversions": [v["name"] for v in fields.get("fixVersions") or []],
         "links": links,
         "via": "",
@@ -326,28 +413,254 @@ def follow_duplicates(row: dict) -> dict:
     return row
 
 
-def after_fix_failures(ticket: dict, release_rows: list[dict]) -> Counter:
-    """Failures on a fix-version branch dated after the ticket was resolved (Closed/Fixed tickets only)."""
+def after_fix_rows(ticket: dict, release_rows: list[dict], above_origin: bool = False) -> list[dict]:
+    """The failing runs dated after a Closed/Fixed ticket was resolved, on a Fix Version/s branch. With above_origin also on
+    every branch above the oldest of those, main included: a fix is merged up into them, and Jira does not list them.
+    The date alone does not make a failure one 'after the fix': a fix reaches a branch by a merge-up, often days after the
+    ticket is closed, so the build of the run has to be checked for the fix (split_by_fix)."""
     if ticket["status"] != "Closed" or ticket["resolution"] != "Fixed" or not ticket["resolutiondate"]:
-        return Counter()
+        return []
     branches = set()
     for version in ticket["fixversions"]:
         match = FIX_VERSION_REGEX.match(version)
         if match and VERSION_REGEX.match(match.group(1)):
             branches.add(match.group(1))
+    if above_origin and branches:
+        origin = min(branches, key=branch_order)
+        branches |= {r["branch"] for r in release_rows if branch_order(r["branch"]) >= branch_order(origin)}
     resolved = parse_time(ticket["resolutiondate"])
-    return Counter(r["branch"] for r in release_rows if r["branch"] in branches and parse_time(r["dt"]) > resolved)
+    return [r for r in release_rows if r["branch"] in branches and parse_time(r["dt"]) > resolved]
+
+
+def pull_module():
+    """The pull script as a module. Its GitHub helpers (token, retries, quota) are the ones its not_merged_to_all_yet
+    list is built with, so a fix is looked for the same way in both."""
+    global PULL_MODULE
+    if PULL_MODULE is None:
+        spec = importlib.util.spec_from_file_location("build_mtr_test_failures_report", PULL_SCRIPT)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+        PULL_MODULE = module
+    return PULL_MODULE
+
+
+def branch_order(branch: str) -> tuple[int, int, int]:
+    """Release branches oldest first, and main, which everything is merged up into, last."""
+    if branch == "main":
+        return (1, 0, 0)
+    major, minor = branch.split(".")
+    return (0, int(major), int(minor))
+
+
+def fix_scope(merged: list[str], missing: list[str]) -> str:
+    """Where a fix is, to read after 'Fixed': 'only in 11.8 and below' when the branches that have it run on from the
+    bottom, 'in all branches' when none lacks it. When they do not run on from the bottom (13.0 lacks what 12.3 and 13.1
+    have), the shorter of the two lists: 'in all branches except 13.0, main' or 'only in 10.11, 11.8'."""
+    if not merged:
+        return "in no release branch"
+    if not missing:
+        return "in all branches"
+    top = max(merged, key=branch_order)
+    if not any(branch_order(branch) < branch_order(top) for branch in missing):
+        return f"only in {top} and below"
+    if len(missing) < len(merged):
+        return "in all branches except " + ", ".join(sorted(missing, key=branch_order))
+    return "only in " + ", ".join(sorted(merged, key=branch_order))
+
+
+def fix_branches_state(ticket: dict, failing: set[str]) -> dict:
+    """Which release branches have the fix of a Closed/Fixed ticket, from GitHub. Jira's Fix Version/s say where the fix is
+    meant to go, not where it has got to: they are filled in for every branch when it is pushed. The fix commit is looked
+    for as the pull script does for not_merged_to_all_yet, on the oldest Fix Version/s branch (a fix is pushed there and
+    merged up), by the MDEV key in the commit subject, around the date the ticket was resolved. Then it is compared with
+    the head of every Fix Version/s branch and of every branch the test fails on. Raises GitError when no commit is found."""
+    pull = pull_module()
+    fix_branches = pull.fix_version_branches(ticket["fixversions"])
+    if not fix_branches:
+        raise GitError(f"{ticket['key']} has no release branch among its Fix Version/s ({', '.join(ticket['fixversions']) or 'none'})")
+    resolved = parse_time(ticket["resolutiondate"])
+    since = pull.github_date(max(parse_time(ticket["created"]), resolved - timedelta(days=pull.FIX_COMMIT_LOOKBACK_DAYS)))
+    until = pull.github_date(resolved + timedelta(days=pull.FIX_COMMIT_SLACK_DAYS))
+    commit = pull.find_fix_commit(ticket["key"], fix_branches[0], since, until)
+    if commit is None:
+        raise GitError(f"no commit naming {ticket['key']} on {fix_branches[0]} between {since} and {until}")
+    merged: list[str] = []
+    not_merged: list[str] = []
+    for branch in sorted({*fix_branches, *failing}, key=branch_order):
+        has_fix = pull.branch_contains(commit["sha"], branch)
+        if has_fix is not None:  # None: no such branch
+            (merged if has_fix else not_merged).append(branch)
+    return {"fix_commit": commit, "merged_to": merged, "not_merged_to": not_merged}
+
+
+def checked_git(call):
+    """call() that never raises: (result, "") or (None, why). A spent GitHub quota is remembered, as every later
+    request of the run would fail the same way."""
+    global GIT_BLOCKED, GIT_FAILURES
+    if GIT_BLOCKED:
+        return None, GIT_BLOCKED
+    try:
+        return call(), ""
+    except Exception as exc:  # GitHub down, out of quota or the pull script changed: the Jira result must survive that
+        reason = (str(exc) if isinstance(exc, GitError) else f"{type(exc).__name__}: {exc}")[:300]
+        if not isinstance(exc, GitError):
+            # The pull script's requests retry for minutes: a GitHub that does not answer must not stall every test
+            GIT_FAILURES += 1
+            if getattr(exc, "rate_limited", False) or GIT_FAILURES >= GIT_MAX_FAILURES:
+                GIT_BLOCKED = reason
+        return None, reason
+
+
+def checked_fix_state(ticket: dict, failing: set[str]) -> tuple[dict | None, str]:
+    """fix_branches_state() that never raises: (state, "") or (None, why)."""
+    return checked_git(lambda: fix_branches_state(ticket, failing))
+
+
+def split_by_fix(fix_sha: str, rows: list[dict]) -> tuple[list[dict], list[dict], list[dict]]:
+    """The failing runs told apart by what their build had: (with the fix, without it, unknown). A build has the fix when its
+    commit contains the fix commit. GitHub compares the two: 'ahead' (the build went on from the fix) and 'identical' say yes,
+    'diverged' (the build went its own way, as a branch does that has not had the merge-up yet) and 'behind' say no. That is
+    the pull script's branch_contains(), which keeps its answers: a commit that ten tests failed on costs one request. As
+    there, the fix is taken to travel by merge-up from the oldest Fix Version/s branch; a fix applied to each branch by its own
+    commit would read as missing. Unknown: GitHub has no such commit, or the run has none."""
+    pull = pull_module()
+    commits = sorted({r["commit"] for r in rows if r.get("commit")})
+    if len(commits) > GIT_MAX_COMMIT_CHECKS:
+        raise GitError(f"{len(commits)} different failing commits (more than {GIT_MAX_COMMIT_CHECKS}) were not compared with the fix commit")
+    has_fix = {commit: pull.branch_contains(fix_sha, commit) for commit in commits}
+    return ([r for r in rows if has_fix.get(r.get("commit")) is True],
+            [r for r in rows if has_fix.get(r.get("commit")) is False],
+            [r for r in rows if has_fix.get(r.get("commit")) is None])
+
+
+def compare_builds_with_fix(result: dict, release: list[dict]) -> None:
+    """Sorts the failures that the dates call 'after the fix' by what the failing build had (result["git"] is known). Only a
+    build that contains the fix commit is still failing after the fix (after_fix). A failure on a build without it ran before
+    the fix reached the branch: when the head of the branch has the fix now it is history (before_fix, with the date of the last
+    one), when the head lacks it too the merge-up is still to come (waiting_fix). When GitHub cannot say (git_error is set), or
+    cannot compare some run, that failure stays in after_fix, as the dates read it, and fix_checked is False: the report says
+    that it is not (all) checked rather than drop a failure."""
+    git = result["git"]
+    rows = after_fix_rows(result["fixed"], release, above_origin=True)
+    # A build on a branch whose head lacks the fix lacks it too (its commit is in the history of the head), so it costs no request
+    waiting_rows = [r for r in rows if r["branch"] in git["not_merged_to"]]
+    to_check = [r for r in rows if r["branch"] not in git["not_merged_to"]]
+    split, why = checked_git(lambda: split_by_fix(git["fix_commit"]["sha"], to_check))
+    if split is None:
+        result["git_error"] = why
+        return
+    with_fix, without_fix, unknown = split
+    without_fix = without_fix + waiting_rows
+    head_has_fix = set(git["merged_to"])
+    result["fix_checked"] = not unknown
+    result["after_fix"] = Counter(r["branch"] for r in with_fix + unknown)
+    result["before_fix"] = Counter(r["branch"] for r in without_fix if r["branch"] in head_has_fix)
+    result["waiting_fix"] = Counter(r["branch"] for r in without_fix if r["branch"] not in head_has_fix)
+    for row in sorted(without_fix, key=lambda r: r["dt"]):
+        if row["branch"] in head_has_fix:
+            result["before_fix_last"][row["branch"]] = row["dt"][:10]
+
+
+def words(text: str) -> str:
+    """Only the lower-case words, so a failure line that a ticket quotes with escaped quotes or JSON \\n still matches."""
+    return " " + re.sub(r"[^a-z0-9]+", " ", re.sub(r"\\[nrt]", " ", text.lower())).strip() + " "
+
+
+def same_failure(ticket: dict, sig: str) -> bool | None:
+    """Is the failure line in the ticket (title, description or a comment)? None when there is no line to compare. A changed
+    line of a result diff ('-) ENGINE=Aria DEFAULT CHARSET=latin1 ...') is compared without its +/- sign, when it has three
+    words or more: a ticket that holds it is about the failure (True), but one that does not may still quote the diff in other
+    words, so for a diff line the answer is True or None, never False (a title match is not dropped for it)."""
+    diff = sig.startswith(("+", "-"))
+    line = sig[1:] if diff else sig
+    if not line.strip() or not words(line).strip() or (diff and len(words(line).split()) < 3):
+        return None
+    fields = jira_issue(ticket["key"], "summary,description,comment").get("fields") or {}
+    time.sleep(JIRA_SLEEP_SECONDS)
+    comments = " ".join(c.get("body") or "" for c in (fields.get("comment") or {}).get("comments") or [])
+    found = words(line) in words(" ".join([fields.get("summary") or "", fields.get("description") or "", comments]))
+    return True if found else (None if diff else False)
+
+
+def key_number(key: str) -> int:
+    """The number of a ticket key (MDEV-41995 gives 41995), 0 for a key without one."""
+    match = re.search(r"\d+$", key)
+    return int(match.group()) if match else 0
+
+
+def linked_follow_ups(own: dict, seen: set[str], sig: str) -> list[dict]:
+    """The Closed tickets that the test's own ticket relates to (Jira type Relates, either direction) and that the search did
+    not find, whose text holds the failure line. A failure of a test after its own ticket was fixed is often a follow-up (a result
+    file that went stale in a merge-up, say) filed as an MDEV of its own and linked to the ticket that added the test, not always
+    with the test name in its title, and its fix is not the fix of the test's own ticket. Jira gives the status of a linked
+    ticket in the link, so an open one costs no request; at most LINKED_MAX closed ones are read, the newest first (a follow-up
+    is filed after the ticket it follows, so it has the higher number). A ticket whose text lacks the failure line, or that has
+    no line to compare, says nothing about this failure and is left out. seen: the keys already found."""
+    keys: list[str] = []
+    for link in own["links"]:
+        if link["type"] == "Relates" and link["status"] == "Closed" and link["key"] and link["key"] not in seen and link["key"] not in keys:
+            keys.append(link["key"])
+    keys.sort(key=key_number, reverse=True)
+    found: list[dict] = []
+    for key in keys[:LINKED_MAX]:
+        ticket = follow_duplicates(issue_row(jira_issue(key)))
+        time.sleep(JIRA_SLEEP_SECONDS)
+        if ticket["key"] in seen or ticket["key"] in {t["key"] for t in found}:
+            continue
+        ticket["via"] = f"linked to {own['key']}"
+        ticket["same_failure"] = same_failure(ticket, sig)
+        if ticket["same_failure"] is True:
+            found.append(ticket)
+    return found
+
+
+def fix_reference(tickets: list[dict]) -> dict | None:
+    """The Closed/Fixed ticket whose fix the failures of a test named after its own MDEV are measured against. Of the tickets
+    whose text holds the failure line (the test's own ticket, a follow-up found by the test name, one linked to the own ticket)
+    the one resolved last: a follow-up is filed because an earlier fix was not enough, so a failure is a failure after the fix
+    only when its build has the latest fix. When no ticket's text holds the line, the test's own ticket, whatever its text says,
+    as before. None when there is no such fixed ticket."""
+    fixed = [t for t in tickets if t["status"] == "Closed" and t["resolution"] == "Fixed" and t["resolutiondate"]]
+    about = [t for t in fixed if t["same_failure"] is True]
+    if about:
+        return max(about, key=lambda t: parse_time(t["resolutiondate"]))
+    return next((t for t in fixed if t["via"] == "key in the test name"), None)
+
+
+def platform_tickets(platform: str) -> tuple[int, list[dict]]:
+    """How many tickets mention the platform (exact phrase), and those of them that are Closed/Fixed, a duplicate as the
+    ticket it duplicates. A phrase that more than PLATFORM_MAX_HITS tickets carry gives no tickets."""
+    if platform not in PLATFORM_TICKETS:
+        jql = 'project = MDEV AND text ~ "\\"%s\\"" ORDER BY created DESC' % platform
+        data = jira_json("/rest/api/2/search", {"jql": jql, "fields": JIRA_FIELDS, "maxResults": PLATFORM_MAX_HITS})
+        time.sleep(JIRA_SLEEP_SECONDS)
+        tickets: list[dict] = []
+        if data.get("total", 0) <= PLATFORM_MAX_HITS:
+            for issue in data.get("issues", []):
+                ticket = follow_duplicates(issue_row(issue))
+                if ticket["status"] == "Closed" and ticket["resolution"] == "Fixed" and ticket["key"] not in {t["key"] for t in tickets}:
+                    tickets.append(ticket)
+        PLATFORM_TICKETS[platform] = (data.get("total", 0), tickets)
+    return PLATFORM_TICKETS[platform]
 
 
 def lookup_jira(info: dict, rows_by_test: dict[str, list[dict]]) -> dict:
     test = info["test"]
-    result = {"failed": False, "errors": [], "queries": [], "tickets": [], "mentioned": [], "own": None, "after_fix": Counter()}
+    # after_fix: failures on builds that have the fix; waiting_fix: on builds without it, on a branch that still lacks it; before_fix
+    # (and before_fix_last, the date of the last one per branch): on builds without it, on a branch that has it now. Until
+    # GitHub has compared the builds with the fix (fix_checked) after_fix only holds the failures dated after the ticket was resolved.
+    result = {"failed": False, "errors": [], "queries": [], "tickets": [], "mentioned": [], "own": None, "fixed": None, "fix_status": "",
+              "git": None, "git_error": "", "after_fix": Counter(), "waiting_fix": Counter(), "before_fix": Counter(),
+              "before_fix_last": {}, "fix_checked": False}
+    release = [r for r in rows_by_test.get(test, []) if VERSION_REGEX.match(r["branch"])]
     terms = [("test name", test)]
     if "." in test:
         terms.append(("bare test name", test.split(".", 1)[1]))
     frag = fragment(info["text"])
     if frag:
         terms.append(("failure text", frag))
+    sig = changed_or_content_lines(info["text"])[0] if info["text"] else ""
     seen: set[str] = set()
     try:
         for how, term in terms:
@@ -362,30 +675,69 @@ def lookup_jira(info: dict, rows_by_test: dict[str, list[dict]]) -> dict:
                     continue
                 seen.add(row["key"])
                 row["via"] = how
-                if term.lower() in row["summary"].lower():
-                    result["tickets"].append(follow_duplicates(row))
-                    found = True
-                else:
+                if term.lower() not in row["summary"].lower():
                     result["mentioned"].append(row)
+                    continue
+                ticket = follow_duplicates(row)
+                ticket["same_failure"] = same_failure(ticket, sig)
+                # A title that names the test is not enough: a ticket whose text lacks this failure line is about another failure
+                if ticket["same_failure"] is False:
+                    result["mentioned"].append(ticket)
+                else:
+                    result["tickets"].append(ticket)
+                    found = True
             if found:
                 break
-        # A test named after a ticket (galera.MDEV-40727) is not found by the phrase search: fetch the key
+        # A test named after a ticket (galera.MDEV-40727) is not found by the phrase search: fetch the key. It is the
+        # test's own ticket whatever its text says, so it is never listed as only mentioned
         key = KEY_IN_NAME_REGEX.search(test)
         if key:
             own = issue_row(jira_issue(f"MDEV-{key.group(1)}"))
             time.sleep(JIRA_SLEEP_SECONDS)
             own["via"] = "key in the test name"
+            if own["status"] == "Closed":
+                own["same_failure"] = same_failure(own, sig)
             result["own"] = own
-            result["after_fix"] = after_fix_failures(own, [r for r in rows_by_test.get(test, []) if VERSION_REGEX.match(r["branch"])])
-            if own["key"] not in {t["key"] for t in result["tickets"]}:
-                result["tickets"].insert(0, own)
-        # Is the failure line from a closed ticket also in that ticket's text?
-        sig = changed_or_content_lines(info["text"])[0] if info["text"] else ""
-        for ticket in result["tickets"][:3]:
-            if ticket["status"] == "Closed" and sig and not sig.startswith(("+", "-")):
-                description = (jira_issue(ticket["key"], "description").get("fields") or {}).get("description") or ""
-                ticket["same_failure"] = sig.lower() in description.lower()
-                time.sleep(JIRA_SLEEP_SECONDS)
+            # A follow-up of the test (filed after the own ticket was fixed, linked to it) has a fix of its own: the failures are
+            # measured against the fix of the ticket whose text holds this failure line, the latest one (fix_reference), and
+            # against the own ticket's fix only when no ticket does
+            follow_ups = linked_follow_ups(own, seen | {own["key"]}, sig) if own["status"] == "Closed" else []
+            result["tickets"] = [own] + [t for t in result["tickets"] if t["key"] != own["key"]] + follow_ups
+            result["mentioned"] = [t for t in result["mentioned"] if t["key"] != own["key"]]
+            reference = fix_reference(result["tickets"])
+            result["after_fix"] = Counter(r["branch"] for r in after_fix_rows(reference, release)) if reference else Counter()
+            if result["after_fix"]:
+                result["fixed"] = reference
+        # Failures that follow the platform (here all of them on Fedora 45 and Ubuntu 26.10 builders) are often one environment
+        # change whose ticket never names the test or the failure line: look for a ticket that mentions the platform, was fixed
+        # shortly before the failures began and has failures on its fix branches dated after it was fixed (whether those builds
+        # had the fix is settled below). Not when an open ticket, the test's own ticket or a fix that is not merged everywhere
+        # already explains the test.
+        if info["platforms"] and not info["not_merged"] and not result["fixed"] and all(t["status"] == "Closed" for t in result["tickets"]):
+            since = (info["onset"] - timedelta(days=PLATFORM_FIX_DAYS)).date().isoformat()
+            for platform in info["platforms"]:
+                mentions, fixed_tickets = platform_tickets(platform)
+                result["queries"].append(("builder OS", platform, mentions))
+                for ticket in fixed_tickets:
+                    after = Counter(r["branch"] for r in after_fix_rows(ticket, release)) if ticket["resolutiondate"][:10] >= since else Counter()
+                    if after and ticket["key"] not in {t["key"] for t in result["tickets"]}:
+                        ticket = dict(ticket, via=f"builder OS '{platform}'")
+                        result["tickets"].append(ticket)
+                        if not result["fixed"]:
+                            result["fixed"], result["after_fix"] = ticket, after
+        # Which release branches have the fix of that ticket, and which of the failing builds had it. Not for a fix the pull
+        # script found (its record says already), and not when an open ticket wins, as the test is then not listed as fixed.
+        if result["fixed"] and not info["not_merged"] and all(t["status"] == "Closed" for t in result["tickets"]):
+            result["git"], result["git_error"] = checked_fix_state(result["fixed"], set(info["per_branch"]))
+            if result["git"]:
+                compare_builds_with_fix(result, release)
+        # The Jira state of the fix that the pull script found but that is not merged everywhere yet (the slide summary names it)
+        fix_key = nm_mdev(info["not_merged"])["key"] if info["not_merged"] else ""
+        if fix_key:
+            result["fix_status"] = issue_row(jira_issue(fix_key))["status"]
+            time.sleep(JIRA_SLEEP_SECONDS)
+        # The namesakes about another failure come first among the tickets that are only mentioned
+        result["mentioned"].sort(key=lambda t: t["same_failure"] is not False)
     except JiraError as exc:
         result["failed"] = True
         result["errors"].append(str(exc))
@@ -405,8 +757,11 @@ def category(info: dict) -> str:
     # unrelated reason, MDEV-22063 itself was fixed long ago
     if any(t["status"] != "Closed" for t in jira["tickets"]):
         return "open"
-    if jira["after_fix"]:
+    if jira["after_fix"] or jira["waiting_fix"]:
         return "fixed_but_failing"
+    # Every failure ran on a build without the fix, and the branch has it now: the ticket explains them, nothing is left to do
+    if jira["before_fix"]:
+        return "fixed_since"
     if jira["tickets"]:
         return "closed"
     return "needs_bug"
@@ -428,7 +783,17 @@ def ticket_text(ticket: dict) -> str:
         text += " (same failure text, other test)"
     elif ticket["via"] == "key in the test name":
         text += " (the test's own ticket)"
+    elif ticket["via"].startswith("linked to"):
+        text += f" ({ticket['via']}, its text holds the failure line)"
+    elif ticket["via"].startswith("builder OS"):
+        text += f" (found by {ticket['via']}: the ticket does not name this test, confirm by hand)"
     return text
+
+
+def mention_text(ticket: dict) -> str:
+    """A ticket that only mentions the test: how it ended and when, so an old closed namesake reads as one."""
+    ended = ticket["resolution"] or ticket["status"]
+    return f"{ticket_link(ticket['key'])} ({ended}{' ' + ticket['resolutiondate'][:4] if ticket['resolutiondate'] else ''})"
 
 
 def nm_mdev(record: dict) -> dict:
@@ -446,6 +811,17 @@ def nm_fix_commit_text(record: dict) -> str:
     return str(fix or "unknown")
 
 
+def counts_text(counts: Counter) -> str:
+    """'12.3 (24), 13.1 (24)': failures per branch, the oldest branch first and main last."""
+    return ", ".join(f"{branch} ({counts[branch]})" for branch in sorted(counts, key=branch_order))
+
+
+def before_fix_text(jira: dict) -> str:
+    """'12.3 (24, last 2026-10-30), main (24, last 2026-10-31)': the failures on builds that did not have the fix yet."""
+    return ", ".join(f"{branch} ({jira['before_fix'][branch]}, last {jira['before_fix_last'][branch]})"
+                     for branch in sorted(jira["before_fix"], key=branch_order))
+
+
 def status_text(info: dict) -> str:
     jira = info["jira"]
     parts = []
@@ -453,12 +829,24 @@ def status_text(info: dict) -> str:
     if info["not_merged"]:
         parts.append(f"{ticket_link(fixed_key)} fixed, not merged everywhere" if fixed_key else "fix not merged everywhere")
     parts += [ticket_text(t) for t in jira["tickets"] if t["key"] != fixed_key][:3]
-    if jira["after_fix"] and not info["not_merged"]:
-        parts.append("still failing after the fix on " + ", ".join(sorted(jira["after_fix"])))
+    if jira["git"]:
+        parts.append("fixed " + fix_scope(jira["git"]["merged_to"], jira["git"]["not_merged_to"]))
+    if not info["not_merged"]:
+        if jira["after_fix"]:
+            parts.append("still failing after the fix on " + ", ".join(sorted(jira["after_fix"], key=branch_order))
+                         + ("" if jira["fix_checked"] else f" ({UNCHECKED})"))
+        if jira["waiting_fix"]:
+            parts.append("failing on " + ", ".join(sorted(jira["waiting_fix"], key=branch_order)) + ", which do not have the fix yet")
+        if jira["before_fix"]:
+            parts.append("failed before the fix reached the branch: " + before_fix_text(jira))
     if jira["failed"] and not parts:
         return "Jira lookup failed"
     if not parts and jira["mentioned"]:
-        return "only mentioned in " + ", ".join(ticket_link(t["key"]) for t in jira["mentioned"][:3])
+        return "only mentioned in " + ", ".join(mention_text(t) for t in jira["mentioned"][:3])
+    # Shown, not dropped: the failure line may be in the ticket in other words
+    namesakes = [t for t in jira["mentioned"] if t["same_failure"] is False and t["key"] != fixed_key][:2]
+    if parts and namesakes:
+        parts.append("also names the test, but its text lacks this failure line: " + ", ".join(mention_text(t) for t in namesakes))
     return "; ".join(parts) or "No MDEV"
 
 
@@ -467,6 +855,50 @@ def branches_text(info: dict, with_commit: bool = False) -> str:
         return ", ".join(f"{b}: {info['per_branch'][b]} (last {info['last'][b][0][:12]} at {info['last'][b][1]})"
                          for b, _ in info["per_branch"].most_common())
     return ", ".join(f"{b}: {c}" for b, c in info["per_branch"].most_common())
+
+
+def slide_jira(info: dict) -> str:
+    """The Jira line of the single-slide summary: the section the test falls in, then its ticket."""
+    jira, kind = info["jira"], category(info)
+    if kind == "needs_bug":
+        return "Needs a bug (no MDEV found)"
+    if kind == "lookup_failed":
+        return "Jira lookup failed"
+    if kind == "open":
+        return "Known, open " + ", ".join([t["key"] for t in jira["tickets"] if t["status"] != "Closed"][:3])
+    if kind == "fixed_but_failing":
+        # Where the fix is: the pull script's record says for a fix it found, GitHub for the others (None: could not ask)
+        if info["not_merged"]:
+            nm = info["not_merged"]
+            ticket = " ".join(filter(None, [jira["fix_status"].lower(), nm_mdev(nm)["key"]]))
+            if not nm.get("merged_to"):
+                return "not_merged_to_all_yet" + (f", {ticket}" if ticket else "")
+            return f"Fixed {fix_scope(nm['merged_to'], nm.get('not_merged_to') or [])}. {ticket}"
+        fixed = jira["fixed"]
+        ticket = f"closed {fixed['key']}"
+        if not jira["git"]:
+            return f"Fixed in Jira but still failing, {ticket}"
+        where = fix_scope(jira["git"]["merged_to"], jira["git"]["not_merged_to"])
+        # Compared with the failing builds: still failing means a build that has the fix failed. Not compared: the old reading
+        # (every branch has the fix and fails anyway; with a branch still waiting for it, its failures are the merge-up's)
+        still = bool(jira["after_fix"]) if jira["fix_checked"] else where == "in all branches"
+        return f"Fixed {where}{', still failing' if still else ''}. {ticket}"
+    if kind == "fixed_since":
+        where = fix_scope(jira["git"]["merged_to"], jira["git"]["not_merged_to"])
+        return f"Fixed {where}, the failures predate the fix (last {max(jira['before_fix_last'].values())}). closed {jira['fixed']['key']}"
+    return "Only closed tickets: " + ", ".join(t["key"] for t in jira["tickets"][:3])
+
+
+def slide_text(infos: list[dict]) -> str:
+    """The single-slide summary: the top SLIDE_TESTS ranked tests as plain lines to paste onto a slide."""
+    lines = []
+    for number, info in enumerate(infos[:SLIDE_TESTS], 1):
+        lines += [f"{number}.",
+                  f"{info['test']}: {info['failures']}",
+                  "Affected branches: " + "|".join(branch for branch, _ in info["per_branch"].most_common()),
+                  "Fail text: " + info["excerpt"],
+                  "Jira: " + slide_jira(info)]
+    return "\n".join(lines)
 
 
 def build_blocks(ctx: dict) -> tuple[list, dict]:
@@ -479,6 +911,7 @@ def build_blocks(ctx: dict) -> tuple[list, dict]:
     headline = [
         f"{len(infos)} ranked tests, {sum(i['failures'] for i in infos)} failures on release branches; "
         f"{len(needs)} without an MDEV, {len(cats.get('fixed_but_failing', []))} fixed in Jira but still failing, "
+        f"{len(cats.get('fixed_since', []))} fixed in Jira and failed only before the fix reached the branch, "
         f"{len(cats.get('open', []))} with an open MDEV, {len(cats.get('closed', []))} with only closed tickets"
         + (f", {len(cats.get('lookup_failed', []))} Jira lookups failed" if cats.get("lookup_failed") else "") + ".",
     ]
@@ -493,6 +926,10 @@ def build_blocks(ctx: dict) -> tuple[list, dict]:
         ("p", f"Window {until_date} to {from_date} (UTC), generated {datetime.now(timezone.utc):%Y-%m-%d %H:%M}Z on {socket.gethostname()}. "
               "Release branches only (10.x to 13.x and main); PR and bb-* branches are not ranked."),
         ("p", f"Saved on {socket.gethostname()} in `{ctx['run_dir']}/`: report.md, report.html (this report) and rows_*.json.gz (every failing run of the window)."),
+    ]
+    if infos:
+        blocks += [("h2", "Single-slide summary"), ("pre", slide_text(infos))]
+    blocks += [
         ("h2", "Summary"),
         ("ul", [
             f"Suite groups: {', '.join(SUITE_GROUPS)}",
@@ -528,17 +965,49 @@ def build_blocks(ctx: dict) -> tuple[list, dict]:
                 mdev = ticket_link(fixed["key"]) if fixed["key"] else "-"
                 summary = fixed["summary"]
             else:
-                own = info["jira"]["own"]
-                detail = f"closed Fixed {own['resolutiondate'][:10]}, still failing after the fix on " + ", ".join(f"{b} ({n})" for b, n in sorted(info["jira"]["after_fix"].items()))
-                mdev, summary = ticket_link(own["key"]), own["summary"]
+                jira = info["jira"]
+                fixed = jira["fixed"]
+                states = []
+                if jira["after_fix"]:
+                    states.append("still failing after the fix on " + counts_text(jira["after_fix"]) + ("" if jira["fix_checked"] else f" ({UNCHECKED})"))
+                if jira["waiting_fix"]:
+                    states.append("failing on " + counts_text(jira["waiting_fix"]) + ", which do not have the fix yet")
+                if jira["before_fix"]:
+                    states.append("also failed before the fix reached the branch: " + before_fix_text(jira))
+                detail = f"closed Fixed {fixed['resolutiondate'][:10]}, " + ", ".join(states)
+                git = jira["git"]
+                if git:
+                    detail += (f"; fix commit {nm_fix_commit_text(git)}; merged to {', '.join(git['merged_to']) or '-'}; "
+                               f"not merged to {', '.join(git['not_merged_to']) or '-'}")
+                if fixed["via"].startswith("builder OS"):
+                    detail += f"; found by {fixed['via']} (the failures sit on {' / '.join(info['platforms'])} builders), the ticket does not name this test"
+                mdev, summary = ticket_link(fixed["key"]), fixed["summary"]
             rows.append([f"`{info['test']}`", mdev, summary, detail, branches_text(info)])
         blocks += [("h2", "Fixed in Jira but still failing"), ("table", ["Test", "MDEV", "Summary", "Fix state", "Failing branches"], rows)]
+    if cats.get("fixed_since"):
+        rows = []
+        for info in cats["fixed_since"]:
+            jira = info["jira"]
+            fixed, git = jira["fixed"], jira["git"]
+            detail = (f"failed on builds without the fix: {before_fix_text(jira)}; closed Fixed {fixed['resolutiondate'][:10]}; "
+                      f"fix commit {nm_fix_commit_text(git)}; merged to {', '.join(git['merged_to']) or '-'}; "
+                      f"not merged to {', '.join(git['not_merged_to']) or '-'}")
+            if fixed["via"].startswith("builder OS"):
+                detail += f"; found by {fixed['via']} (the failures sit on {' / '.join(info['platforms'])} builders), the ticket does not name this test"
+            rows.append([f"`{info['test']}`", ticket_link(fixed["key"]), fixed["summary"], detail, branches_text(info)])
+        blocks += [("h2", "Fixed in Jira, failed only before the fix reached the branch"),
+                   ("p", "A fix reaches a branch by a merge-up, often days after its MDEV is closed. These failures ran on builds whose commit does not "
+                         "contain the fix commit (GitHub compare), and the branch has the fix now: nothing is left to file for them. "
+                         "A failure on a build that has the fix would be listed under \"Fixed in Jira but still failing\"."),
+                   ("table", ["Test", "MDEV", "Summary", "Fix state", "Failing branches"], rows)]
     if cats.get("open"):
         rows = []
         for info in cats["open"]:
             closed = [t for t in info["jira"]["tickets"] if t["status"] == "Closed"]
-            also = "; ".join(ticket_text(t) + (" still failing after the fix on " + ", ".join(sorted(info["jira"]["after_fix"]))
-                                                if t["via"] == "key in the test name" and info["jira"]["after_fix"] else "") for t in closed[:2])
+            jira = info["jira"]
+            also = "; ".join(ticket_text(t) + (" still failing after the fix on " + ", ".join(sorted(jira["after_fix"], key=branch_order))
+                                                + ("" if jira["fix_checked"] else f" ({UNCHECKED})")
+                                                if t["via"] == "key in the test name" and jira["after_fix"] else "") for t in closed[:2])
             for t in [t for t in info["jira"]["tickets"] if t["status"] != "Closed"][:3]:
                 rows.append([f"`{info['test']}`", ticket_link(t["key"]), t["status"], t["summary"], t["via"], also or "-"])
         blocks += [("h2", "Known, open MDEV"), ("table", ["Test", "MDEV", "Status", "Summary", "Found by", "Closed tickets of the same test"], rows)]
@@ -719,12 +1188,25 @@ def build(args, run_dir: Path, from_date: str, until_date: str) -> tuple[dict, l
             notes.append(f"Jira lookup problem for {info['test']}: {'; '.join(info['jira']['errors'])}")
         if info["failures"] != info["release_rows"]:
             notes.append(f"{info['test']}: the ranking counts {info['failures']} failures, the rows file has {info['release_rows']} release-branch rows.")
+    # One note per ticket and reason, not per test: a spent GitHub quota would otherwise repeat for every row
+    git_errors: dict[tuple[str, str], list[str]] = {}
+    for info in infos:
+        if info["jira"]["git_error"]:
+            git_errors.setdefault((info["jira"]["fixed"]["key"], info["jira"]["git_error"]), []).append(info["test"])
+    for (key, error), tests in git_errors.items():
+        notes.append(f"Git check of {key} failed for {len(tests)} test(s), e.g. {tests[0]}: {error}. Those rows keep Jira's wording (failures dated after the ticket was resolved, the failing builds not compared with the fix)."
+                     + (" Set GITHUB_TOKEN (or GH_TOKEN) in the crontab to lift GitHub's 60 requests an hour." if "rate limit" in error else ""))
 
     stderr_lines = [l for l in (run_dir / "pull_stderr.txt").read_text(encoding="utf-8", errors="replace").splitlines() if l.strip() and not l.startswith("Wrote ")]
     notes += [f"Report script warning: {l}" for l in stderr_lines[:10]]
     head = subprocess.run(["git", "-C", str(REPO), "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip()
     notes += [f"mariadb-qa commit {head or 'unknown'} on {socket.gethostname()}.",
-              "Jira lookups are anonymous and read-only; a ticket counts as a match when its summary contains the test name (or the failure line). Generated without an AI step."]
+              "Jira lookups are anonymous and read-only; a ticket counts as a match when its title contains the test name (or the failure line) and its text holds this failure line. "
+              "A title match whose text lacks the failure line is listed as only mentioned. A test whose failures sit on a few platforms that few tickets mention is also looked up by platform (a ticket fixed shortly before the first failure). "
+              "For a fixed ticket GitHub says which branches have the fix: its commit (the MDEV key in the subject, on the oldest Fix Version/s branch) is compared with every branch head, as Jira's Fix Version/s say where a fix is meant to go and not where it has got to. "
+              "It is compared with the commit of every failing build too: a failure dated after the ticket was resolved counts as still failing after the fix only when its build contains the fix commit, as a fix reaches a branch by a merge-up, often days after the ticket is closed. "
+              "For a test named after its own MDEV that fix is the one of the latest closed ticket whose text holds the failure line (the own ticket, a follow-up found by the test name, or one the own ticket relates to), the own ticket's fix only when none does. "
+              "Generated without an AI step."]
     ctx = {"infos": infos, "from_date": from_date, "until_date": until_date, "notes": notes, "run_dir": run_dir,
            "rows_all": len(rows), "rows_release": len(release),
            "tests_all": len({r["test_name"] for r in rows}), "tests_release": len({r["test_name"] for r in release})}

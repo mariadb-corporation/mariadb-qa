@@ -268,6 +268,33 @@ a >= 0.0 && b >= 0.0|SIGABRT|compare_cost|best_access_path|get_costs_for_tables|
 SIGSEGV|std::max<unsigned int>|Sql_path::set|Sql_path_instant_set::~Sql_path_instant_set|mysql_make_view                                                                       ## MDEV-42131
 SIGSEGV|std::max<unsigned int>|Sql_path::set|Sql_path_instant_set::~Sql_path_instant_set|Table_triggers_list::check_n_load                                                     ## MDEV-42131
 !(hint_forces_bnl && hint_forces_bka)|SIGABRT|check_join_cache_usage|check_join_cache_usage_for_tables|make_join_readinfo|JOIN::optimize_stage2                                ## MDEV-42124
+0|SIGABRT|ha_partition::can_skip_merging_scans|ha_partition::multi_range_read_next|JOIN_TAB_SCAN_MRR::next|JOIN_CACHE::join_matching_records                                   ## MDEV-42183
+bit < map->n_bits|SIGABRT|bitmap_is_set|ha_partition::handle_ordered_index_scan|ha_partition::multi_range_read_next|JOIN_TAB_SCAN_MRR::next                                    ## MDEV-42183 
+0|SIGABRT|btr_search_hash_table_validate|btr_search_validate|ha_innobase::check|handler::ha_check                                                                              ## MDEV-42174
+locale == my_locales[locale->number]|SIGABRT|my_locale_by_number|check_locale|sys_var::check|set_var::check                                                                    ## MDEV-42168
+sp_params->elements == thd->lex->prepared_stmt.param_count()|SIGABRT|Protocol_text::send_out_parameters|Prepared_statement::execute|Prepared_statement::execute_loop|mysql_sql_stmt_execute ## MENT-3217
+0|SIGABRT|Item_param::save_in_field|fill_record|select_unit::send_data|select_result_sink::send_data_with_check                                                                ## MENT-3216
+inited == NONE || table->open_by_handler|SIGABRT|handler::ha_external_lock|handler::ha_external_unlock|unlock_external|mysql_unlock_tables                                     ## MENT-3215
+index->table->get_ref_count() || !index->table->can_be_evicted|SIGABRT|lock_rec_create_low|lock_rec_lock|lock_clust_rec_read_check_and_lock|row_ins_set_shared_rec_lock        ## MDEV-42119
+index->table->get_ref_count() || !index->table->can_be_evicted|SIGABRT|lock_rec_create|lock_rec_lock|lock_clust_rec_read_check_and_lock|row_ins_set_shared_rec_lock            ## MDEV-42119
+!return_error || thd->is_error() || thd->killed|SIGABRT|Sql_cmd_delete::delete_from_single_table|Sql_cmd_delete::execute_inner|Sql_cmd_dml::execute|mysql_execute_command      ## MDEV-42085
+!return_error || thd->is_error() || thd->killed|SIGABRT|mysql_delete|mysql_execute_command|mysql_parse|dispatch_command                                                        ## MDEV-42085
+!(keyinfo->flag & (1LL<<20))|SIGABRT|heap_rkey|ha_heap::index_read_map|handler::ha_index_read_map|join_read_always_key                                                         ## MDEV-42027
+!(keyinfo->flag & (1LL<<20))|SIGABRT|heap_rkey|handler::ha_index_read_map|join_read_always_key|sub_select                                                                      ## MDEV-42027
+SIGSEGV|MY_HASH_ADD_STR|my_hash_sort_bin|my_ci_hash_sort|hp_hashnr                                                                                                             ## MDEV-42027
+cond_selectivity <= 1.000000001|SIGABRT|get_range_limit_read_cost|test_if_cheaper_ordering|test_if_skip_sort_order_early|join_limit_shortcut_finalize_plan                     ## MDEV-42011
+field->col->mtype == type|SIGABRT|ut_dbg_assertion_failed|row_sel_convert_mysql_key_to_innobase|ha_innobase::records_in_range|handler::multi_range_read_info_const             ## MDEV-42010
+page_dir_get_n_heap(new_page) == 2U|SIGABRT|PageBulk::init|BtrBulk::finish|row_fts_merge_insert|fts_parallel_merge                                                             ## MDEV-37458
+page_dir_get_n_heap(new_page) == 2U|SIGABRT|PageBulk::init|BtrBulk::finish|row_fts_merge_insert|tpool::task::execute                                                           ## MDEV-37458
+!err|SIGABRT|ha_innobase::truncate|handler::ha_truncate|Sql_cmd_truncate_table::handler_truncate|Sql_cmd_truncate_table::truncate_table                                        ## MDEV-42006
+SIGABRT|__cxa_throw|std::__throw_out_of_range_fmt|std::vector<PageBulk*, ut_allocator<PageBulk*, true> >::_M_range_check|std::vector<PageBulk*, ut_allocator<PageBulk*, true> >::at  ## MDEV-42001
+m_root_level + 1 == m_page_bulks.size()|SIGABRT|BtrBulk::release|row_merge_read_clustered_index|row_merge_build_indexes|ha_innobase::inplace_alter_table                       ## MDEV-42001
+SIGSEGV|Dep_analysis_context::dbug_print_deps|check_func_dependency|eliminate_tables_for_list|eliminate_tables_for_list                                                        ## MDEV-41997
+trx->error_state == DB_SUCCESS|SIGABRT|ut_dbg_assertion_failed|que_eval_sql|trx_t::drop_table|fts_drop_table                                                                   ## MDEV-37833
+!node->table->skip_alter_undo|SIGABRT|row_upd_clust_rec|row_upd_clust_step|row_upd|row_upd_step                                                                                ## MDEV-41994
+SIGSEGV|Item_cache_row::store|sp_rcontext::set_case_expr|sp_instr_set_case_expr::exec_core|sp_lex_keeper::reset_lex_and_exec_core                                              ## MDEV-41983
+SIGABRT|Type_handler_composite::Item_val_bool|Item::val_bool|Item_cond_and::val_bool|Item_bool_func::val_int                                                                   ## MDEV-41982
+SIGABRT|Type_handler_composite::Item_val_bool|Item_cond_and::val_bool|Item_bool_func::val_int|Item_func_set_user_var::check                                                    ## MDEV-41982
 err != DB_DUPLICATE_KEY|SIGABRT|row_rename_table_for_mysql|innobase_rename_table|ha_innobase::rename_table|handler::ha_rename_table                                            ## MDEV-41809
 !((system_charset_info)->coll->strcasecmp((system_charset_info), (dict_table_get_col_name( ib_table, j)), (field->field_name.str)))|SIGABRT|innobase_build_v_templ|ha_innobase::open|handler::ha_open|open_table_from_share           ## MDEV-41254
 field->field_name.streq( dict_table_get_col_name(ib_table, j))|SIGABRT|innobase_build_v_templ|ha_innobase::open|handler::ha_open|open_table_from_share                         ## MDEV-41254

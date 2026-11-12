@@ -1,0 +1,9 @@
+SET optimizer_switch='mrr=on';
+SET join_cache_level=5;
+CREATE TABLE t1 (a INT);
+INSERT INTO t1 VALUES (NULL),(NULL);
+CREATE TABLE t2 (a INT, b INT, KEY(a)) PARTITION BY HASH(a);
+INSERT INTO t2 VALUES (1,1),(2,2);
+SELECT a FROM t2 WHERE a > 2;
+SELECT * FROM t2;
+SELECT * FROM t1 LEFT JOIN t2 USING (a);
