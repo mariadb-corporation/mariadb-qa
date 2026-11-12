@@ -22,6 +22,8 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|get_new_start_alter_info|Query_log_event::handle_split_alter_query_log_event                                               ## MDEV-37770 (needs testcase)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|heap-use-after-free|include/mem0mem.h|__asan_memcpy|mem_heap_dup|dfield_dup|row_upd_store_v_row                                                                           ## MDEV-42211
+ASAN|global-buffer-overflow|crtstuff.c|MemcmpInterceptorCommon|bcmp|QUICK_GROUP_MIN_MAX_SELECT::add_range|TRP_GROUP_MIN_MAX::make_quick                                        ## MDEV-42209
 UBSAN|call to function sphinx_snippets through pointer to incorrect function type 'char *(*)(st_udf_init *, st_udf_args *, char *, unsigned long *, unsigned char *, unsigned char *)'|sql/item_func.cc|udf_handler::val_str|Item_func_udf_str::val_str|Type_handler::Item_send_str|Protocol::send_result_set_row ## MDEV-42090
 UBSAN|call to function sphinx_snippets through pointer to incorrect function type 'char *(*)(st_udf_init *, st_udf_args *, char *, unsigned long *, unsigned char *, unsigned char *)'|sql/item_func.cc|udf_handler::val_str|Item_func_udf_str::val_str|Item_func_octet_length::val_int|Item::save_int_in_field ## MDEV-42090
 UBSAN|addition of unsigned offset to X overflowed to Y|mysys/mf_iocache.c|reinit_io_cache|binlog_cache_data::truncate|binlog_cache_data::restore_prev_position|online_alter_end_trans  ## MDEV-37425
