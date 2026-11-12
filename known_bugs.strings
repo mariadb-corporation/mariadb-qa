@@ -261,6 +261,7 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+value->state == JST_KEY|SIGABRT|Item_func_json_contains::check_contains|Item_func_json_contains::val_bool|Item_bool_func::val_int|Type_handler::Item_send_long                 ## MDEV-42213
 SIGSEGV|__strlen_evex|set_to_string|Item_func_get_system_var::fix_length_and_dec|Item_func::fix_fields                                                                         ## MDEV-38504
 0|SIGABRT|row_upd_sec_index_entry|row_upd_sec_step|row_upd|row_upd_step                                                                                                        ## MDEV-42211
 typeid(*copy) == typeid(*this)|SIGABRT|Item::shallow_copy_with_checks|Item_int::deep_copy|Item::deep_copy_with_checks|Item_func_or_sum::deep_copy                              ## MDEV-40255
