@@ -1,0 +1,5 @@
+CREATE TABLE t1 (c FLOAT) PARTITION BY KEY (c) PARTITIONS 7;
+INSERT INTO t1 VALUES (0), (-1e-50);
+SELECT COUNT(*) FROM t1 WHERE c = 0;
+#CLI: 1; expected 2
+#ERR: - (no error)
