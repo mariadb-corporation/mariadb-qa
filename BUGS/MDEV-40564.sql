@@ -1,0 +1,100 @@
+CREATE TABLE p1 (s VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci);
+CREATE TABLE p2 (s VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci);
+INSERT INTO p1 VALUES ('ABC'),('abc');
+INSERT INTO p2 VALUES ('abc');
+SELECT 'unfiltered' AS q, COUNT(*) AS n FROM (SELECT s FROM p1 EXCEPT SELECT s FROM p2) q;
+SELECT 'WHERE HEX(s)=HEX(''ABC'')' AS q, COUNT(*) AS n FROM (SELECT s FROM p1 EXCEPT SELECT s FROM p2) q WHERE HEX(q.s) = HEX('ABC');
+SELECT 'WHERE HEX(s)=HEX(''abc'')' AS q, COUNT(*) AS n FROM (SELECT s FROM p1 EXCEPT SELECT s FROM p2) q WHERE HEX(q.s) = HEX('abc');
+SET SESSION optimizer_switch = 'condition_pushdown_for_derived=off';
+SELECT 'pushdown off' AS q, COUNT(*) AS n FROM (SELECT s FROM p1 EXCEPT SELECT s FROM p2) q WHERE HEX(q.s) = HEX('ABC');
+SET SESSION optimizer_switch = DEFAULT;
+#CLI: 0, 1, 0, 0; expected 0, 0, 0, 0
+#ERR: - (no error)
+
+CREATE TABLE p1 (s VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci);
+CREATE TABLE p2 (s VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci);
+INSERT INTO p1 VALUES ('ABC'),('abc');
+INSERT INTO p2 VALUES ('abc');
+SELECT HEX(s) FROM (SELECT s FROM p1 INTERSECT SELECT s FROM p2) q;
+SELECT COUNT(*) FROM (SELECT s FROM p1 INTERSECT SELECT s FROM p2) q WHERE HEX(q.s) = HEX('ABC');
+SELECT COUNT(*) FROM (SELECT s FROM p1 INTERSECT SELECT s FROM p2) q WHERE HEX(q.s) = HEX('abc');
+#CLI: 414243, then 0, then 1; expected 414243, then 1, then 0
+#ERR: - (no error)
+
+CREATE TABLE t1 (s VARCHAR(20) COLLATE utf8mb4_general_ci);
+CREATE TABLE t2 (s VARCHAR(20) COLLATE utf8mb4_general_ci);
+INSERT INTO t1 VALUES ('ABC'),('abc');
+INSERT INTO t2 VALUES ('abc');
+SELECT COUNT(*) AS n FROM (SELECT s FROM t1 EXCEPT SELECT s FROM t2) q WHERE HEX(q.s) = HEX('ABC');
+#CLI: 1; expected 0
+#ERR: - (no error)
+
+CREATE TABLE t1 (s VARCHAR(20) COLLATE utf8mb4_general_ci);
+CREATE TABLE t2 (s VARCHAR(20) COLLATE utf8mb4_general_ci);
+INSERT INTO t1 VALUES ('ABC'),('abc');
+INSERT INTO t2 VALUES ('abc');
+SELECT COUNT(*) AS n FROM (SELECT s FROM t1 EXCEPT SELECT s FROM t2) q WHERE BINARY q.s = 'ABC';
+#CLI: 1; expected 0
+#ERR: - (no error)
+
+CREATE TABLE t3 (s VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci);
+CREATE TABLE t4 (s VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci);
+INSERT INTO t3 VALUES ('ABC'),('abc');
+INSERT INTO t4 VALUES ('abc');
+SELECT COUNT(*) AS n FROM (SELECT s FROM t3 EXCEPT SELECT s FROM t4) q WHERE HEX(q.s) = HEX('ABC');
+#CLI: 1; expected 0
+#ERR: - (no error)
+
+CREATE TABLE t1 (s VARCHAR(20) COLLATE utf8mb4_general_ci);
+CREATE TABLE t2 (s VARCHAR(20) COLLATE utf8mb4_general_ci);
+INSERT INTO t1 VALUES ('ABC'),('abc');
+INSERT INTO t2 VALUES ('abc');
+CREATE VIEW v_except AS SELECT s FROM t1 EXCEPT SELECT s FROM t2;
+SELECT COUNT(*) AS n FROM v_except WHERE HEX(s) = HEX('ABC');
+#CLI: 1; expected 0
+#ERR: - (no error)
+
+CREATE TABLE t1 (s VARCHAR(20) COLLATE utf8mb4_general_ci);
+CREATE TABLE t2 (s VARCHAR(20) COLLATE utf8mb4_general_ci);
+INSERT INTO t1 VALUES ('ABC'),('abc');
+INSERT INTO t2 VALUES ('abc');
+WITH q AS (SELECT s FROM t1 EXCEPT SELECT s FROM t2) SELECT COUNT(*) AS n FROM q WHERE HEX(q.s) = HEX('ABC');
+#CLI: 1; expected 0
+#ERR: - (no error)
+
+SET NAMES utf8mb4;
+CREATE TABLE t1 (s VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci);
+CREATE TABLE t2 (s VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci);
+INSERT INTO t1 VALUES ('ABC'),('abc');
+INSERT INTO t2 VALUES ('abc');
+SELECT s FROM (SELECT s FROM t1 UNION SELECT s FROM t2) q;
+SELECT COUNT(*) FROM (SELECT s FROM t1 UNION SELECT s FROM t2) q WHERE q.s = 'abc' COLLATE utf8mb4_bin;
+#CLI: ABC, then 1; expected ABC, then 0
+#ERR: - (no error)
+
+SET NAMES utf8mb4;
+CREATE TABLE t1 (s VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci);
+CREATE TABLE t2 (s VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci);
+INSERT INTO t1 VALUES ('ABC'),('abc');
+INSERT INTO t2 VALUES ('abc');
+SELECT s FROM (SELECT s FROM t1 INTERSECT ALL SELECT s FROM t2) q;
+SELECT COUNT(*) FROM (SELECT s FROM t1 INTERSECT ALL SELECT s FROM t2) q WHERE q.s = 'abc' COLLATE utf8mb4_bin;
+#CLI: ABC, then 1; expected ABC, then 0
+#ERR: - (no error)
+
+SET NAMES utf8mb4;
+CREATE TABLE t1 (s VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci);
+INSERT INTO t1 VALUES ('ABC'),('abc');
+SELECT s FROM (SELECT DISTINCT s FROM t1) q;
+SELECT COUNT(*) FROM (SELECT DISTINCT s FROM t1) q WHERE q.s = 'abc' COLLATE utf8mb4_bin;
+#CLI: ABC, then 1; expected ABC, then 0
+#ERR: - (no error)
+
+CREATE TABLE t1 (s VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci);
+CREATE TABLE t2 (s VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci);
+INSERT INTO t1 VALUES ('ABC'),('abc');
+INSERT INTO t2 VALUES ('abc'),('abc');
+SELECT COUNT(*) FROM (SELECT s FROM t1 EXCEPT ALL SELECT s FROM t2) q;
+SELECT COUNT(*) FROM (SELECT s FROM t1 EXCEPT ALL SELECT s FROM t2) q WHERE HEX(q.s) = HEX('ABC');
+#CLI: 0, then 1; expected 0, then 0
+#ERR: - (no error)

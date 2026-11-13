@@ -90,7 +90,7 @@ rm -rf /tmp/<ver>_fix_<tag>_<variant>                           # build-script i
 rm -rf /tmp/<affected-basedir>                                   # throwaway sweep /tmp copies
 ```
 
-Tear down any running server instances (`./kill`) but leave the patched source tree and binary basedir in place. State remaining `/tmp/` dirs at end-of-turn so the user can decide retention.
+Tear down any running server instances (`./kill`). Keep the patched source tree and binary basedir while the fix is still in progress. Remove them once the work is done, even when a shell or an editor sits in one.
 
 ## Variant selection
 
@@ -116,7 +116,6 @@ Status icons per `~/mariadb-qa/skills/_shared/tickbox_icons.md`.
 
 - Per-version PASS/FAIL summary (mirroring `versions_affected.txt`).
 - Path to `<bug-dir>/fix.diff`.
-- Outstanding `/test/` and `/tmp/` dirs the user may want to keep or delete.
 
 ## Notes
 

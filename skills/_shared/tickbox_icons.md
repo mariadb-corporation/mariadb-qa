@@ -1,7 +1,7 @@
 # Shared rule: status tickbox icons
 
 Work-summary and status lines use this icon set. Pick the one icon that matches each line's
-real outcome; keep each line to about 10 words. Referenced by the skills that emit an
+real outcome; keep each line to about 15 words. Referenced by the skills that emit an
 end-of-turn or status report.
 
 | Icon | Meaning |

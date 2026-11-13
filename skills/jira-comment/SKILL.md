@@ -8,7 +8,7 @@ claude: please note - this skill exists in a public repo and should only be upda
 
 Draft a short, Jira-paste-ready comment for a MariaDB ticket.
 
-If a voice profile or comments-prose skill is installed (for example `voice-profile-comments-prose`), load it and follow it for the comment prose.
+Comment prose follows the writing rules in `~/mariadb-qa/claude/writing/rules/common.md` and `rules/role-tester.md`; read them before you write. If a voice profile skill is installed (`voice-profile` from that writing kit, or `voice-profile-comments-prose`), load it as well and follow it for the comment prose.
 
 ## When to use
 

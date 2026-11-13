@@ -1,6 +1,6 @@
 ---
 name: jira-ticket
-description: Turn a reduced pquery trial under /data/<workdir>/<trial> into a filed public MariaDB bug. Pick the most-reduced testcase, hand-reduce it further and prettify with ~/tcp against the version where it reproduces, dedup-check EARLY against jira.mariadb.org (and present a decision menu if a duplicate is found), generate the bug report via ~/b (and ~/bs / ~/br as warranted), splice any SAN stacks/Setup/matrix into the body, build and verify an MTR testcase (CLI/MTR compatible note, or dual CLI+MTR blocks), derive Affects+Fix versions / components / labels / priority, write a paste-ready overview to log_jira_ticket.txt for approval, file the MDEV ticket via ~/jira, then register it (eb testcase + kb/kba UniqueIDs) and clean matching workdirs (ca). Public generic crash / assert / UB / ASAN bugs only. Started without a trial dir or other pointer to one bug? Ask which bug, and never go looking for one. The four original/fixed/diff/base gates run only on request - "deliver fix", "1/2/3", "1/2/3/4", "gate 1/2/3", "gate 1/2/3/4", "gate fix/pass/diff/base" or similar.
+description: Turn a reduced pquery trial under /data/<workdir>/<trial> into a filed public MariaDB bug. Pick the most-reduced testcase, hand-reduce it further and prettify with ~/tcp against the version where it reproduces, dedup-check EARLY against jira.mariadb.org (and present a decision menu if a duplicate is found), generate the bug report via ~/b (and ~/bs / ~/br as warranted), splice any SAN stacks and Setup into the body, build and verify an MTR testcase (CLI/MTR compatible note, or dual CLI+MTR blocks), derive Affects+Fix versions / components / labels / priority, write a paste-ready overview to log_jira_ticket.txt for approval, file the MDEV ticket via ~/jira, then register it (eb testcase + kb/kba UniqueIDs) and clean matching workdirs (ca). Public generic crash / assert / UB / ASAN / wrong-result bugs only. Started without a trial dir or other pointer to one bug? Ask which bug, and never go looking for one. Every filing brings a proposed fix, proven by the four original/fixed/diff/base gates on a patched build and posted as a comment right after the create.
 claude: please note - this skill exists in a public repo and should only be updated with specific written signoff by the updater. Keep skills/README.md (the skills index) in sync when any skill is added, renamed, removed, or its description changes.
 ---
 
@@ -39,7 +39,7 @@ Verify with `~/jira --whoami`.
 
 - NEVER submit before explicit user approval of `log_jira_ticket.txt` (step 8).
 - **Never run MTR in a `/test` basedir.** An MTR run drops and recreates `mariadb-test/var/` in the basedir it runs in, so it destroys the cores and error logs an earlier run left there, the ones this report is built from included. Copy the basedir to `/tmp` and run there, from the first run onwards - see step 6 for the copy commands.
-- **Never hand-roll. Use the framework tool for every step.** This skill is a sequence of framework tool calls, not a place to write new tooling. Concretely: the repro cycle is `./all_no_cl` + `./test` + `~/t` (and `./multirun_loop` when a loop is needed) - no wrapper, driver, or batch script around them, and no reading the error log as a stand-in for a UniqueID; the stack is `~/stack` (it also runs inside `mariadb-test`/`mysql-test` dirs); the report body is `~/b` (`~/bs`/`~/br`/`~/bm`/`~/bt`); the prettified testcase is `~/tcp`; the UniqueID and dedup URLs are `~/t`/`~/tt`; filing, commenting, linking and version edits are `~/jira`. Take each tool's output as emitted: never trim, re-indent, re-title, retype, or reassemble a stack or report block by hand, and never reconstruct one from memory. If a step seems to need something the tools do not provide, say so and ask - do not build it. There is NO exception for the sanitizer block: `~/stack` emits the assert block plus exactly ONE stack, each already wrapped in its own `{noformat:title=<version banner>}`. **A *SAN or Valgrind report wins over the core backtrace** - on a sanitizer build you get the sanitizer block and no gdb output, because that backtrace usually shows only the abort path and not the offending code. Never post two stacks for one bug. So never hand-assemble a stack or a sanitizer block out of `log/master.err`, and never build a `{noformat:title=...}` line yourself from `~/myver`. `~/stack` needs no core for the sanitizer block - a UBSAN runtime error that does not abort is still emitted. It covers UBSAN, ASAN, MSAN, TSAN and Valgrind. Version coverage is stated ONLY by the Bug Detection Matrix block(s), verbatim - in the report body AND in any comment. Never write a version list as prose ("Reproduces on CS x.y, ... / ES x.y, ...") in place of, or alongside, the matrix.
+- **Never hand-roll. Use the framework tool for every step.** This skill is a sequence of framework tool calls, not a place to write new tooling. Concretely: the repro cycle is `./all_no_cl` + `./test` + `~/t` (and `./multirun_loop` when a loop is needed) - no wrapper, driver, or batch script around them, and no reading the error log as a stand-in for a UniqueID; the stack is `~/stack` (it also runs inside `mariadb-test`/`mysql-test` dirs); the report body is `~/b` (`~/bs`/`~/br`/`~/bm`/`~/bt`); the prettified testcase is `~/tcp`; the UniqueID and dedup URLs are `~/t`/`~/tt`; filing, commenting, linking and version edits are `~/jira`. Take each tool's output as emitted: never trim, re-indent, re-title, retype, or reassemble a stack or report block by hand, and never reconstruct one from memory. If a step seems to need something the tools do not provide, say so and ask - do not build it. There is NO exception for the sanitizer block: `~/stack` emits the assert block plus exactly ONE stack, each already wrapped in its own `{noformat:title=<version banner>}`. **A *SAN or Valgrind report wins over the core backtrace** - on a sanitizer build you get the sanitizer block and no gdb output, because that backtrace usually shows only the abort path and not the offending code. Never post two stacks for one bug. So never hand-assemble a stack or a sanitizer block out of `log/master.err`, and never build a `{noformat:title=...}` line yourself from `~/myver`. `~/stack` needs no core for the sanitizer block - a UBSAN runtime error that does not abort is still emitted. It covers UBSAN, ASAN, MSAN, TSAN and Valgrind. Version coverage goes in the Affects and Affects ES fields (step 7). The body carries no Bug Detection Matrix, no version list and no build count such as "all 21 builds, debug and optimized": those builds are local, so a count tells the reader nothing. Run the matrix anyway. It fills the version fields, and it stays in the trial dir as evidence. A comment on a ticket somebody else filed names the versions in one sentence (step 3).
 - **A CLOSED ticket is NEVER reopened.** If a closed/fixed bug still reproduces - an incomplete fix, a missed variant, a regression - that is a NEW bug: file it in the standard format (full `~/b` body, testcase, stacks, matrix, derived fields) and link it to the old one as `Relates` (step 10). Do NOT comment asking for a reopen, do NOT add Affects/Fix versions to the closed ticket, and do NOT treat "the fix is incomplete" as a reason to keep the discussion on the old ticket. Reference the old key in the new ticket's description AND create the actual Jira issue link - both are required, the description mention alone is not enough: `~/jira --link MDEV-<new> --relates MDEV-<closed>` (step 10), verified afterwards via `GET /issue/MDEV-<new>?fields=issuelinks`. Commenting on the closed ticket is only for a pure cross-reference once the new key exists.
 - Dedup EARLY (step 3, before `~/b`/MTR), because it decides WHICH deliverable you build - a new ticket, or a comment plus a version-field edit on the existing one. It does not decide WHETHER you build one. A duplicate still needs the reduced testcase, the verified MTR and the matrix, because the comment and the Affects edit are both read off them.
 - **Do the whole job before you present, on every disposition.** ONE approval gate, not three. Never present a bare decision menu and wait, then draft the comment after the answer, then plan the version edit after that - each round trip costs the user real time. By the time you present, the reduction is done, the MTR is verified, the matrix is swept, the comment text is drafted verbatim, and the version-edit command is written out. The user then answers once and everything executes. Stop early ONLY at a real fork you cannot resolve, and say in one line what you would do by default.
@@ -48,9 +48,9 @@ Verify with `~/jira --whoami`.
 - **NEVER use a Jira `||` header table anywhere in a body or a comment.** Not for versions, not for results, not for an optimizer-switch comparison, not for anything. Every tabular block is a `{noformat:title=<name>}` block with space-aligned columns, exactly as `~/b` emits them. A `||` table is the single clearest tell that a block was hand-written instead of taken from a tool.
 - **NEVER paste CLI output, MTR output or an error-log line in a bare `{noformat}` block.** Every such block carries the version banner of the build it came from: `{noformat:title=<CS/ES> <version> <full sha> (<build type>, <compiler>) Build <DD/MM/YYYY>}`. `~/stack`, `~/b` and `~/tt` already emit that line, so take it from the tool output. For a run the tools did not produce, read the banner in that basedir with `source ~/mariadb-qa/version_chk_helper.source` and build the title from `${SVR} ${SERVER_VERSION} ${SOURCE_CODE_REV}${BUILD_TYPE} ${BUILD_DATE}`. A renamed basedir breaks that parse, so check the title before the block goes in. Without the banner the reader cannot tell which build produced the output.
 - **Never invent a matrix row, a flavour tag, or a version.** Every row states a build that was actually run, and its cells come from that build: the vendor tag and build date from the basedir name, the commit from `~/myver`, the observation from the run. No row for a build you did not run, no rounded or guessed version, no flavour you did not test. If a build is missing from the matrix, run it or leave it out - never fill the gap.
-- **`~/b` is not core-only, and the matrix is mandatory for every bug class.** Plain `b` looks for crashes and asserts in the error logs as well as for core files. `bs`/`bm`/`bt`/`bv` take a search string as their argument, so a sanitizer or Valgrind text works. `bug_report.sh` itself honours `export TEXT='<string>'` for any other error-log text. Try these before deciding the tool does not fit - see "When `~/b` cannot run" below. Never fall back to prose or a `||` table.
+- **`~/b` is not core-only, and the matrix is run for every bug class.** Plain `b` looks for crashes and asserts in the error logs as well as for core files. `bs`/`bm`/`bt`/`bv` take a search string as their argument, so a sanitizer or Valgrind text works. `bug_report.sh` itself honours `export TEXT='<string>'` for any other error-log text. Try these before deciding the tool does not fit - see "When `~/b` cannot run" below. Never fall back to prose or a `||` table.
 - **`Please also test any fixes with this testcase.` belongs to a comment on a PRE-EXISTING bug, and nowhere else.** It goes at the end of a comment that adds our testcase to a bug somebody already filed, where it asks the dev to cover this extra variant as well. It never goes in a new ticket's description, and never in a comment on a ticket filed in this session - there the testcase already IS the bug, so the line says nothing.
-- Scope = public generic bugs (crash / assert / UB / ASAN) in project **MDEV**.
+- Scope = public generic bugs (crash / assert / UB / ASAN / wrong result) in project **MDEV**.
 - **The project follows the code, and that is not a question to ask.** A defect in code that only the Enterprise Server tree carries is a **MENT** bug. MDEV is for a defect present in Community Server, and its `--es-version` field then carries the ES coverage as well. Read the code on both sides before naming the project.
 - The Jira body IS the `~/b` report block, near-verbatim. Do not re-prose it. Match the existing house style - it is already encoded in `b`/`bs`/`br`.
 - Every testcase SQL statement stays on ONE unbroken line - in `log_jira_ticket.body`, the eb file, the `.test`, AND in any chat display. Wrapping/splitting a line breaks pquery/reducer/MTR replay. When presenting CLI + MTR testcases, stack them as separate full-width blocks; never side-by-side (it wraps lines).
@@ -58,13 +58,13 @@ Verify with `~/jira --whoami`.
 - A comment on a ticket pings every watcher plus the creator, so it interrupts real people who did not ask to be interrupted. That sets the bar: post when the comment carries something they need, and never when it only restates or tidies what is there.
 - **Read the whole ticket before you draft a comment, and add to it.** Pull the description, every comment, the work log (`/rest/api/2/issue/<KEY>/worklog`, where anyone may have left additional comments) and the links with the PAT, and read them. Then write only what the ticket does not already hold. A sweep row that repeats a test the reporter already ran, or a restatement of a conclusion already in the description, is not a contribution - it reads as redoing their work, and worse as correcting it. Say what you bring and stop: a version the ticket does not cover, an additional different testcase, a case it has not seen, a measurement nobody took. Where your finding narrows something already there, say only what is new about it. If it turns out you cannot answer a question the ticket asks, say so in one line and give the bound you did establish; do not restate the part already known as if it were the answer.
 - All deliverable prose is timeless and literal (CLAUDE.md). No "fixed in", "re-scored", build-internal paths, or `MD<DDMMYY>`/`EMD` shorthand in the Jira body - use CS/ES + version.
-- If a voice profile or comments-prose skill is installed (for example `voice-profile-comments-prose`), load it and follow it for the ticket prose.
+- Ticket prose follows the writing rules in `~/mariadb-qa/claude/writing/rules/common.md` and `rules/role-tester.md`; read them before you write. If a voice profile skill is installed (`voice-profile` from that writing kit, or `voice-profile-comments-prose`), load it as well and follow it for the ticket prose.
 
 ## Tools used
 
 | Tool | Role |
 |---|---|
-| `~/jira` (`log_jira_ticket.sh`) | files the MDEV ticket; also `--comment <KEY>`, `--link <KEY> --relates <KEY>`, `--edit <KEY>` (additively add Affects/Fix versions to an existing issue; `-s 'New title'` sets the title), `--createmeta`, `--whoami`; 3x-confirm (`-y` to skip for a directly-instructed edit) |
+| `~/jira` (`log_jira_ticket.sh`) | files the MDEV ticket; also `--comment <KEY>`, `--link <KEY> --relates <KEY>`, `--edit <KEY>` (additively add Affects/Fix versions to an existing issue; `-s 'New title'` sets the title; `--description-file F` replaces the description), `--createmeta`, `--whoami`; 3x-confirm (`-y` to skip for a directly-instructed edit) |
 | `~/b` / `~/bs` / `~/br` | bug report (regular / SAN / replication); run inside a basedir; tees to `report.log` |
 | `~/tcp` (`testcase_prettify.sh`) | prettify testcase; converts `--sql_mode=` header to `SET sql_mode='';` |
 | `~/t` / `~/tt` | UniqueID; UniqueID + known-bugs scan + Jira search URLs |
@@ -154,10 +154,10 @@ With a reproducing basedir (core present), run the dedup now - a duplicate must 
   | Comment to the ticket (post for a stack variant or a substantially different testcase) | Post a note when EITHER our testcase SUBSTANTIALLY differs from the dup's (different SQL structure, even if the UID is identical) OR ours is a **stack variant** of the dup (a different UID / frames / call path into the SAME bug) - a variant stack tells the dev the bug is reachable another way, so a variant USUALLY warrants a short note even when the SQL is similar. Intro `Ran into this one also. CLI testcase:` (label `CLI testcase` unless you have verified it in MTR) + the testcase (`{code:sql}`) + `Leads to:` + `~/stack` output, verbatim - it already supplies the `{noformat:title=<version banner>}` header, so never write a title yourself or paste a bare UniqueID into one. If the STACK/UID differs from the ticket's, frame the intro as `Additional testcase with slight stack variation:` and give the intro no mechanism explanation - the stack and the testcase carry it. **A comment is leaner than a report - it carries only what the ticket does not already have:**
 
   - **dbg stack only.** Add the opt stack ONLY when it is new compared with what the ticket already carries. Do not post both as a matter of course.
-  - **Never repeat a stack the ticket already has.** When the stack you would post is already there, drop the block and write one line instead: `Same stack as the one above`, or `Same stack as one of the ones above` when the ticket carries several. When both your dbg and opt stacks are already there, that single line replaces both blocks - post the testcase, the line, and the matrix.
+  - **Never repeat a stack the ticket already has.** When the stack you would post is already there, drop the block and write one line instead: `Same stack as the one above`, or `Same stack as one of the ones above` when the ticket carries several. When both your dbg and opt stacks are already there, that single line replaces both blocks - post the testcase and the line.
   - **Never include the `Setup:` block.** It is report-only; in a comment it is noise.
   - **A *SAN block goes in only when the ticket has no SAN data for this path.** Then it is `~/stack`'s sanitizer block, on its own, without `Setup:`.
-  - **Bug Detection Matrix and SAN Bug Detection Matrix: include where relevant** - always when the comment says anything about which versions are affected, and alongside a SAN block for the SAN one. ALWAYS end the comment with the line `Please also test any fixes with this testcase.` (so the dev validates the fix against this variant too). That line belongs ONLY to a comment on a PRE-EXISTING bug - one somebody else already filed, where our testcase is an extra variant the dev has to cover too. Never put it in a new ticket's description, and never in a comment on a ticket filed in this session. "Substantially differs" is judged against ALL existing testcases in the issue - the description AND every comment (some may be the user's own); read them first, and post only when this testcase adds a genuinely new path/index/version (e.g. DESC vs ASC, skip_nulls vs next_min, a newer regression range). Present the LITERAL text for approval, as a `cat <full path>` line, then `~/jira --comment <KEY> --description-file <file> -y`; NEVER auto-post (hard rule). Minor diffs only -> skip the comment (the eb-append already captured it). |
+  - **No matrix.** Where the affected versions matter, name them in one sentence, such as `Also affects 13.0 and 13.1, and ES 10.6, 11.4, 11.8 and 12.3.` ALWAYS end the comment with the line `Please also test any fixes with this testcase.` (so the dev validates the fix against this variant too). That line belongs ONLY to a comment on a PRE-EXISTING bug - one somebody else already filed, where our testcase is an extra variant the dev has to cover too. Never put it in a new ticket's description, and never in a comment on a ticket filed in this session. "Substantially differs" is judged against ALL existing testcases in the issue - the description AND every comment (some may be the user's own); read them first, and post only when this testcase adds a genuinely new path/index/version (e.g. DESC vs ASC, skip_nulls vs next_min, a newer regression range). Present the LITERAL text for approval, as a `cat <full path>` line, then `~/jira --comment <KEY> --description-file <file> -y`; NEVER auto-post (hard rule). Minor diffs only -> skip the comment (the eb-append already captured it). |
   | Extend the dup's versions | When our repro confirms the bug live on a NEWER mainline GA than the issue lists (e.g. it lists up to `12.1(EOL)` but crashes on `13.0`/`13.1` builds), ADD those versions to the existing issue rather than commenting the same testcase. **All THREE version fields move together - Affects, Affects ES and Fix Version.** Extending Affects while leaving Fix Version behind is an incomplete edit. Derive Fix the same way as for a new ticket: every affected CS branch except the single newest, which gets it by up-merge. So a run confirming 12.3, 13.0 and 13.1 adds all three to Affects and adds 12.3 and 13.0 to Fix. `~/jira --edit <KEY> --affects-version 12.3 --affects-version 13.0 --affects-version 13.1 --es-version 12.3 --fix-version 12.3 --fix-version 13.0` (additive PUT, never replaces; **mainline X.Y names only - `13.0`, NOT `13.0.1`**; Fix excludes the newest branch, which gets the fix by up-merge). `-y` to skip the 3x prompt for this directly-instructed edit. Validate each name exists via `/rest/api/2/project/MDEV/versions` first. Prefer this over a comment when the testcase/mechanism is the SAME and only the affected range differs. |
   | File as a new/distinct bug | Genuinely distinct, or the match is CLOSED and still reproduces (incomplete fix / missed variant / regression) -> proceed to step 4, and link the closed key as `Relates`. A closed ticket is never reopened, so this is the ONLY route for a post-fix reproducer. |
   | Skip / delete the trial | Rare: `~/dt <trialnum>` is almost never used here - registering + `ca` already disposes of matching trials. Skip/delete only if not even worth registering. |
@@ -219,11 +219,13 @@ Copy the minimal testcase into the matching mainline basedir as `in.sql` and run
 sed -n '/^-------------------- BUG REPORT --------------------$/,/^-------------------- \/BUG REPORT --------------------$/p' report.log | sed '1d;$d'
 ```
 
-**Prose paragraphs must be a single unwrapped line.** `~/b` hard-wraps the explanatory prose; un-wrap each prose paragraph to one line (only `{code}`/`{noformat}` blocks keep their line structure). **Never clobber the user's edits on a filed ticket:** there is no `~/jira` description-edit, so a description change needs a raw `PUT .../rest/api/2/issue/KEY` with `{fields:{description:...}}` (jq `-Rs` to encode the body) - before any full re-PUT, re-fetch the live description and carry forward any manual edits the user made, then sync the local `log_jira_ticket.body`/`.txt`.
+Leave the `{noformat:title=Bug Detection Matrix}` block out of the body. It stays in `report.log`, and step 7 reads the version fields from it.
 
-**Never replace a tool-emitted block with your own prose, and never drop one.** The body keeps the `~/b` shape exactly, in this order: the `Likely cause:` line, testcase, `Leads to:`, crash stack, Bug Detection Matrix, then (when a SAN issue fired) SAN stack, `Setup:`, and the SAN Bug Detection Matrix LAST. The Bug Detection Matrix is ALWAYS present and always follows the assert/crash stack - its rows ARE how CS and ES version coverage is stated, so a sentence like "also reproducing on ES 10.6, 11.4, 11.8" is wrong and must not appear in place of (or alongside) the matrix. If a matrix row looks wrong - a `No bug found` cell that a direct re-run contradicts - the fix is to RE-RUN `~/b` and regenerate the matrix, never to hand-edit a row, omit the matrix, or paraphrase it. The SAN matrix stands alone ONLY for a SAN-only finding - one that does not reproduce in regular builds at all. Whenever a regular build reproduces the issue, the regular matrix covers that assert/crash and the SAN matrix follows it; the two are not alternatives.
+**Prose paragraphs must be a single unwrapped line.** `~/b` hard-wraps the explanatory prose; un-wrap each prose paragraph to one line (only `{code}`/`{noformat}` blocks keep their line structure). **Never clobber the user's edits on a filed ticket:** `~/jira --edit KEY --description-file <file>` replaces the whole description, so before it, re-fetch the live description and carry forward any manual edits the user made, then sync the local `log_jira_ticket.body`/`.txt`.
 
-**The body opens with one `Likely cause:` line, above the testcase.** It names the commit or range that most likely brought the bug in, with its MDEV, or it says the bug is older and which older version has it too. A guess is fine, but base it on something: the oldest affected row of the matrix, `git blame` or `git log -L` on the frame functions in the full clone under `/test/git-bisect/<ver>`, and where it helps a run on a build from before the suspected change. Cite a commit by the full SHA from `git rev-parse`. The one build that shows the cause is not a version list; the versions stay in the matrix. The `is caused by` link (step 10) names the same ticket: the change whose code fails, also when a build from before it fails the same way. The line says whether the bug is a regression. When the failing code is older than the ticket that seems to cause it, the link to that ticket is `Relates`, and the older change gets the `is caused by` link. The forms:
+**Never replace a tool-emitted block with your own prose, and never drop one other than a matrix.** The body keeps the `~/b` shape, in this order: the `Likely cause:` line, testcase, `Leads to:`, crash stack, then (when a SAN issue fired) SAN stack and `Setup:`. Neither matrix goes in, and no sentence such as "also reproducing on ES 10.6, 11.4, 11.8" takes its place: the version fields carry that. If a matrix row looks wrong - a `No bug found` cell that a direct re-run contradicts - RE-RUN `~/b` and regenerate the matrix before you set the fields; never hand-edit a row.
+
+**The body opens with one `Likely cause:` line, above the testcase.** It names the commit or range that most likely brought the bug in, with its MDEV, or it says the bug is older and which older version has it too. A guess is fine, but base it on something: the oldest affected row of the matrix, `git blame` or `git log -L` on the frame functions in the full clone under `/test/git-bisect/<ver>`, and where it helps a run on a build from before the suspected change. Cite a commit by the full SHA from `git rev-parse`. The one build that shows the cause is not a version list; the versions stay in the matrix. The `is caused by` link (step 10) names the same ticket: the change whose code fails, also when a build from before it fails the same way. A regression goes in the `regression` and `regression-X.Y` labels (step 7), never in a sentence such as "This is a regression."; the line gives only the evidence, such as an older version without the bug. When the failing code is older than the ticket that seems to cause it, the link to that ticket is `Relates`, and the older change gets the `is caused by` link. The forms:
 
 ```
 Likely cause: commit <full SHA> (MDEV-NNNNN), in {{<function>()}}. CS X.Y.Z, from before it, does not have the bug.
@@ -231,6 +233,22 @@ Likely cause: commit <full SHA> (MDEV-NNNNN), in {{<function>()}}. CS X.Y.Z, fro
 Likely cause: older than MDEV-NNNNN. CS X.Y.Z has it too, and it looks like it comes from MDEV-MMMMM (X.Y.1).
 Likely cause: a change between CS X.Y.A and X.Y.B, in the range <full SHA>..<full SHA>.
 ```
+
+**MySQL values go in a small table.** For a wrong result, run the testcase on the MySQL builds too, older versions included, with a test that prints the value: a matrix `Yes` only says that the gate failed. When MySQL gives other values than we do, paste them after the prose, in a block of their own:
+
+```
+{noformat:title=MySQL}
++--------+--------+--------+
+| MySQL  | Finds  | Engine |
++--------+--------+--------+
+| 5.5.62 | no row | MyISAM |
+| 5.6.51 | 20     | MyISAM |
+| 8.0.36 | 2      | InnoDB |
++--------+--------+--------+
+{noformat}
+```
+
+When MySQL does not have the feature, say so in one sentence. The same values set the `upstream-X.Y` labels (step 7). For a crash, the MySQL rows of the matrix set them.
 
 **Gate:** a well-formed report with a real stack (not "DID NOT CRASH") and a Bug Detection Matrix that shows the bug present in at least one row.
 
@@ -261,10 +279,10 @@ Only when none of those fits - a wrong result that leaves nothing in the error l
 (Before the approval gate, so the comment the user approves in step 8 is final.) After `~/b`, read the `----- *SAN Execution of the testcase -----` mini-report (after `/BUG REPORT`). If a real `ASAN|...`/`UBSAN|...`/`MSAN|...` UniqueID appears (not "No SAN issue detected"):
 
 1. Run `~/bs` with the same `in.sql` in the matching `UBASAN_...`/`MSAN_...` **dbg** basedir.
-2. From that `bs` BUG REPORT block, take, in order: the **SAN stack** (`{noformat:title=... UBASAN ...}` ... `==...==ABORTING` `{noformat}`); the **`Setup:`** block (`Setup:` + `{noformat}` ... `{noformat}`); the **`{noformat:title=SAN Bug Detection Matrix}`** ... `{noformat}` block.
+2. From that `bs` BUG REPORT block, take, in order: the **SAN stack** (`{noformat:title=... UBASAN ...}` ... `==...==ABORTING` `{noformat}`) and the **`Setup:`** block (`Setup:` + `{noformat}` ... `{noformat}`). Its `{noformat:title=SAN Bug Detection Matrix}` block stays out of the body, like the regular matrix.
    If `bs`'s emitted SAN stack looks incomplete, do NOT rebuild it by hand. Run `~/stack` in that SAN basedir: it emits the sanitizer block on its own, from the first sanitizer issue line through its closing `SUMMARY:` / `==ABORTING` line, already wrapped in the `{noformat:title=<version banner>}` header. Use that output verbatim. `~/stack` covers UBSAN, ASAN, MSAN, TSAN and Valgrind, picks the right start and end markers per sanitizer, and needs no core, so it also serves a UBSAN runtime error that did not abort.
    **Take the SAN stack and NOT the SAN build's core backtrace.** The body carries one stack per build flavour: the non-SAN build contributes its crash stack, the SAN build contributes its sanitizer block. A SAN build's gdb backtrace never goes in - it usually shows only the abort path. `~/stack` already enforces this, so a `~/stack` run in a SAN basedir cannot give you the wrong one.
-3. Splice all three **after the regular Bug Detection Matrix**, in the order SAN stack, `Setup:`, SAN Bug Detection Matrix - the SAN matrix ends the body. Keep the blocks verbatim. The regular Bug Detection Matrix stays where `~/b` put it, directly under the crash stack. Full body order when a SAN issue fired: `Likely cause:` line > testcase > assert/crash stack > regular Bug Detection Matrix > SAN stack > `Setup:` > SAN Bug Detection Matrix.
+3. Splice both **after the crash stack**, in the order SAN stack, `Setup:`. Keep the blocks verbatim. Full body order when a SAN issue fired: `Likely cause:` line > testcase > assert/crash stack > SAN stack > `Setup:`.
 
 If SAN-only (no core), the SAN stack is the primary stack. If no SAN issue fired, skip and do not mention SAN.
 
@@ -283,9 +301,9 @@ Reproduce the SAME failure as the CLI testcase (fail / inverse gate): a crash ki
 
 #### The four gates
 
-On request only - "deliver fix", "1/2/3", "1/2/3/4", "gate 1/2/3", "gate 1/2/3/4", "gate
-fix/pass/diff/base" or similar. A bare "1/2/3" or "1/2/3/4" is a fix request. Not part of a
-normal filing.
+Part of every filing. A filing brings a proposed fix: build it, prove it with these four
+gates, and draft `comment_fix.txt` (step 8a) before the overview goes out. When no fix holds
+after three tries, say so in the bottom line of the overview.
 
 Put every testcase in one MTR test, name it `test_claude`, copy the `.test` into both
 basedirs, and run all four gates in this order. The test that goes in the report is the one
@@ -294,14 +312,14 @@ that went through the gates, byte for byte.
 1. Original must fail. The test on the affected build has to fail there, on the symptom the
    report describes: the stack, the error, the wrong result, the hang. A pass here means the
    test does not detect the bug.
-2. Fixed must pass. The same test on the unaffected build, with the MTR summary read to the
+2. Fixed must pass. The same test on the patched build, with the MTR summary read to the
    end. `Completed: All 1 tests were successful` can sit right below a failed post-test
    check, so the last line alone is not the verdict.
 3. Same test on both sides. Diff the `.test` between the two basedirs; it must be empty.
    Without this a silent copy failure reads as a pass, and a block showing a test other than
    the one that ran proves nothing.
-4. Same base on both sides. Where a fix was asked for and gate 2 runs on a build you
-   patched, both builds must come from the same source, differing only by `fix.diff`. The
+4. Same base on both sides. Gate 2 runs on the build you patched, so both builds must come
+   from the same source, differing only by `fix.diff`. The
    version string alone does not settle it: two basedirs can both say `11.8.9-6` and be
    weeks apart, so a bug fixed upstream in between reads as your patch working. The version
    and the exact revision must be identical on both sides, so read this before you read any
@@ -320,10 +338,6 @@ echo "$SERVER_VERSION $SOURCE_CODE_REV"
    Build the baseline from the SAME source copy the patch came from, unpatched, and re-run
    gate 1 there. An older basedir lying around in `/tmp` or `/test` is not a baseline; it is
    a different tree.
-
-   Where no fix was asked for, gate 2 runs on an unaffected version of the same product, so
-   the two bases differ by design. Print both readings anyway and say in one line that gate
-   4 does not apply on this run, so nobody reads the version difference as a fix.
 
    Never pair an Enterprise Server build with a Community Server build across gates 1 and
    2. They are two different products, so the pass side proves nothing about the fail side.
@@ -381,24 +395,42 @@ preamble above the headers: that makes the reader copy two pieces to run one gat
 # Original (gate 1, must fail):
 S=<affected basedir>
 cd $S/mariadb-test && ./mtr main.test_claude
+# main.test_claude                         [ fail ]
+# <the --die text, or the assert or signal of a crash>
 
 # Fixed (gate 2, must pass):
-F=<unaffected basedir>
+F=<patched basedir>
 cd $F/mariadb-test && ./mtr main.test_claude
+# main.test_claude                         [ pass ]
+cd $F/mariadb-test && ./mtr --parallel=8 --force \
+  main.<test> main.<test> <suite>.<test>
+# Completed: All 3 tests were successful.
+cd $F/mariadb-test && ./mtr --parallel=8 --force --ps-protocol \
+  main.<test> main.<test> <suite>.<test>
+# Completed: All 3 tests were successful.
 
 # Diff (gate 3, must be empty):
 T=mariadb-test/main/test_claude.test
 diff <affected basedir>/$T \
-     <unaffected basedir>/$T
+     <patched basedir>/$T
+# (no output)
 
 # Base (gate 4, must be identical):
 cd <affected basedir>
 source ~/mariadb-qa/version_chk_helper.source
 echo "$SERVER_VERSION $SOURCE_CODE_REV"
-cd <unaffected basedir>
+# <version> <full revision>
+cd <patched basedir>
 source ~/mariadb-qa/version_chk_helper.source
 echo "$SERVER_VERSION $SOURCE_CODE_REV"
+# <version> <full revision>
 ```
+
+In the reply, the result of each command goes on `#` lines right under it, so the results
+show green: the `[ fail ]` line with the failure text, the `[ pass ]` line, the `Completed:`
+line of each regression run, `(no output)` for gate 3, and the version line of each side for
+gate 4. Gate 2 also runs a handful of existing tests of the area, once as they are and once
+with `--ps-protocol`, with the test names on the `./mtr` lines.
 
 The test directory is `mariadb-test` on 11.4 and newer and `mysql-test` on 10.11, so use the
 one the basedir has.
@@ -409,14 +441,11 @@ with an invalid revision range. `/test/git-bisect/<ver>` holds a full clone for 
 branches. For a branch with no full clone, an ES branch among them, take a deep clone of that
 branch and read the history there.
 
-A new bug has no fixed build, so the gate 2 pass side is a build where the behaviour is
-correct: an unaffected version of the same product from the matrix, never the other
-product's build. When the matrix shows every build of that product affected, BUILD one -
-apply the narrow fix in a `/tmp` source copy through the `build-fix-diff` skill and run
-gate 2 against that basedir. Do not ask whether to build
-it; building it is part of the job. Never edit the test to make something pass, and never
-present a removed precondition as gate 2 - that a precondition is load-bearing is separate
-evidence.
+A new bug has no fixed build, so BUILD one: apply the narrow fix in a `/tmp` source copy
+through the `build-fix-diff` skill, and run gate 2 against that basedir. An older or an
+unaffected build that passes is not gate 2. Do not ask whether to build it; building it is
+part of the job. Never edit the test to make something pass, and never present a removed
+precondition as gate 2 - that a precondition is load-bearing is separate evidence.
 
 A sporadic bug needs the repeat form above at BOTH gate 1 and gate 2, not one run each. A
 single failing run does not establish gate 1 and a single clean run does not establish gate
@@ -504,6 +533,7 @@ still does not fire on every run".
 ## Step 7 - Derive the Jira fields
 
 - **Title** (synthesize - the report has none). House style: `<assert text | SIGNAL> in <function> on <SQL op>`; SAN leads with the tool (`ASAN <class> in <fn> on <op>`, `UBSAN: <message> in <fn> on <op>`). Source the signal/assert + frames from the UniqueID, the function from frame 1-2, the op from the triggering statement. **Keep it SHORT** - favour a terse op + the single load-bearing modifier over a verbose descriptive clause, and abbreviate (`w/`, `vcol`). E.g. prefer `... in Item_func_connection_id::val_int on INSERT w/ TRIGGER` over `... on INSERT into a table with a CONNECTION_ID() virtual column`. Sentence case, no terminal period.
+  **A wrong result leads with the broken promise.** When a feature that must not change a query result does change it - partitioning, an index, a plan choice, a rewrite - the title says so first: `<feature> changes the query result: <what is lost>`, as on MDEV-41475: `Partitioning by TO_SECONDS(), TO_DAYS() or UNIX_TIMESTAMP() changes the query result: a row with fractional seconds is not found`. The first line of prose after the output says the same, such as `Partitioning changes the query result. Without partitioning, the query finds the row.` The mechanism comes after.
 - **Versions - THREE fields, all from the Bug Detection Matrix** (rows whose UniqueID column is not "No bug found"; ignore MS rows; `Rel` is already `X.Y`). MDEV tracks CS and ES affects SEPARATELY:
 
   ```bash
@@ -513,7 +543,7 @@ still does not fire on every run".
 
   - **Affects Version/s** (`--affects-version`) = the **CS** rows. Map each `X.Y` to a real Jira version: `X.Y`, else `X.Y(EOL)`, else drop + note (validate against the list above).
   - **Affects ES Version/s** (`--es-version` -> `customfield_13204`, a labels field) = the **ES** rows, as bare `X.Y` tokens (no version validation - it is free-text labels). This is a DISTINCT field from CS Affects; populate it whenever the matrix has ES rows, otherwise it defaults to "Unknown". (There is no separate ES Fix field.)
-  - **Fix Version/s** (`--fix-version`) = the CS-affected set minus the single newest branch (highest `X.Y`, currently `13.1`) - it lands by up-merge. Real Jira names only.
+  - **Fix Version/s** (`--fix-version`) = the CS-affected set minus the version main builds (read `VERSION` on main, currently `13.2`) - it lands by up-merge. Real Jira names only.
   - Surface all three in the overview for adjustment.
   - A clean (`No bug found`) cell can mean *already fixed in that build*, not *unaffected* (step 4 up-merge gate); a crashing older-dated cell can be *stale* (predates an up-merged fix). Reconcile each Affects/Fix entry against the fix-commit status; never set them from build version strings/dates alone.
 - **Components** (1-3) - infer from the crashing subsystem/frames + SQL: `Optimizer`, `Optimizer - Window functions`, `Storage Engine - InnoDB`, `Replication`, `Parser`, `Server`, `GIS`, `Character Sets`, `Partitioning`, `Data Definition - Temporary`, `Data Manipulation - Insert`, `Stored routines`, `Triggers`, `Views`, `Virtual Columns`, `Storage Engine - <Engine>`. Component names are case- and spelling-EXACT - `~/jira` create 400s on a bad one (`Component name '<X>' is not valid`). Common traps: `Stored routines` (lowercase r), DML is split into separate `Data Manipulation - Insert` / `- Update` / `- Delete` / `- Subquery` (no combined name). Validate every `-c` against the live list before filing: `curl -sS -H "Authorization: Bearer $(< ~/.config/mariadb-qa/jira.pat)" 'https://jira.mariadb.org/rest/api/2/project/MDEV/components' | jq -r '.[].name'`. Add an engine component (`Storage Engine - InnoDB`, `Partitioning`, `Storage Engine - <X>`) ONLY when that engine is load-bearing for the repro (per the step-2 engine test) - not merely because the reduced testcase happens to use it. If InnoDB is NOT load-bearing, drop `ENGINE=InnoDB` from the testcase instead (no `have_innodb.inc` needed). **`wsrep` and `Galera` are two different components, and the project says so: `Galera` is "the galera library (libgalera_smm.so)" and `wsrep` is "wsrep-patch in the server".** A bug in server code under `#ifdef WITH_WSREP` is `wsrep`. `Galera` is for the library itself. Take both only when both are genuinely implicated. Reading a neighbouring ticket's components is not a guide here - the two are mixed up in practice.
@@ -521,6 +551,8 @@ still does not fire on every run".
   **A regression takes both `regression` and `regression-X.Y`.** It is one when the same testcase runs on the older branches and gives the right result there. X.Y is the oldest affected release series in the matrix, often the version of the change that the "is caused by" link names. Check this on every matrix, a wrong result included. For example, when 11.8 and newer give a wrong result and 11.4 gives the right one, the labels are `regression regression-11.8`. An older branch that cannot run the testcase, such as one where the CREATE fails for a missing type or collation, does not make the bug a regression.
 
   For an ASAN/UBSAN/MSAN bug, derive the SAN class label from the `SUMMARY:` line of the SAN log - `SUMMARY: <AddressSanitizer|UndefinedBehaviorSanitizer|MemorySanitizer>: <class> <file>:<line>` - take the `<class>` token (e.g. `null-pointer-use`, `heap-use-after-free`, `heap-buffer-overflow`, `stack-buffer-overflow`, `dynamic-stack-buffer-overflow`, `use-after-poison`, `use-of-uninitialized-value`). The SAME bug often emits DIFFERENT wording across builds at the SAME `file:line` (e.g. dbg `load of null pointer` vs opt `member access within null pointer`; both are null-pointer-use). EVERY such applicable variant the matrix sweep produced for this bug IS part of the bug - capture ALL of them for the kb/kba registration (step 11), and use the primary class as the label. (Only a SUMMARY at a genuinely DIFFERENT `file:line` belongs to a different bug.) Validate the label token before use.
+
+  **MySQL labels.** When MySQL has the bug too, add one `upstream-X.Y` label for each MySQL version that has it (`upstream-5.5`, `upstream-5.6`, `upstream-5.7`, `upstream-8.0`, `upstream-9.1`), plus `upstream-not-8.0` when MySQL 8.0 and newer do not have it, as on MDEV-41455: `upstream-5.5 upstream-5.6 upstream-5.7 upstream-not-8.0`. Base them on the values each MySQL build gives (step 4), not on a matrix `Yes`. There is no `upstream-not-5.5`.
 - **Priority** - `Major` for a typical crash/assert; `Critical` for a high-impact bug or a regression present for some time; `Blocker` for a recent regression. Never below `Major`.
 - **Assignee** - if someone's patch introduced the bug, that person fixes it. Otherwise it is most often the owner of the area. The patch author is the assignee of the ticket that patch was for, the one the "is caused by" link names; confirm the account is active. For the owner of the area, derive the default by the subsystem owning the bug's ROOT cause (the feature fundamentally involved, not the surface symptom). A virtual-column bug goes to the Virtual columns owner even when it surfaces via the optimizer's filesort. A sibling's assignee (from dedup) is only a weak hint, and only if it is TRULY the same bug - do NOT override the map from a loosely-related sibling. Take the Jira username from the PRE-RESOLVED list at the top of `~/mariadb-qa/skills/_shared/default_assignees.md` - do not re-derive one that is already there. For a name the file does not list, resolve via `https://jira.mariadb.org/rest/api/2/user/search?username=<prefix>` (the param is `username`, NOT `query`) and take the **`name`** field, NOT `key` - see the gotcha below. Set with `--assignee <name>`, and surface it (Display Name + username) in the overview for signoff. Consult the subsystem-to-assignee map in `~/mariadb-qa/skills/_shared/default_assignees.md` to pre-fill the suggestion.
 
@@ -538,7 +570,7 @@ The `key` is still the right field for JQL (`reporter = <key>`, `assignee = <key
 
 ## Step 8 - Assemble the overview and get approval
 
-ALWAYS produce and present the full overview, **irrespective of disposition** - file, comment-on-existing, duplicate (open or closed), refuted, or any no-action outcome all get one. Never skip or shorten it because the verdict is "duplicate, do not file"; a duplicate needs as clear a paper trail (crash/UID, assert+line, trigger, reduced testcase, dedup verdict + evidence chain, matrix, explicit disposition) as a filing, and it is persisted in the dir even when nothing is filed. **Print the overview in the chat reply every time, in the reply shape below.** Do not reference "presented earlier", and do not only persist it to a file. Never paste a testcase, the body, a comment or a tool-emitted block into the reply. The `Files:` list points to the body and the comment files instead, and the approver reads the exact text from there.
+ALWAYS produce and present the full overview, **irrespective of disposition** - file, comment-on-existing, duplicate (open or closed), refuted, or any no-action outcome all get one. Never skip or shorten it because the verdict is "duplicate, do not file"; a duplicate needs as clear a paper trail (crash/UID, assert+line, trigger, reduced testcase, dedup verdict + evidence chain, matrix, explicit disposition) as a filing, and it is persisted in the dir even when nothing is filed. **Print the overview in the chat reply every time, in the reply shape below.** Do not reference "presented earlier", and do not only persist it to a file. Never paste a testcase, the body, a comment or a tool-emitted block into the reply, and never name a testcase file in it. The `cat` lines point to the body and the comment files instead, and the approver reads the exact text from there.
 
 Write two files into `<trial-dir>`:
 
@@ -552,7 +584,7 @@ Write two files into `<trial-dir>`:
   Priority    : <priority>
   Affects     : <CS v1, v2, ...>
   Affects ES  : <ES v1, v2, ...>
-  Fix Version : <v1, v2, ...>   (newest branch dropped)
+  Fix Version : <v1, v2, ...>   (without the version main builds)
   Components  : <c1, c2>
   Labels      : <l1, l2>
   Assignee    : <Display Name> / <username> (<one-line reason: owning subsystem, or the precedent - e.g. "fixed the identical MDEV-NNNNN">)
@@ -569,14 +601,29 @@ Write two files into `<trial-dir>`:
 
 Present the overview in this reply shape (keep identical across sessions), in this order:
 
-1. One line with the bottom line, such as `Ready to file. It is not a duplicate.`
-2. Short bullets, 10 words or fewer: ✅ for a check that holds, ⚠️ for a real gap or overlap, 🔵 for what changed since the last reply. The dedup verdict and the related issues go here.
-3. The ticket fields in a plain fence, one field per line, values aligned: Title, Type (project, issue type, priority), Components, Assignee, Affects, Fix, ES, Labels, Links.
-4. The two decisions in one plain line: approve to file, and which related links.
-5. `Files:` then one `cat <full absolute path>` line per file that gets posted, in a fence, with no `-` in front: `log_jira_ticket.body` and each comment file, such as `comment_fix.txt`. Never the other files of the dir.
-6. The four-gate block from step 6, where the gates were run, always last. Nothing follows it.
+1. One line with the bottom line, such as `Ready to file. It is not a duplicate.` It also asks for the approval.
+2. Short bullets, 15 words or fewer: ✅ for a check that holds, ⚠️ for a real gap or overlap, 🔵 for what changed since the last reply. The dedup verdict and the related issues go here.
+3. The ticket fields in a plain fence, with no language tag, one field per line and the values aligned. A long value wraps under its own column. `Line 1` is the `Likely cause:` line of the body, `Type/Prio` always gives the priority, and the links are full URLs:
 
-Render every referenced MDEV/MENT key (dedup hits, related candidates) as a full clickable `https://jira.mariadb.org/browse/<KEY>` URL, not a bare key, so the approver can click through. The Assignee line is presented as `Display Name / username (reason)` - the reason in parentheses is the owning subsystem OR the precedent (e.g. "fixed the identical MDEV-NNNNN"; prefer the latter when dedup found a truly-same-path issue, as its assignee/owner is the strongest signal). Never `(none)`, `suggest`, or a `signoff` qualifier; the signoff is the overall approval, not a per-line hedge. After filing, show the new ticket's URL the same way. Ask for approval. If ANYTHING changes after a presentation (further reduction, a version/label/component/assignee fix, a testcase or body edit), RE-PRESENT THE FULL overview from scratch, in the whole reply shape above - never just the delta or the fixed line. The approver must always see the entire current report in one place before approving.
+   ```
+   Title     : <title>
+   Line 1    : Likely cause: commit <full SHA> (MDEV-NNNNN), in {{<function>()}}.
+               CS X.Y.Z, from before it, does not have the bug.
+   Type/Prio : MDEV Bug / Major
+   Component : <component>, <component>
+   Assignee  : <Display Name> / <username> (<reason>)
+   Affects   : 12.3, 13.0, 13.1, 13.2
+   Fix       : 12.3, 13.0, 13.1
+   ES        : 12.3
+   Labels    : regression, regression-12.3
+   Links     : is caused by https://jira.mariadb.org/browse/MDEV-NNNNN
+               is part of   https://jira.mariadb.org/browse/TODO-NNNN
+   ```
+
+4. One `cat <full absolute path>` line per file that gets posted, in a fence, as the first lines after the fields fence, with no `-` in front: `log_jira_ticket.body` and each comment file, such as `comment_fix.txt`. Never the other files of the dir. Nothing goes between the two fences but one blank line: no question such as "Shall I file?", no label, no testcase.
+5. The four-gate block from step 6, with the result of each command as a `#` line under it, always last. Nothing follows it.
+
+Render every referenced MDEV/MENT key (dedup hits, related candidates) as a full clickable `https://jira.mariadb.org/browse/<KEY>` URL, not a bare key, so the approver can click through. A comment is named by its full link, `https://jira.mariadb.org/browse/<KEY>?focusedCommentId=<id>&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-<id>`, never as "the first comment" or "the comment above". The Assignee line is presented as `Display Name / username (reason)` - the reason in parentheses is the owning subsystem OR the precedent (e.g. "fixed the identical MDEV-NNNNN"; prefer the latter when dedup found a truly-same-path issue, as its assignee/owner is the strongest signal). Never `(none)`, `suggest`, or a `signoff` qualifier; the signoff is the overall approval, not a per-line hedge. After filing, show the new ticket's URL and the link of the fix comment the same way; `~/jira --comment` prints that link. The approval is asked in the bottom line of item 1 and nowhere else, so no "File?" line and no "Files:" label sit between the fences. If ANYTHING changes after a presentation (further reduction, a version/label/component/assignee fix, a testcase or body edit), RE-PRESENT THE FULL overview from scratch, in the whole reply shape above - never just the delta or the fixed line. The approver must always see the entire current report in one place before approving.
 
 **Gate:** explicit user approval.
 
@@ -597,15 +644,29 @@ grep -n 'Please also test any fixes' "$F"    # body only: the line belongs to a 
 head -1 "$F" | grep -v '^Likely cause: '     # body only: the first line is the Likely cause: line
 grep -nwE 'uuid|varchar|char|int|bigint|timestamp|datetime|date|time|blob|text|binary|varbinary|decimal|inet4|inet6|select|insert|update|delete|create|alter|drop|table|index|foreign key|primary key|unique' "$F"
                                              # SQL keyword or data type in lowercase: uppercase it
+awk '/^\{(code|noformat)/{b=!b; next} !b && /\((\*[rgby]?|[xyni!?+\/-]|on|off|flag|flagoff)\)|[:;]-?[()PD]|(^|[^\\])\[[^~]/ {print NR": "$0}' "$F"
+                                             # outside {code}/{noformat}: an emoticon such as (*) shows as an icon,
+                                             # a [ as a link, also in {{..}}: write {{COUNT(\*)}}, {{record\[0\]}}
 ```
 
-Every one of these must return nothing, except two lines. On the `\-` line every hit must sit inside a `{{..}}` monospace span. On the lowercase-SQL line, uppercase every hit that is prose, a `{{..}}` span or SQL you wrote; leave a hit that sits inside quoted server output, a stack, a source line or the customer's own DDL exactly as it came. That is the one rule for the hyphen escape: `\-` only inside `{{..}}`, and only for an issue key (`{{MDEV\-12345}}`) or a leading `--` option (`{{\--ssl-crl}}`). Ordinary prose takes the plain hyphen - `non-default`, `follow-up`, `10.6 - 13.1`, `{{a}} -> {{b}}` - and a bare `MDEV-12345` in prose stays unescaped so Jira links it. See `~/mariadb-qa/skills/_shared/jira_markup.md`.
+Every one of these must return nothing, except three lines. On the `\-` line every hit must sit inside a `{{..}}` monospace span. On the lowercase-SQL line, uppercase every hit that is prose, a `{{..}}` span or SQL you wrote; leave a hit that sits inside quoted server output, a stack, a source line or the customer's own DDL exactly as it came. On the emoticon line, the one hit that may stay is a link you meant, written `[<full link>]`. That is the one rule for the hyphen escape: `\-` only inside `{{..}}`, and only for an issue key (`{{MDEV\-12345}}`) or a leading `--` option (`{{\--ssl-crl}}`). Ordinary prose takes the plain hyphen - `non-default`, `follow-up`, `10.6 - 13.1`, `{{a}} -> {{b}}` - and a bare `MDEV-12345` in prose stays unescaped so Jira links it. See `~/mariadb-qa/skills/_shared/jira_markup.md`.
+
+**Keep the prose short.** The testcase, the output and the diff carry the report, so the prose says only what they do not show. In the body, that is a few short sentences under the output. The fix comment, `comment_fix.txt`, is posted on the new ticket right after the create, so it repeats nothing from the description. It is `AI (<model>, <effort> effort) proposed fix:`, the `{code:cpp}` diff, then four short paragraphs of about 150 words in all:
+
+1. With the patch, the testcase passes, and what the statement does now.
+2. The test areas that pass with the patch.
+3. The run counts without and with the patch.
+4. The version the patch was made and tested on, and the versions it also applies to.
+
+The bracket names the model that developed the fix and its effort level, such as `(Opus 5.5, max effort)`: the model the session runs on, and the effort level in `$CLAUDE_CODE_EFFORT_LEVEL`.
+
+A side effect of the patch goes in too, such as an existing test whose result changes. The other checks, the cases that behave the same with and without the patch, and the full list of suites go in the reply, not on the ticket. No `[~name]` mention and no request to review: a new ticket reaches its assignee through triage.
 
 ## Step 9 - Submit
 
 `~/jira` = `~/mariadb-qa/log_jira_ticket.sh`. Do NOT re-read the script to learn its flags - they are fixed and listed here.
 
-**Modes:** default = create; `--whoami` (auth check); `--createmeta -p MDEV -t Bug` (required fields); `--comment KEY` (body via `--description-file <file>`, see the body rule below); `--link KEY --relates OTHER [--link-type Relates] [--reverse]`; `--edit KEY --affects-version X.Y ...` (ADDITIVE version add to an existing issue, never replaces - use mainline X.Y).
+**Modes:** default = create; `--whoami` (auth check); `--createmeta -p MDEV -t Bug` (required fields); `--comment KEY` (body via `--description-file <file>`, see the body rule below); `--link KEY --relates OTHER [--link-type Relates] [--reverse]`; `--edit KEY --affects-version X.Y ...` (ADDITIVE version add to an existing issue, never replaces - use mainline X.Y); `--edit KEY --description-file <file>` (replaces the description, see step 4).
 
 **Body rule - a file is always posted with `--description-file`.** `-d` takes the body text itself, so `-d <file>` posts the path as the body. The script refuses a body that is one line or starts with `/`, and names the right flag in the error. `--oneline` overrides, and is only for a body genuinely meant to be a single line. Re-read the `=== Body ===` block it echoes before confirming, and after any post.
 
@@ -636,6 +697,14 @@ Every one of these must return nothing, except two lines. On the `\-` line every
 
 Always pass `--assignee <username>` matching the `Assignee` shown in the approved `log_jira_ticket.txt` overview - the sign-off INCLUDES the assignee, so the filing must match it (do NOT file unassigned when an assignee was shown and approved). The username comes from the pre-resolved list in `~/mariadb-qa/skills/_shared/default_assignees.md`; if you resolved it yourself, confirm you took `user/search`'s **`name`** field and not its `key` - they differ for some users and the `key` fails the create.
 
+**Right after the create, post the fix comment**, then the links of step 10. The approval in step 8 covers it, as the overview listed it in the `cat` lines:
+
+```bash
+~/jira --comment MDEV-xxxxx --description-file <dir>/comment_fix.txt -y
+```
+
+The script prints the link of the new comment. Give it with the ticket link.
+
 ## Step 10 - Link related bugs (always propose for signoff)
 
 The dedup (step 3) usually surfaces same-family issues that are NOT strict duplicates (same assert / adjacent code path, different feature). These are RELATED, not dups. ALWAYS propose the related set to the user for signoff first (it appears in the step 8 overview's `Related:` line) - never auto-link. Apply only the signed-off ones via the script (3x-confirm):
@@ -644,7 +713,7 @@ The dedup (step 3) usually surfaces same-family issues that are NOT strict dupli
 ~/jira --link MDEV-xxxxx --relates MDEV-aaaaa --relates MDEV-bbbbb   # type defaults to "Relates"
 ```
 
-`--link-type` is one of `Blocks`, `Duplicate`, `Issue split`, `PartOf`, `Problem/Incident`, `Relates` (default); the script rejects anything else and prints the list. `Problem/Incident` is the caused-by type (inward "is caused by" / outward "causes"), used to link a bug to the change whose code fails. Use it also when a build from before that change fails the same way; the `Likely cause:` line (step 4) says whether the bug is a regression. Link a change as `Relates` only when the failing code is older than it, and give the older change the `is caused by` link. For example, a bug that fails in the new code of MDEV-NNNNN is caused by MDEV-NNNNN. When a bug seems to come from MDEV-NNNNN but fails in older code from MDEV-MMMMM, it is caused by MDEV-MMMMM and relates to MDEV-NNNNN. For the regression question, a testcase that cannot run on the older build, such as a debug crash point it does not have, proves nothing either way; compare at the crash points both builds have. `--reverse` flips a link to the outward wording. A confirmed duplicate would have been actioned in step 3 (not filed), so here the type is almost always `Relates`.
+`--link-type` is one of `Blocks`, `Duplicate`, `Issue split`, `PartOf`, `Problem/Incident`, `Relates` (default); the script rejects anything else and prints the list. `Problem/Incident` is the caused-by type (inward "is caused by" / outward "causes"), used to link a bug to the change whose code fails. Use it also when a build from before that change fails the same way; the `regression` labels (step 7) say whether the bug is a regression. Link a change as `Relates` only when the failing code is older than it, and give the older change the `is caused by` link. For example, a bug that fails in the new code of MDEV-NNNNN is caused by MDEV-NNNNN. When a bug seems to come from MDEV-NNNNN but fails in older code from MDEV-MMMMM, it is caused by MDEV-MMMMM and relates to MDEV-NNNNN. For the regression question, a testcase that cannot run on the older build, such as a debug crash point it does not have, proves nothing either way; compare at the crash points both builds have. `--reverse` flips a link to the outward wording. A confirmed duplicate would have been actioned in step 3 (not filed), so here the type is almost always `Relates`.
 
 **A related ticket sometimes needs a short comment, not only a link.** Two shapes come up, and
 both are drafted verbatim for signoff alongside the link (never posted on your own):
@@ -748,12 +817,13 @@ Status icons per `~/mariadb-qa/skills/_shared/tickbox_icons.md` (full set: 🟢 
 ✅ hand-reduced + tcp, repro re-verified (UniqueID <...>)
 ✅ dedup early (String Scan + frame + assert searches) -> new | dup-menu shown
 ✅ ~/b report generated (+ ~/bs / ~/br as applicable)
-✅ SAN stacks/Setup/matrix spliced into body  (or: no SAN issue)
+✅ SAN stack and Setup spliced into body  (or: no SAN issue)
 ✅ MTR testcase verified + folded in (or: CLI/MTR compatible)
+✅ fix built, the four gates pass, comment_fix.txt drafted
 ✅ Affects/Fix/components/labels/priority derived + validated
 ✅ related issues captured + proposed for signoff (step 10)
 ✅ log_jira_ticket.txt written, approval requested
-⏳ submit pending approval   (or: ✅ filed MDEV-xxxxx <url>)
+⏳ submit pending approval   (or: ✅ filed MDEV-xxxxx <url>, fix comment <comment link>)
    then: ✅ related links applied, eb + kb/kba registered, trials cleaned (my_cleanup_script, or a sweep started)
 ```
 

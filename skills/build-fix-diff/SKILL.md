@@ -95,7 +95,7 @@ If not provided in the invocation, ask the user.
    rm -rf /tmp/<ver>_fix_<tag> /tmp/<PREFIX>-mariadb-<x.y.z>-linux-x86_64-<variant>
    ```
 
-   State remaining `/tmp/` dirs at end-of-turn for the user to decide retention.
+   Run that removal once the work is done, even when a shell or an editor sits in one of the dirs.
 
 ## Output
 

@@ -22,6 +22,7 @@ Referenced by the `jira-comment`, `mtr_testcase`, and `jira-ticket` skills.
 - Never use an em-dash. Use a plain hyphen `-`. A lone hyphen with surrounding spaces is safe; strikethrough triggers only on `-text-` hugging a word with no spaces.
 - Never start a prose line with `#`; Jira turns it into a numbered-list item. Rephrase so the line starts with a word, or escape as `\#`.
 - Identifiers containing `*` or `_` go inside `{{...}}` (no escaping needed inside the braces): `{{char*}}`, `{{auth_string_length}}`.
+- Jira reads `(*)` as a star icon and square brackets as a link, also inside `{{..}}`: `{{COUNT(*)}}` shows a star, and `{{record[0]}}` shows `[0]` as a red error. Write `{{COUNT(\*)}}` and `{{record\[0\]}}`. The other emoticons, such as `(x)`, `(i)`, `(!)` and `:)`, work the same way. A `{code}` or `{noformat}` block is literal and stays bare.
 
 ## Naming and style
 
@@ -30,5 +31,5 @@ Referenced by the `jira-comment`, `mtr_testcase`, and `jira-ticket` skills.
 - An error number carries its symbol: `{{ERROR 1205}}` (`{{ER_LOCK_WAIT_TIMEOUT}}`).
 - Try deleting before rewording. When a sentence reads wrong, cut it and read the paragraph without it. Very often nothing is lost, because the sentence was a lead-in, a framing line or a restatement, and the paragraph is better starting on the fact. Reword only what survives the cut.
 - Professional, neutral, brief, factual. No hyperbole, no idioms. No teaching/explanatory padding - state the fact.
-- Facts only. A MENT or MDEV comment can be read by the customer, so it carries what was run, what came out, what the code does and what the operator sees, and nothing else. Nothing that reads as criticism even if true: not what a defect, a message or a wait cost anyone, not a verdict on our product, a customer, another team's work or anyone's handling of the case. Leave the impact out rather than imply it. An internal judgementi, if ever remotely neeeed, goes in a dev-only comment in the most friendly and collegial manner possible, or off the ticket.
+- Facts only. A MENT or MDEV comment can be read by the customer, so it carries what was run, what came out, what the code does and what the operator sees, and nothing else. Nothing that reads as criticism even if true: not what a defect, a message or a wait cost anyone, not a verdict on our product, a customer, another team's work or anyone's handling of the case. Leave the impact out rather than imply it. An internal judgement, if ever needed, goes in a dev-only comment in the most friendly and collegial manner possible, or off the ticket.
 - The reader is a professional: they know the subsystem, the standard terms and the tools, and they use the short forms daily. Give the fact and skip the background, the definition of a standard term and the walk-through of behaviour they work with every day.

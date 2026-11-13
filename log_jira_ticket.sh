@@ -20,8 +20,12 @@ PRIORITY=""
 ENVIRONMENT=""
 EXTRA_FILE=""
 COMMENT_KEY=""
+COMMENT_ID=""
 LINK_KEY=""
 EDIT_KEY=""
+WORKLOG_KEY=""
+TIME_SPENT=""
+STARTED=""
 LINK_TYPE="Relates"
 LINK_REVERSE=0
 ASSIGNEE=""
@@ -42,12 +46,16 @@ DEDUP_SINCE=""
 DEDUP_SINCE_S=""
 
 declare -a AFFECTS=() FIXINS=() COMPONENTS=() LABELS=() RELATES=() ESVERS=() SEC_COMMENTS=() DEDUP_JQL=()
+declare -a SUPPORT_IDS=()
 declare -a AFFECTS_DEL=() FIXINS_DEL=() ESVERS_DEL=()
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 
 # Guard a flag that takes a value: need "$@" from inside its case branch.
-need() { [ "$#" -ge 2 ] || die "$1 requires a value (see --help)"; }
+need() {
+  [ "$#" -ge 2 ] || die "$1 requires a value (see --help)"
+  case "$2" in --dry-run|-y|--yes) die "$1 requires a value, not $2 (see --help)" ;; esac
+}
 
 # Guard against two mode flags in one call.
 mode_once() {
@@ -62,8 +70,10 @@ mode_once() {
 # Both tells of that mistake are refused here: a body starting with "/", and a
 # body of one single line. Neither shape is what a real report or comment looks
 # like. --oneline is the deliberate override when such a body is truly wanted.
+# A work log text is often one line, so its caller passes 1 as the third
+# argument to allow that, and the slash check still runs.
 check_body() {
-  local what="$1" body="$2" first
+  local what="$1" body="$2" one_ok="${3:-0}" first
   if [ "$ONELINE" = 1 ]; then return 0; fi
   first="${body%%$'\n'*}"
   if [ "${body#/}" != "$body" ]; then
@@ -72,7 +82,7 @@ check_body() {
     fi
     die "$what starts with \"/\", the shape of a path passed to -d by mistake. Use --description-file to post a file, or --oneline if the text really starts with a slash."
   fi
-  if [ "$body" = "$first" ]; then
+  if [ "$body" = "$first" ] && [ "$one_ok" != 1 ]; then
     die "$what is a single line. To post a file, use --description-file FILE. If one line really is the whole body, pass --oneline."
   fi
 }
@@ -89,19 +99,34 @@ Modes:
   --comment KEY      Add a comment to issue KEY. A comment held in a file is
                        posted with --description-file FILE; -d is for text.
                        Add --dev-only to restrict it to the $SEC_ROLE role
+                       Add --comment-id ID to replace the text of comment ID
+                       instead (the number in focusedCommentId=ID). It shows
+                       the change first, keeps who can see the comment, and
+                       reads the text back after
+  --worklog KEY      Add a work log (timesheet) entry to issue KEY:
+                       --worklog KEY --time-spent '1h 30m' [--started TIME] [-d TEXT | --description-file F]
+                       --time-spent takes the Jira units w, d, h and m.
+                       --started is when the work began, in any form date -d
+                       reads, e.g. '2026-11-09 07:00'. A time with no offset is
+                       read in this machine's time zone. The default is now.
+                       The text is optional and may be one line.
+                       The remaining estimate on KEY is left as it is.
   --link KEY         Link KEY to related issues: --link KEY --relates OTHER [--relates ...] [--link-type Relates] [--reverse]
                        Default reads "OTHER <type-inward> KEY" (e.g. PartOf: "OTHER is part of KEY");
                        --reverse flips to "OTHER <type-outward> KEY" (e.g. PartOf: "OTHER includes KEY").
                        Valid --link-type values: Blocks, Duplicate, "Issue split", PartOf,
                        Problem/Incident ("is caused by" / "causes"), Relates. An unknown
                        value is rejected; the list is read back from the server.
-  --edit KEY         Change versions, labels and/or the title on an EXISTING issue. Adding is additive,
+  --edit KEY         Change versions, labels, the title and/or the description on an EXISTING issue. Adding is additive,
                      so what is already there stays; a --remove- option takes one value off:
                        --edit KEY --affects-version 13.0 [--affects-version 13.1] [--fix-version 13.0] [--es-version 13.0]
                        --edit KEY --label corruption [--label security]
                        --edit KEY --label corruption --affects-version 13.1   (versions + labels combinable)
                        --edit KEY --remove-fix-version N/A --fix-version 13.0  (replace a placeholder)
                        --edit KEY -s 'New title'                               (set the title)
+                       --edit KEY --description-file F                         (replace the description with F)
+                       --edit KEY --support-case-id 263733                     (add a support case number to Support case ID)
+                       --edit KEY --support-case-id 13.2V1                     (or a release tag: fix before the first 13.2 release)
                        --remove-affects-version V / --remove-es-version V / --remove-fix-version V
                      Use mainline X.Y names only (13.0, not 13.0.1).
                      An out-of-support version is refused for Affects CS and Fix, see below.
@@ -140,7 +165,8 @@ Create options:
                            (required). A ticket created since then that a search
                            finds stops the create, and nothing is posted.
       --dry-run            Print the payload/preview, do not POST. No auth needed,
-                           except --link, which reads the link types from the server.
+                           except --link, which reads the link types from the server,
+                           and --comment-id, which reads the comment.
                            With a stored token it runs the duplicate searches too.
   -y, --yes                Skip the 3x confirmation (for automation)
   -h, --help               This help
@@ -171,8 +197,12 @@ while [ $# -gt 0 ]; do
     --whoami) mode_once "$1" whoami ;;
     --createmeta) mode_once "$1" createmeta ;;
     --comment) need "$@"; mode_once "$1" comment; COMMENT_KEY="$2"; shift ;;
+    --comment-id) need "$@"; COMMENT_ID="$2"; shift ;;
     --link) need "$@"; mode_once "$1" link; LINK_KEY="$2"; shift ;;
     --edit) need "$@"; mode_once "$1" edit; EDIT_KEY="$2"; shift ;;
+    --worklog) need "$@"; mode_once "$1" worklog; WORKLOG_KEY="$2"; shift ;;
+    --time-spent) need "$@"; TIME_SPENT="$2"; shift ;;
+    --started) need "$@"; STARTED="$2"; shift ;;
     --relates) need "$@"; RELATES+=("$2"); shift ;;
     --link-type) need "$@"; LINK_TYPE="$2"; LINK_TYPE_SET=1; shift ;;
     --reverse) LINK_REVERSE=1 ;;
@@ -189,6 +219,7 @@ while [ $# -gt 0 ]; do
     --remove-fix-version) need "$@"; FIXINS_DEL+=("$2"); shift ;;
     -c|--component) need "$@"; COMPONENTS+=("$2"); shift ;;
     -l|--label) need "$@"; LABELS+=("$2"); shift ;;
+    --support-case-id) need "$@"; SUPPORT_IDS+=("$2"); shift ;;
     --priority) need "$@"; PRIORITY="$2"; shift ;;
     --assignee) need "$@"; ASSIGNEE="$2"; shift ;;
     --environment) need "$@"; ENVIRONMENT="$2"; shift ;;
@@ -215,6 +246,11 @@ if [ "$MODE" != "link" ]; then
 fi
 if [ "$MODE" != "comment" ]; then
   [ "$DEV_ONLY" = 0 ] || die "--dev-only is only valid with --comment"
+  [ -z "$COMMENT_ID" ] || die "--comment-id is only valid with --comment"
+fi
+if [ "$MODE" != "worklog" ]; then
+  [ -z "$TIME_SPENT" ] || die "--time-spent is only valid with --worklog"
+  [ -z "$STARTED" ]    || die "--started is only valid with --worklog"
 fi
 if [ "$MODE" != "create" ]; then
   [ "$SEC_BUG" = 0 ]              || die "--security-bug is only valid when creating an issue"
@@ -457,6 +493,45 @@ case "$MODE" in
     fi
     [ -n "$DESCRIPTION" ] || die "comment body required (-d or --description-file)"
     check_body "The comment body" "$DESCRIPTION"
+    if [ -n "$COMMENT_ID" ]; then
+      [[ "$COMMENT_ID" =~ ^[0-9]+$ ]] || die "--comment-id takes the comment number, as in focusedCommentId=NNN: $COMMENT_ID"
+      require_auth
+      curl_url="$JIRA_URL/rest/api/2/issue/$COMMENT_KEY/comment/$COMMENT_ID"
+      link="$JIRA_URL/browse/$COMMENT_KEY?focusedCommentId=$COMMENT_ID&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-$COMMENT_ID"
+      resp="$(jira_curl -H 'Accept: application/json' -w $'\n%{http_code}' "$curl_url")"
+      code="${resp##*$'\n'}"; old="${resp%$'\n'*}"
+      [ "$code" = "200" ] || die "Cannot read comment $COMMENT_ID on $COMMENT_KEY (HTTP $code)"
+      [ "$(printf '%s' "$old" | jq --arg b "$DESCRIPTION" '.body == $b')" != "true" ] || die "Comment $COMMENT_ID already has this text, so there is nothing to change."
+      # An edit keeps who can see the comment; only --dev-only narrows it
+      vis="$(printf '%s' "$old" | jq -c '.visibility // null | if . then {type, value} else null end')"
+      if [ "$DEV_ONLY" = 1 ]; then vis="$(jq -cn --arg r "$SEC_ROLE" '{type: "role", value: $r}')"; fi
+      payload="$(jq -n --arg b "$DESCRIPTION" --argjson v "$vis" '{body: $b} + (if $v then {visibility: $v} else {} end)')"
+      echo "=== Edit comment: $link  (as $WHOAMI) ===" >&2
+      echo "=== Visible to: $(printf '%s' "$vis" | jq -r 'if . then "\(.type) \(.value)" else "everyone" end') ===" >&2
+      echo "=== Change ===" >&2
+      diff -u --label posted --label new <(printf '%s' "$old" | jq -r '.body') <(printf '%s\n' "$DESCRIPTION") >&2 || true
+      if [ "$DRY_RUN" = 1 ]; then echo "[dry-run] comment not changed." >&2; exit 0; fi
+      if [ "$ASSUME_YES" != 1 ]; then
+        echo "Confirm this change to comment $COMMENT_ID on $COMMENT_KEY. Press Enter 3x (Ctrl-C to abort)." >&2
+        read -rp "1x... " _ < /dev/tty
+        read -rp "2x... " _ < /dev/tty
+        read -rp "3x... " _ < /dev/tty
+      fi
+      resp="$(jira_curl -X PUT -H 'Content-Type: application/json' -H 'Accept: application/json' \
+        --data-binary "$payload" -w $'\n%{http_code}' "$curl_url")"
+      code="${resp##*$'\n'}"; cbody="${resp%$'\n'*}"
+      if [ "$code" != "200" ]; then
+        echo "Comment edit failed (HTTP $code):" >&2
+        printf '%s' "$cbody" | jq . >&2 2>/dev/null || printf '%s\n' "$cbody" >&2
+        exit 1
+      fi
+      new="$(jira_curl -H 'Accept: application/json' "$curl_url")"
+      [ "$(printf '%s' "$new" | jq --arg b "$DESCRIPTION" --argjson v "$vis" \
+        '.body == $b and (.visibility // null | if . then {type, value} else null end) == $v')" = "true" ] \
+        || die "Comment $COMMENT_ID on $COMMENT_KEY was changed, but the text or visibility read back is not what was sent. Check: $link"
+      echo "Comment changed, and its text and visibility read back the same: $link"
+      exit 0
+    fi
     [ "$DRY_RUN" = 1 ] || require_auth
     if [ "$DEV_ONLY" = 1 ]; then
       payload="$(jq -n --arg b "$DESCRIPTION" --arg r "$SEC_ROLE" \
@@ -480,10 +555,48 @@ case "$MODE" in
     code="${resp##*$'\n'}"; cbody="${resp%$'\n'*}"
     if [ "$code" = "201" ]; then
       echo "Comment added to $COMMENT_KEY"
-      echo "URL: $JIRA_URL/browse/$COMMENT_KEY"
+      id="$(printf '%s' "$cbody" | jq -r '.id // empty')"
+      echo "URL: $JIRA_URL/browse/$COMMENT_KEY${id:+?focusedCommentId=$id&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-$id}"
     else
       echo "Comment failed (HTTP $code):" >&2
       printf '%s' "$cbody" | jq . >&2 2>/dev/null || printf '%s\n' "$cbody" >&2
+      exit 1
+    fi
+    exit 0 ;;
+  worklog)
+    [ -n "$WORKLOG_KEY" ] || die "--worklog requires an issue key (e.g. MDEV-12345)"
+    [ -n "$TIME_SPENT" ] || die "--worklog needs --time-spent, e.g. --time-spent '1h 30m'"
+    [[ "$TIME_SPENT" =~ ^[0-9]+[wdhm]([[:space:]]+[0-9]+[wdhm])*$ ]] \
+      || die "--time-spent takes the Jira units w, d, h and m, as in '1h 30m': $TIME_SPENT"
+    started="$(date -d "${STARTED:-now}" +%Y-%m-%dT%H:%M:%S.000%z 2>/dev/null)" \
+      || die "--started is not a time: $STARTED"
+    if [ -n "$DESC_FILE" ]; then
+      [ -f "$DESC_FILE" ] || die "work log text file not found: $DESC_FILE"
+      DESCRIPTION="$(< "$DESC_FILE")"
+    fi
+    [ -z "$DESCRIPTION" ] || check_body "The work log text" "$DESCRIPTION" 1
+    payload="$(jq -n --arg t "$TIME_SPENT" --arg s "$started" --arg c "$DESCRIPTION" \
+      '{timeSpent: $t, started: $s} + (if $c != "" then {comment: $c} else {} end)')"
+    [ "$DRY_RUN" = 1 ] || require_auth
+    echo "=== Work log on: $JIRA_URL/browse/$WORKLOG_KEY${WHOAMI:+  (as $WHOAMI)} ===" >&2
+    printf '%s\n' "$payload" | jq . >&2
+    if [ "$DRY_RUN" = 1 ]; then echo "[dry-run] work log not added." >&2; exit 0; fi
+    if [ "$ASSUME_YES" != 1 ]; then
+      echo "Confirm adding this work log to $WORKLOG_KEY. Press Enter 3x (Ctrl-C to abort)." >&2
+      read -rp "1x... " _ < /dev/tty
+      read -rp "2x... " _ < /dev/tty
+      read -rp "3x... " _ < /dev/tty
+    fi
+    resp="$(jira_curl -X POST -H 'Content-Type: application/json' -H 'Accept: application/json' \
+      --data-binary "$payload" -w $'\n%{http_code}' "$JIRA_URL/rest/api/2/issue/$WORKLOG_KEY/worklog?adjustEstimate=leave")"
+    code="${resp##*$'\n'}"; wbody="${resp%$'\n'*}"
+    if [ "$code" = "201" ]; then
+      echo "Work log added to $WORKLOG_KEY"
+      id="$(printf '%s' "$wbody" | jq -r '.id // empty')"
+      echo "URL: $JIRA_URL/browse/$WORKLOG_KEY${id:+?focusedWorklogId=$id&page=com.atlassian.jira.plugin.system.issuetabpanels:worklog-tabpanel#worklog-$id}"
+    else
+      echo "Work log failed (HTTP $code):" >&2
+      printf '%s' "$wbody" | jq . >&2 2>/dev/null || printf '%s\n' "$wbody" >&2
       exit 1
     fi
     exit 0 ;;
@@ -531,15 +644,23 @@ case "$MODE" in
     fv_json="$(jq -n --argjson a "$(arr_addname FIXINS)"  --argjson d "$(arr_delname FIXINS_DEL)" '$a + $d')"
     ev_json="$(jq -n --argjson a "$(arr_addstr ESVERS)"   --argjson d "$(arr_delstr ESVERS_DEL)" '$a + $d')"
     lb_json="$(arr_addstr LABELS)"
-    upd="$(jq -n --argjson av "$av_json" --argjson fv "$fv_json" --argjson ev "$ev_json" --argjson lb "$lb_json" \
+    si_json="$(arr_addstr SUPPORT_IDS)"
+    upd="$(jq -n --argjson av "$av_json" --argjson fv "$fv_json" --argjson ev "$ev_json" --argjson lb "$lb_json" --argjson si "$si_json" \
       '{}
        + (if ($av|length) > 0 then {versions: $av}            else {} end)
        + (if ($fv|length) > 0 then {fixVersions: $fv}         else {} end)
        + (if ($ev|length) > 0 then {customfield_13204: $ev}   else {} end)
-       + (if ($lb|length) > 0 then {labels: $lb}              else {} end)')"
+       + (if ($lb|length) > 0 then {labels: $lb}              else {} end)
+       + (if ($si|length) > 0 then {customfield_11500: $si}   else {} end)')"
     if [ -n "$ASSIGNEE" ]; then fld_json="$(jq -n --arg a "$ASSIGNEE" '{assignee:{name:$a}}')"; else fld_json='{}'; fi
     if [ -n "$SUMMARY" ]; then fld_json="$(printf '%s' "$fld_json" | jq --arg s "$SUMMARY" '. + {summary: $s}')"; fi
-    [ "$(printf '%s' "$upd" | jq 'length')" -gt 0 ] || [ "$(printf '%s' "$fld_json" | jq 'length')" -gt 0 ] || die "--edit needs at least one --affects-version/--fix-version/--es-version/--label/--assignee/--summary, or the --remove- form of a version option"
+    if [ -n "$DESC_FILE" ]; then
+      [ -f "$DESC_FILE" ] || die "description file not found: $DESC_FILE"
+      DESCRIPTION="$(< "$DESC_FILE")"
+      check_body "The description" "$DESCRIPTION"
+      fld_json="$(printf '%s' "$fld_json" | jq --arg d "$DESCRIPTION" '. + {description: $d}')"
+    fi
+    [ "$(printf '%s' "$upd" | jq 'length')" -gt 0 ] || [ "$(printf '%s' "$fld_json" | jq 'length')" -gt 0 ] || die "--edit needs at least one --affects-version/--fix-version/--es-version/--label/--support-case-id/--assignee/--summary/--description-file, or the --remove- form of a version option"
     payload="$(jq -n --argjson u "$upd" --argjson f "$fld_json" \
       '(if ($u|length) > 0 then {update: $u} else {} end)
        + (if ($f|length) > 0 then {fields: $f} else {} end)')"

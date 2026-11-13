@@ -18,7 +18,7 @@ task matches its description.
   wiki markup.
 - `jira-ticket` - file a reduced pquery trial as a public MariaDB bug: reduce further,
   dedup against Jira, generate the report, craft the MTR testcase, derive the fields, and
-  file after approval. The three original/fixed/diff gates run only on request.
+  file after approval, with a proposed fix proven by the four original/fixed/diff/base gates.
 - `loop-screens-cleanup` - sweep the reducer screens and end the finished ones, reaping
   each ended trial's processes and its `/dev/shm` workdir; leave screens still reducing.
 - `mtr-failure-create-bug` - pull an MTR test's buildbot failure history, filter by similarity to a

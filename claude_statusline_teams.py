@@ -19,10 +19,15 @@ import time
 import urllib.request
 from datetime import datetime
 
-CACHE = f'/tmp/.claude_usage_teams.{os.getuid()}.json'
+# the folder this session reads its login from. A session on a login kept outside ~/.claude keeps usage numbers
+# of its own, named after that folder
+STORE = os.environ.get('CLAUDE_SECURESTORAGE_CONFIG_DIR') or os.path.expanduser('~/.claude')
+REAL = os.path.realpath(STORE)
+KEY = '' if REAL == os.path.realpath(os.path.expanduser('~/.claude')) else '.' + os.path.basename(REAL)
+CACHE = f'/tmp/.claude_usage_teams{KEY}.{os.getuid()}.json'
 MARK = CACHE + '.pending'
-SEEN = f'/tmp/.claude_limits_teams.{os.getuid()}.json'
-CREDS = os.path.expanduser('~/.claude/.credentials.json')
+SEEN = f'/tmp/.claude_limits_teams{KEY}.{os.getuid()}.json'
+CREDS = os.path.join(STORE, '.credentials.json')
 USAGE_URL = 'https://api.anthropic.com/api/oauth/usage'
 POLL = 300      # seconds between Fable-number reads
 STALE = 900     # seconds before the Fable number is drawn dimmed
@@ -307,6 +312,7 @@ def limits(rate):
            for key, one in rate.items()
            if isinstance(one, dict) and one.get('used_percentage') is not None
            and (one.get('resets_at') or 0) > now}
+  own = fresh
   fresh = {key: one for key, one in fresh.items()
            if (one['resets'], one['pct']) >= ((keep.get(key) or {}).get('resets') or 0,
                                               (keep.get(key) or {}).get('pct') or 0)}
@@ -324,7 +330,10 @@ def limits(rate):
       os.replace(tmp, SEEN)
     except OSError:
       pass
-  return keep
+  # a login has one window of each kind at a time, so a window that resets at another
+  # time is from another login. Each session then shows its own window
+  return {**keep, **{key: one for key, one in own.items()
+                     if one['resets'] != (keep.get(key) or {}).get('resets')}}
 
 
 def spawn():
