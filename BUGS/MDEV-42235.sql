@@ -1,0 +1,4 @@
+SET @a='A';
+PREPARE s FROM 'BINLOG @a, @a';
+EXECUTE s;
+EXECUTE s;

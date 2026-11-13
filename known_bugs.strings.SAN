@@ -22,6 +22,9 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|get_new_start_alter_info|Query_log_event::handle_split_alter_query_log_event                                               ## MDEV-37770 (needs testcase)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+ASAN|heap-use-after-free|strings/strings_def.h|skip_trailing_space|my_hash_sort_utf8mb3_general1400_as_ci|my_ci_hash_sort|my_hash_sort                                         ## MDEV-42235
+ASAN|heap-use-after-free|strings/strings_def.h|skip_trailing_space|my_hash_sort_utf8mb3|my_ci_hash_sort|my_hash_sort                                                           ## MDEV-42235
+ASAN|heap-buffer-overflow|sql/item_strfunc.cc|__asan_memcpy|Item_func_rpad::val_str|Item::save_str_in_field|Item::save_in_field                                                ## MDEV-42233
 UBSAN|null pointer passed as argument 1, which is declared to never be null|sql/strfunc.cc|set_to_string|sys_var::value_ptr|Item_func_get_system_var::fix_length_and_dec|Item_func::fix_fields     ## MDEV-38504
 ASAN|heap-use-after-free|include/mem0mem.h|__asan_memcpy|mem_heap_dup|dfield_dup|row_upd_store_v_row                                                                           ## MDEV-42211
 ASAN|global-buffer-overflow|crtstuff.c|MemcmpInterceptorCommon|bcmp|QUICK_GROUP_MIN_MAX_SELECT::add_range|TRP_GROUP_MIN_MAX::make_quick                                        ## MDEV-42209

@@ -261,6 +261,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|Item_func_rpad::val_str|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field|Item::save_in_field                                                     ## MDEV-42233
+SIGSEGV|Item_func_rpad::val_str|Item::save_str_in_field|Item::save_in_field|fill_record                                                                                        ## MDEV-42233
 SIGSEGV|sequence_definition::read_fields|SEQUENCE::read_stored_values|SEQUENCE::read_initial_values|ha_sequence::open                                                          ## MDEV-42214
 value->state == JST_KEY|SIGABRT|Item_func_json_contains::check_contains|Item_func_json_contains::val_bool|Item_bool_func::val_int|Type_handler::Item_send_long                 ## MDEV-42213
 SIGSEGV|__strlen_evex|set_to_string|Item_func_get_system_var::fix_length_and_dec|Item_func::fix_fields                                                                         ## MDEV-38504
