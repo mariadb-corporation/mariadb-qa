@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-# Claude Code status line: cwd, session, context, cost, model, tokens,
+# Claude Code status line: cwd, session, context, session meter, cost, model, tokens,
 # session name, clock. The same line as claude_statusline_teams.py, with the session cost
 # in the place of its usage bands
-# Example: ~/mariadb-qa abc123de 235k $1.23 o55-m ↑1.2M ↓84k ↻96% corlogic-cf 11:02
+# Example: ~/mariadb-qa abc123de 235k 🟢12 $1.23 o55-m ↑1.2M ↓84k ↻96% corlogic-cf 11:02
 # Install in ~/.claude/settings.json:
 #   "statusLine": { "type": "command", "refreshInterval": 30,
 #                   "command": "python3 ~/mariadb-qa/claude_statusline.py" }
@@ -274,10 +274,11 @@ if used is not None:
   room = '' if not size or size >= 1000000 else f'/{tokens(size)}'
   parts.append(f'{color}{tokens(used)}{room}{RESET}')
 
-check = os.path.expanduser('~/.claude/sanity_check.py')
-if os.path.exists(check):
+# the session meter: a 0 to 100 friction score for this session, see claude/session_meter/README.md
+meter = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'claude', 'session_meter', 'session_meter.py')
+if os.path.exists(meter):
   try:
-    said = subprocess.run([sys.executable, check, '--segment'], input=json.dumps(data),
+    said = subprocess.run([sys.executable, meter, '--segment'], input=json.dumps(data),
                           capture_output=True, text=True, timeout=3).stdout.strip()
   except Exception:
     said = ''

@@ -45,6 +45,8 @@ task matches its description.
   pass paths. Private, box-specific patterns belong in
   `~/.config/mariadb-qa/public_safety_denylist` (seeded by `linkit`, never committed).
 - `../claude/writing/` - writing setup kit for colleagues: rules, voice profile, installer.
+- `../claude/session_meter/` - session meter for Claude Code: a 0 to 100 friction score in
+  the status bar, with an optional prompt hook.
 
 ## Install
 

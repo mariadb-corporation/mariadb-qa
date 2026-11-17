@@ -1,0 +1,14 @@
+CREATE TABLE t1 (x VARCHAR(1));
+INSERT INTO t1 VALUES (' '), ('');
+SELECT COUNT(*) FROM t1 WHERE EXISTS (SELECT 1 FROM (SELECT '0' AS x) r WHERE t1.x < r.x AND t1.x LIKE '');
+#CLI: 0; expected 1
+#ERR: - (no error)
+
+SET NAMES utf8mb4;
+CREATE TABLE t1 (c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci);
+INSERT INTO t1 VALUES ('a'), ('A');
+CREATE TABLE t2 (x VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin);
+INSERT INTO t2 VALUES ('a');
+SELECT COUNT(*) FROM t1 WHERE (SELECT COUNT(*) FROM t2 WHERE t2.x = t1.c COLLATE utf8mb4_bin) = 1;
+#CLI: 2; expected 1
+#ERR: - (no error)

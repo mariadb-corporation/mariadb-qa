@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-# Claude Code status line: cwd, session, context, usage bands, model, tokens, session name, clock
-# Example: ~/mariadb-qa abc123de 235k 5h: 25% 13:10 wk: 23% 07:00 f5: 3%    Fri o55-m ↑1.2M ↓84k ↻96% corlogic-cf 11:02
+# Claude Code status line: cwd, session, context, session meter, usage bands, model, tokens, session name, clock
+# Example: ~/mariadb-qa abc123de 235k 🟢12 5h: 25% 13:10 wk: 23% 07:00 f5: 3%    Fri o55-m ↑1.2M ↓84k ↻96% corlogic-cf 11:02
 # The 5h and weekly numbers arrive with every render, in the JSON Claude Code feeds
 # this script, so they cost nothing and are always current. The Fable weekly number
 # is not in that JSON. It is read from GET /api/oauth/usage by a detached background
@@ -427,10 +427,11 @@ if used is not None:
   room = '' if not size or size >= 1000000 else f'/{tokens(size)}'
   parts.append(f'{color}{tokens(used)}{room}{RESET}')
 
-check = os.path.expanduser('~/.claude/sanity_check.py')
-if os.path.exists(check):
+# the session meter: a 0 to 100 friction score for this session, see claude/session_meter/README.md
+meter = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'claude', 'session_meter', 'session_meter.py')
+if os.path.exists(meter):
   try:
-    said = subprocess.run([sys.executable, check, '--segment'], input=json.dumps(data),
+    said = subprocess.run([sys.executable, meter, '--segment'], input=json.dumps(data),
                           capture_output=True, text=True, timeout=3).stdout.strip()
   except Exception:
     said = ''
