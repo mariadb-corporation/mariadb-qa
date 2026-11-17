@@ -47,6 +47,8 @@ task matches its description.
 - `../claude/writing/` - writing setup kit for colleagues: rules, voice profile, installer.
 - `../claude/session_meter/` - session meter for Claude Code: a 0 to 100 friction score in
   the status bar, with an optional prompt hook.
+- `../claude_statusline_standalone_install.md` - installs the Claude Code status bar and the
+  session meter without the rest of the framework.
 
 ## Install
 

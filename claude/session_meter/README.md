@@ -27,6 +27,8 @@ Claude Code, and Python 3.8 or later. Tested on Linux.
 
 No setup is needed: each status bar script finds the meter by its place in the repository. `⋯` shows for a short time while a long transcript is read for the first time.
 
+To use the status bar and the meter without the rest of this repository, see [claude_statusline_standalone_install.md](../../claude_statusline_standalone_install.md).
+
 ## The prompt hook
 
 The hook is optional. Each time you send a prompt while the reading is yellow or worse, it puts one line into the session, where Claude reads it:

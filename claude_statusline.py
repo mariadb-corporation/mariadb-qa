@@ -1,19 +1,23 @@
 #!/usr/bin/env python3
 # Claude Code status line: cwd, session, context, session meter, cost, model, tokens,
-# session name, clock. The same line as claude_statusline_teams.py, with the session cost
-# in the place of its usage bands
-# Example: ~/mariadb-qa abc123de 235k 🟢12 $1.23 o55-m ↑1.2M ↓84k ↻96% corlogic-cf 11:02
+# session name, clock, account. The same line as claude_statusline_teams.py, with the
+# session cost in the place of its usage bands
+# Example: ~/mariadb-qa abc123de 235k 🟢12 $1.23 o55-m ↑1.2M ↓84k ↻96% corlogic-cf 11:02 ent
 # Install in ~/.claude/settings.json:
 #   "statusLine": { "type": "command", "refreshInterval": 30,
 #                   "command": "python3 ~/mariadb-qa/claude_statusline.py" }
+# To install without the rest of mariadb-qa, see claude_statusline_standalone_install.md
 
 import glob
 import json
 import os
+import re
 import subprocess
 import sys
 from datetime import datetime
 
+# the folder this session reads its login from
+REAL = os.path.realpath(os.environ.get('CLAUDE_SECURESTORAGE_CONFIG_DIR') or os.path.expanduser('~/.claude'))
 CWD = 19        # width the current directory is cut back to
 NAME = 16       # width the session name is cut back to
 FAMILY = {'opus': 'o', 'sonnet': 's', 'haiku': 'h', 'fable': 'f', 'mythos': 'm'}
@@ -228,6 +232,40 @@ def record(session):
     return
 
 
+def load(path):
+  # a JSON object from a file, or an empty one when the file is missing or holds something else
+  try:
+    with open(path) as f:
+      got = json.load(f)
+  except (OSError, ValueError):
+    return {}
+  return got if isinstance(got, dict) else {}
+
+
+def account():
+  # the account this session uses, by the name claude_accounts.md saves its login under, made short: t1 for
+  # ~/claude_teams1, ent for ~/claude_ent. Empty when no login is saved that way
+  store = os.path.expanduser('~/.claude_accounts')
+  if not os.path.isdir(store):
+    return ''
+  if REAL != os.path.realpath(os.path.expanduser('~/.claude')):
+    # a login kept outside ~/.claude is in a folder named after its account
+    name = os.path.basename(REAL)
+  elif os.path.exists(f'{store}/picked.json'):
+    # when logins are kept outside ~/.claude, picked.json names the account in ~/.claude
+    name = load(f'{store}/picked.json').get('claude')
+  else:
+    # else ~/.claude.json names the account of the login in ~/.claude
+    acct = load(os.path.expanduser('~/.claude.json')).get('oauthAccount') or {}
+    name = ''
+    for path in glob.glob(f'{store}/*.json'):
+      kept = load(path).get('oauthAccount') or {}
+      if acct.get('accountUuid') and all(kept.get(k) == acct.get(k) for k in ('accountUuid', 'organizationUuid')):
+        name = os.path.basename(path)[:-5]
+  m = re.fullmatch(r'(teams|ent)(\d*)', name or '')
+  return ('t' if m[1] == 'teams' else 'ent') + m[2] if m else ''
+
+
 if os.path.exists(os.path.expanduser('~/mariadb-qa/nostatusline')):
   sys.exit(0)
 
@@ -270,7 +308,7 @@ if used is not None:
     color = '\033[33m'
   else:
     color = LINE
-  # the window size is shown only when it is not the 1M one this box runs on
+  # the window size is shown only when it is under 1M
   room = '' if not size or size >= 1000000 else f'/{tokens(size)}'
   parts.append(f'{color}{tokens(used)}{room}{RESET}')
 
@@ -314,5 +352,9 @@ if name:
   parts.append(f'{LINE}{clip(name, NAME)}{RESET}')
 
 parts.append(f'{LINE}{datetime.now().strftime("%H:%M")}{RESET}')
+
+login = account()
+if login:
+  parts.append(f'{LINE}{login}{RESET}')
 
 print(' '.join(parts))

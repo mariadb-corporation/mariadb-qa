@@ -138,7 +138,7 @@ settings = {}
 if os.path.exists(path):
   with open(path) as f:
     settings = json.load(f)
-settings['statusLine'] = {'type': 'command', 'command': 'python3 ~/mariadb-qa/claude_statusline.py'}
+settings['statusLine'] = {'type': 'command', 'command': 'python3 ~/mariadb-qa/claude_statusline.py', 'refreshInterval': 30}
 with open(path, 'w') as f:
   json.dump(settings, f, indent=2)
   f.write('\n')
