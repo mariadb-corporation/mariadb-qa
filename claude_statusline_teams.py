@@ -14,21 +14,27 @@
 import glob
 import json
 import os
+import tempfile
 import re
 import subprocess
 import sys
+if hasattr(sys.stdout, 'reconfigure'):
+  sys.stdout.reconfigure(encoding='utf-8', errors='replace')  # Windows console is cp1252
 import time
 import urllib.request
 from datetime import datetime
+# Windows has no os.getuid and no /tmp; use the user name and the temp folder there
+_UID = os.getuid() if hasattr(os, 'getuid') else (os.environ.get('USERNAME') or 'user')
+_TMP = '/tmp' if os.name != 'nt' else tempfile.gettempdir()
 
 # the folder this session reads its login from. A session on a login kept outside ~/.claude keeps usage numbers
 # of its own, named after that folder
 STORE = os.environ.get('CLAUDE_SECURESTORAGE_CONFIG_DIR') or os.path.expanduser('~/.claude')
 REAL = os.path.realpath(STORE)
 KEY = '' if REAL == os.path.realpath(os.path.expanduser('~/.claude')) else '.' + os.path.basename(REAL)
-CACHE = f'/tmp/.claude_usage_teams{KEY}.{os.getuid()}.json'
+CACHE = f'{_TMP}/.claude_usage_teams{KEY}.{_UID}.json'
 MARK = CACHE + '.pending'
-SEEN = f'/tmp/.claude_limits_teams{KEY}.{os.getuid()}.json'
+SEEN = f'{_TMP}/.claude_limits_teams{KEY}.{_UID}.json'
 CREDS = os.path.join(STORE, '.credentials.json')
 USAGE_URL = 'https://api.anthropic.com/api/oauth/usage'
 POLL = 300      # seconds between Fable-number reads
@@ -129,7 +135,7 @@ def counted(path, start):
 def consumed(transcript, session):
   # every token this session and its subagents have used. Each transcript is read on
   # from where the last render stopped, so the count stays cheap on a long session
-  store = f'/tmp/.claude_tokens_io.{os.getuid()}.{session[:8]}.json'
+  store = f'{_TMP}/.claude_tokens_io.{_UID}.{session[:8]}.json'
   try:
     with open(store) as f:
       seen = json.load(f)
@@ -267,7 +273,7 @@ def record(session):
   p = claude_pid()
   if p is None:
     return
-  d = f'/tmp/.claude_session_ids.{os.getuid()}'
+  d = f'{_TMP}/.claude_session_ids.{_UID}'
   t = tty_of(p)
   try:
     os.makedirs(f'{d}/tty' if t else d, exist_ok=True)

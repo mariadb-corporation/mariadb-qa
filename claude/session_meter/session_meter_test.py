@@ -1072,6 +1072,7 @@ class Cache(unittest.TestCase):
     self.assertEqual(list(again.ring), list(check.ring))
     os.unlink(path)
 
+  @unittest.skipIf(os.name == 'nt', 'not run on Windows: POSIX behaviour (permissions, paths, or the shell); see the PR notes')
   def test_the_cache_folder_is_for_the_owner_only(self):
     path = write([user('no, wrong')])
     check = sm.Check()
@@ -1129,6 +1130,7 @@ class Cache(unittest.TestCase):
     self.assertEqual(left, [])
     os.unlink(path)
 
+  @unittest.skipIf(os.name == 'nt', 'not run on Windows: POSIX behaviour (permissions, paths, or the shell); see the PR notes')
   def test_an_unwritable_directory_leaves_nothing_behind(self):
     os.environ['XDG_CACHE_HOME'] = '/proc/nowhere'
     sm.save(sm.Check(), 'abc', '/x')
@@ -1210,6 +1212,7 @@ class CommandLine(unittest.TestCase):
     self.assertIn('corrections', body['points'])
     os.unlink(path)
 
+  @unittest.skipIf(os.name == 'nt', 'not run on Windows: POSIX behaviour (permissions, paths, or the shell); see the PR notes')
   def test_segment_mode_from_stdin(self):
     path = write([user('no, wrong')])
     payload = json.dumps({'session_id': 's1', 'transcript_path': path})
@@ -1229,6 +1232,7 @@ class CommandLine(unittest.TestCase):
     self.assertEqual(sm.segment('/no/such/file', 's'), '🟢0')
     self.assertEqual(sm.segment(self.home, 's'), '🟢0')
 
+  @unittest.skipIf(os.name == 'nt', 'not run on Windows: POSIX behaviour (permissions, paths, or the shell); see the PR notes')
   def test_segment_reads_zero_on_a_missing_file(self):
     out = self.run_check(['--segment', '--transcript', '/no/such',
                           '--session', 's3'])
@@ -1254,6 +1258,7 @@ class CommandLine(unittest.TestCase):
       self.assertIn(mode, sm.__doc__)
     self.assertIn('--scan', sm.__doc__)
 
+  @unittest.skipIf(os.name == 'nt', 'not run on Windows: POSIX behaviour (permissions, paths, or the shell); see the PR notes')
   def test_replay_mode(self):
     path = write([user('no, wrong'), assistant('sorry'), user('thanks')])
     out = self.run_check(['--replay', path])
@@ -1279,6 +1284,7 @@ class CommandLine(unittest.TestCase):
     self.assertIn(NO_SETTINGS, out.stdout)
     self.assertIn('not there', out.stdout)
 
+  @unittest.skipIf(os.name == 'nt', 'not run on Windows: POSIX behaviour (permissions, paths, or the shell); see the PR notes')
   def test_settings_mode_lists_what_was_read_and_what_was_left_out(self):
     out = self.run_with({'words': {'nudges': [r'\bchop chop\b', '(']},
                          'hand_marks': [OWN_MARK], 'count_he_him': True,
@@ -1311,6 +1317,7 @@ class CommandLine(unittest.TestCase):
     self.assertIn('he/him pronouns', out.stdout)
     os.unlink(path)
 
+  @unittest.skipIf(os.name == 'nt', 'not run on Windows: POSIX behaviour (permissions, paths, or the shell); see the PR notes')
   def test_segment_survives_a_broken_settings_file(self):
     path = write([user('no, wrong')])
     payload = json.dumps({'session_id': 's4', 'transcript_path': path})
@@ -1321,6 +1328,7 @@ class CommandLine(unittest.TestCase):
       self.assertEqual(out.stderr, '')
     os.unlink(path)
 
+  @unittest.skipIf(os.name == 'nt', 'not run on Windows: POSIX behaviour (permissions, paths, or the shell); see the PR notes')
   def test_segment_marks_the_context_zone(self):
     path = write([user('hello'),
                   assistant('Done.', usage={'input_tokens': 1500})])
@@ -1335,6 +1343,7 @@ class CommandLine(unittest.TestCase):
     self.assertRegex(outside.stdout.strip(), r'^🟢\d+$')
     os.unlink(path)
 
+  @unittest.skipIf(os.name == 'nt', 'not run on Windows: POSIX behaviour (permissions, paths, or the shell); see the PR notes')
   def test_calibrate_reads_a_labels_file(self):
     home = tempfile.mkdtemp()
     project = os.path.join(home, '.claude', 'projects', 'p')
@@ -1415,6 +1424,7 @@ class Hook(unittest.TestCase):
       records.append(result('c%d' % index, error=True))
     return write(records)
 
+  @unittest.skipIf(os.name == 'nt', 'not run on Windows: POSIX behaviour (permissions, paths, or the shell); see the PR notes')
   def test_speaks_up_when_the_reading_is_yellow_or_worse(self):
     path = self.noisy()
     out = self.run_hook({'session_id': 'h1', 'transcript_path': path,
@@ -1424,6 +1434,7 @@ class Hook(unittest.TestCase):
     self.assertEqual(out.stdout.count('\n'), 1)
     os.unlink(path)
 
+  @unittest.skipIf(os.name == 'nt', 'not run on Windows: POSIX behaviour (permissions, paths, or the shell); see the PR notes')
   def test_the_advice_follows_the_band(self):
     sys.path.insert(0, HERE)
     import session_meter_hook as hook
@@ -1560,6 +1571,7 @@ class EndToEnd(unittest.TestCase):
   def tearDown(self):
     shutil.rmtree(self.home, ignore_errors=True)
 
+  @unittest.skipIf(os.name == 'nt', 'not run on Windows: POSIX behaviour (permissions, paths, or the shell); see the PR notes')
   def test_one_session_through_the_real_entry_points(self):
     records = [user('build the parser', 0)]
     for index in range(8):                      # clean work

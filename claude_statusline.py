@@ -11,10 +11,16 @@
 import glob
 import json
 import os
+import tempfile
 import re
 import subprocess
 import sys
+if hasattr(sys.stdout, 'reconfigure'):
+  sys.stdout.reconfigure(encoding='utf-8', errors='replace')  # Windows console is cp1252
 from datetime import datetime
+# Windows has no os.getuid and no /tmp; use the user name and the temp folder there
+_UID = os.getuid() if hasattr(os, 'getuid') else (os.environ.get('USERNAME') or 'user')
+_TMP = '/tmp' if os.name != 'nt' else tempfile.gettempdir()
 
 # the folder this session reads its login from
 REAL = os.path.realpath(os.environ.get('CLAUDE_SECURESTORAGE_CONFIG_DIR') or os.path.expanduser('~/.claude'))
@@ -106,7 +112,7 @@ def counted(path, start):
 def consumed(transcript, session):
   # every token this session and its subagents have used. Each transcript is read on
   # from where the last render stopped, so the count stays cheap on a long session
-  store = f'/tmp/.claude_tokens_io.{os.getuid()}.{session[:8]}.json'
+  store = f'{_TMP}/.claude_tokens_io.{_UID}.{session[:8]}.json'
   try:
     with open(store) as f:
       seen = json.load(f)
@@ -216,7 +222,7 @@ def record(session):
   p = claude_pid()
   if p is None:
     return
-  d = f'/tmp/.claude_session_ids.{os.getuid()}'
+  d = f'{_TMP}/.claude_session_ids.{_UID}'
   t = tty_of(p)
   try:
     os.makedirs(f'{d}/tty' if t else d, exist_ok=True)
