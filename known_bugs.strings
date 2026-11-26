@@ -262,6 +262,8 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+info->state == start_alter_state::REGISTERED|SIGABRT|rpl_pause_for_ftwrl|mysql_execute_command|mysql_parse|dispatch_command                                                    ## MDEV-42489
+info->state == start_alter_state::REGISTERED|SIGABRT|check_and_remove_stale_alter|Format_description_log_event::do_apply_event|Log_event::apply_event|apply_event_and_update_pos_apply ## MDEV-42489
 SIGSEGV|my_instr_bin|charset_info_st::instr|Item_func_locate::val_int|Type_handler::Item_send_long                                                                             ## MDEV-42479
 got_name == named_item_expected()|SIGABRT|Json_writer::on_start_object|Json_writer::start_object|Json_writer_object::Json_writer_object|Json_writer_object::Json_writer_object ## MDEV-28598
 (have_last && !have_first) || (have_last && have_first && (last_res == 0))|SIGABRT|QUICK_GROUP_MIN_MAX_SELECT::get_next|rr_quick|sub_select|do_select                          ## MDEV-41366

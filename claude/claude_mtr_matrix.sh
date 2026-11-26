@@ -181,8 +181,10 @@ run_one() {
   if ! grep -q 'Completed: All' "${OUT}"; then
     local STR= FAIL
     # ~/t exits 0 only when it produced a UniqueID, so the exit code is the gate here.
+    # A replica logs error 2003 (Can't connect) while its primary is down, for example when
+    # a test restarts the primary, so that string is dropped as well
     if STR="$(cd "${MTRDIR}" && ~/t 2>/dev/null)"; then
-      STR="$(echo "${STR}" | grep -vEi 'no error log|no core file found|no relevant strings were found|no parsable frames|please add a typed prefix rule|^Assert:|^WSREP_WARNING\|' | head -n1)"
+      STR="$(echo "${STR}" | grep -vEi 'no error log|no core file found|no relevant strings were found|no parsable frames|please add a typed prefix rule|^Assert:|^WSREP_WARNING\||^MARIADB_ERROR_CODE\|MariaDB error code: 2003$' | head -n1)"
     else
       STR=
     fi
