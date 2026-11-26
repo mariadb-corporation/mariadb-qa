@@ -10,7 +10,7 @@ Nothing is sent anywhere. The transcript is read where it is. The cache in `~/.c
 
 ## Requirements
 
-Claude Code, and Python 3.8 or later. Tested on Linux.
+Claude Code, and Python 3.8 or later. Tested on Linux and on Windows 11 (Python 3.14). On Windows the test suite skips the twelve tests that check POSIX-only behaviour; they still run on Linux and macOS.
 
 ## The status bar
 

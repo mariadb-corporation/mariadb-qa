@@ -35,7 +35,9 @@ Claude runs the steps below. To install by hand, run them yourself.
 
 ## Requirements
 
-Claude Code, Python 3.8 or later, and curl. Tested on Linux only. Both status bar scripts use calls that Python offers on Unix only, so they do not run under Python for Windows.
+Claude Code, Python 3.8 or later, and curl. Tested on Linux and on Windows 11 (Python 3.14). On Windows the status bars use the user name and the temp folder in place of `os.getuid()` and `/tmp`, and the meter writes UTF-8 to the console.
+
+On Windows, `python3` may be the Microsoft Store alias, which fails when Claude Code runs the hook or the status bar. Use the full path to a real Python executable in the `command` entries of `settings.json`, for example `"C:/Users/<you>/AppData/Local/Python/.../python.exe"`.
 
 ## 1. Get the files
 
