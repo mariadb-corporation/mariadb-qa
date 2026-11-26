@@ -4,6 +4,8 @@ Default assignee per subsystem for MDEV and MENT bug reports, used by the `jira-
 
 Jira usernames: Sanja/Oleksandr Byelkin=`sanja`, Aleksey Midenkov=`midenok`, Monty Widenius=`monty`, Rucha Deodhar=`rucha174`, Sergei Golubchik=`serg`, Vladislav Vaintroub=`wlad`, Brandon Nesterenko=`bnestere`, Raghunandan Bhat=`raghunandan.bhat`, Thiru Balathandayuthapani=`thiru`, Seppo Jaakola=`seppo`, Georg Richter=`georg`, Sergei Petrunia=`psergei`, Daniel Black=`danblack`, Alexey Botchkov=`holyfoot`, Alexander Barkov=`bar`, Dmitry Shulga=`shulga`, Kristian Nielsen=`knielsen`, Yuchen Pei=`ycp`, Roman Nozdrin=`drrtuy`, Georgi Kodinov, known as Joro=`gkodinov` (the `joro` account is someone else), Kouhei Sutou=`kou`.
 
+Managers, for the closing line of a `bug-fix-post` fix comment: Brandon Nesterenko=`bnestere`, Thiru Balathandayuthapani=`thiru`, Sanja/Oleksandr Byelkin=`sanja`.
+
 | Subsystem | Default assignee |
 |---|---|
 | Aggregate stored functions | Sanja Byelkin |

@@ -50,13 +50,25 @@ A replication bug (trial shows `MASTER_EXTRA`/`SLAVE_EXTRA`/`REPL_EXTRA`, or nee
 ## sql_mode and expected errors
 
 - `--sql_mode=` header -> inline `SET sql_mode='';` (tcp converts it). Strict mode rejects loose data (`'' `/`'a'` into INT); set `sql_mode=''` when the reduced testcase relies on it.
-- Gate each statement that LEGITIMATELY errors with a SPECIFIC `--error <ER_NAME|errno>` on the line ABOVE it (e.g. `--error ER_PARSE_ERROR`), so MTR does not abort before the triggering statement. A statement that only WARNS (very common under `SET sql_mode=''`) needs NO gate at all - do not gate warnings. **Do NOT use `--disable_abort_on_error`** - it is a blunt instrument that hides which statements error and reads as sloppy; determine each statement's actual result during reduction (run it, read the `--error`/warning) and gate precisely. (`--disable_abort_on_error` only as an absolute last resort for a still-noisy reduced testcase, and then note why.) Each `--error <X>` also documents the expected error for the dev.
+- Gate each statement that LEGITIMATELY errors with a SPECIFIC `--error <ER_NAME|errno>` on the line ABOVE it (e.g. `--error ER_PARSE_ERROR`), so MTR does not abort before the triggering statement. A statement that only WARNS (very common under `SET sql_mode=''`) needs NO gate at all - do not gate warnings. **Do NOT use `--disable_abort_on_error`** - it is a blunt instrument that hides which statements error and reads as sloppy; determine each statement's actual result during reduction (run it, read the `--error`/warning) and gate precisely. (`--disable_abort_on_error` only as an absolute last resort for a still-noisy reduced testcase, and then note why. The one planned use is the crash gate under Form, around the single statement that crashes.) Each `--error <X>` also documents the expected error for the dev.
 - `--write_file` and other directives must be hoisted ABOVE any `if(){}` - a `--write_file` inside a false `if` leaks its body as SQL (`ER_PARSE_ERROR`).
 
 ## Form
 
 - ONE SQL statement per line (mariadb-test-run.pl, pquery, and reducer all assume this).
 - **The test is ALWAYS a REVERSE GATE**: it FAILS while the bug is live and PASSES once fixed. Do NOT `--record` buggy output; do NOT add a `.result` that bakes in the wrong behaviour. For a CRASH/assert/SAN bug the gate is the server dying (`Lost connection`) and needs nothing else.
+- **A crash can also get a plain verdict line.** Wrap the one statement that crashes, and `--die` on error 2013, the lost connection. This form also passes when a correct server refuses the statement with an error, so the gate does not need to know which error a fixed server gives:
+
+```
+--disable_abort_on_error
+ALTER TABLE t1 CONVERT TABLE v2 TO PARTITION p1 VALUES LESS THAN (20);
+--enable_abort_on_error
+if ($mysql_errno == 2013)
+{
+  --die The server crashed on ALTER TABLE ... CONVERT TABLE of a view into a partition
+}
+```
+
 - **Every other reverse gate ends in `--die`, with the defect written out in plain words.** For a missing error, a wrong error, or a wrong result, do not leave the verdict to mysqltest's own message. `--error <ER_NAME>` alone reports "query 'SELECT ...' succeeded - should have failed with error ER_X (1055)", which states the mechanics and leaves the reader to work out the bug. Allow both outcomes, then decide and `--die`:
 
 ```

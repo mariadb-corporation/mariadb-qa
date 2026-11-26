@@ -75,4 +75,5 @@ The row layout is the framework's own, from `version_chk_helper.source`, the sam
 - MTR picks a free port range itself, so a sweep does not collide with another MTR run on the box.
 - Default parallel jobs is 48, capped at the number of BASEDIRs. Lower it when the box is busy.
 - Each run has a 900 second timeout per build.
-- The testcase and its `.result` stay in the BASEDIRs after the run. Remove them when the sweep was a one-off.
+- The testcase goes into each BASEDIR under a name of its own, made with mktemp, and is removed after the run, with its `.result` and any `.reject`.
+- MySQL 8.0 and later have no `include/have_innodb.inc`, so that line of the copy is left empty there. With no `.result` they run with `--nocheck-testcases`.

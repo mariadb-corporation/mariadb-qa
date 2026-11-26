@@ -102,6 +102,7 @@ GOT_ERROR|Got error 123|when reading table                     ## MDEV-36963
 # GOT_ERROR|Got error 127|when reading table (temptable)         ## MDEV-39562  ## Idem ^
 # GOT_ERROR|Got error 127|when reading table                     ## MDEV-27903  ## Idem ^
 # GOT_ERROR|Got error 127|when reading table X                                                                                                                                 ## MDEV-41410  ## Idem ^
+# GOT_ERROR|Got error 127|Table file is corrupted                                                                                                                              ## MDEV-42471  ## Idem ^
 GOT_ERROR|Got error 128|when reading table                     ## MDEV-34991
 GOT_ERROR|Got error 131|when reading table X                   ## MDEV-40834
 GOT_ERROR|Got error 134|when reading table                     ## MDEV-34230
@@ -261,6 +262,14 @@ SIGSEGV|_int_free|root_free|free_root|free_tmp_table                            
 ###SIGABRT|__libc_message|malloc_printerr|unlink_chunk|_int_free                                                                                                                  ## MDEV-21799
 
 ##### CURRENT BUGS (Search key: Mac) #####
+SIGSEGV|my_instr_bin|charset_info_st::instr|Item_func_locate::val_int|Type_handler::Item_send_long                                                                             ## MDEV-42479
+got_name == named_item_expected()|SIGABRT|Json_writer::on_start_object|Json_writer::start_object|Json_writer_object::Json_writer_object|Json_writer_object::Json_writer_object ## MDEV-28598
+(have_last && !have_first) || (have_last && have_first && (last_res == 0))|SIGABRT|QUICK_GROUP_MIN_MAX_SELECT::get_next|rr_quick|sub_select|do_select                          ## MDEV-41366
+(have_last && !have_first) || (have_last && have_first && (last_res == 0))|SIGABRT|QUICK_GROUP_MIN_MAX_SELECT::get_next|rr_quick|READ_RECORD::read_record|join_init_read_record ## MDEV-41366
+mon > 0 && mon < 13|SIGABRT|sec_since_epoch|Time_zone_offset::TIME_to_gmt_sec|THD::safe_timeval_replacement_for_nonzero_datetime|Type_handler_datetime_common::convert_item_for_comparison ## MDEV-42473
+SIGSEGV|wait_while_table_is_used|fast_alter_partition_table|mysql_alter_table|Sql_cmd_alter_table::execute                                                                     ## MDEV-33131
+!prebuilt->index->is_primary()|SIGABRT|row_search_idx_cond_check|row_search_mvcc<InnoDBPolicy<true, true> >|ha_innobase::index_read|ha_innobase::index_first                   ## MDEV-27366
+SIGSEGV|row_merge_read_clustered_index|row_merge_build_indexes|ha_innobase::inplace_alter_table|handler::ha_inplace_alter_table                                                ## MDEV-42314
 table->s->db_options_in_use == part_table->s->db_options_in_use|SIGABRT|compare_table_with_partition|Sql_cmd_alter_table_exchange_partition::exchange_partition|Sql_cmd_alter_table_exchange_partition::execute|mysql_execute_command  ## MDEV-18858
 SIGSEGV|Item_func_rpad::val_str|Item::save_str_in_field|Type_handler_string_result::Item_save_in_field|Item::save_in_field                                                     ## MDEV-42233
 SIGSEGV|Item_func_rpad::val_str|Item::save_str_in_field|Item::save_in_field|fill_record                                                                                        ## MDEV-42233
@@ -3989,6 +3998,7 @@ SIGSEGV|ha_maria::get_auto_increment|ha_partition::get_auto_increment|handler::u
 # b == &block[0] + buf->total_size || blob_file|SIGSEGV|cmp_dfield_dfield|row_merge_tuple_cmp|row_merge_tuple_sort|row_merge_tuple_sort                               ## Fixed ## MDEV-40915
 # num_fts_index <= 1|SIGABRT|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table|ha_partition::prepare_inplace_alter_table|mysql_inplace_alter_table       ## Fixed ## MDEV-40915
 # num_fts_index <= 1|SIGABRT|prepare_inplace_alter_table_dict|ha_innobase::prepare_inplace_alter_table|handler::ha_prepare_inplace_alter_table|ha_partition::prepare_inplace_alter_table   ## Fixed ## MDEV-40915
+# table->get_ref_count() == 0|SIGABRT|ut_dbg_assertion_failed|dict_sys_t::remove|trx_t::commit|ha_innobase::commit_inplace_alter_table                                         ## Fixed ## MDEV-40915
 # SIGSEGV|sec_part_shift|Field_time_hires::Field_time_hires|new_Field_time|Type_handler_time2::make_table_field                                                       ## Fixed ## MDEV-41225
 # dec <= 6|SIGABRT|Field_time_with_dec::Field_time_with_dec|Field_time_hires::Field_time_hires|new_Field_time|Type_handler_time2::make_table_field                    ## Fixed ## MDEV-41225
 # partial_join_cost >= -2.2204460492503131e-16|SIGABRT|recompute_join_cost_with_limit|join_limit_shortcut_finalize_plan|choose_plan|make_join_statistics              ## Fixed ## MDEV-41252

@@ -1,0 +1,43 @@
+CREATE TABLE t1 (a INT);
+INSERT INTO t1 VALUES (2),(3);
+CREATE TABLE t2 (b INT);
+INSERT INTO t2 VALUES (2),(4);
+SET tmp_table_size=0;
+SELECT COUNT(*) FROM t2 WHERE EXISTS (SELECT t2.b FROM DUAL EXCEPT SELECT a FROM t1);
+#CLI: 0; expected 1
+#ERR: - (no error)
+
+CREATE TABLE t1 (a INT);
+INSERT INTO t1 VALUES (2),(3);
+CREATE TABLE t2 (b INT);
+INSERT INTO t2 VALUES (2),(4);
+SET tmp_table_size=0;
+SELECT b, (SELECT t2.b FROM DUAL EXCEPT SELECT a FROM t1) AS e FROM t2;
+#CLI: e is NULL for b = 4; expected 4
+#ERR: - (no error)
+
+CREATE TABLE t1 (a INT);
+INSERT INTO t1 VALUES (2),(3);
+CREATE TABLE t2 (b INT);
+INSERT INTO t2 VALUES (2),(4);
+SET tmp_table_size=0;
+SELECT COUNT(*) FROM t2 WHERE EXISTS (SELECT t2.b FROM DUAL EXCEPT ALL SELECT a FROM t1);
+#CLI: 0; expected 1
+#ERR: - (no error)
+
+CREATE TABLE t1 (a INT);
+INSERT INTO t1 VALUES (2),(3);
+CREATE TABLE t3 (b INT);
+INSERT INTO t3 VALUES (4),(2);
+SET tmp_table_size=0;
+SELECT COUNT(*) FROM t3 WHERE EXISTS (SELECT t3.b FROM DUAL INTERSECT SELECT a FROM t1);
+#CLI: 0; expected 1
+#ERR: - (no error)
+
+CREATE TABLE t2 (b INT);
+INSERT INTO t2 VALUES (2),(4);
+SET tmp_table_size=0;
+SET @v= 1;
+SELECT b, (SELECT @v:= @v + 1 EXCEPT SELECT 2) AS e FROM t2;
+#CLI: e is NULL for b = 4; expected 3
+#ERR: - (no error)

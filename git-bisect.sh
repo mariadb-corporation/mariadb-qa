@@ -7,7 +7,7 @@ set +H
 # User variables
 DBG_OR_OPT='dbg'                                                    # Use 'dbg' or 'opt' only
 VERSION=11.4                                                        # Use the earliest major version affected by the bug
-LATEST_MARIADB_CS_VERSION=13.1                                      # Ensure this is set to the current trunk/main CS version
+LATEST_MARIADB_CS_VERSION=13.3                                      # Ensure this is set to the current trunk/main CS version
 ES=0                                                                # If set to 1, MariaDB Enterprise Server will be used instead of MariaDB Community Server
 SKIP_NON_SAME_VERSION=0                                             # Skip commits which are not of the VERSION version. If you are confident you know what version a bug was introduced in, and this version is specified in VERSION above, set this to 1, otherwise set it to 0. Also, if there are build errors in older revisions, setting this to 0 may help. Recommended in any case: 0, especially in older versions, which regularly yield build issues on newer systems; it may make the bisect quicker/better/easier in such cases
 FEATURETREE=''                                                      # Leave blank to use /test/git-bisect/${VERSION} or set to use a feature tree in the same location (the VERSION option will be ignored)

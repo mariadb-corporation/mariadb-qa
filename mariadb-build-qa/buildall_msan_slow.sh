@@ -44,8 +44,10 @@ BUILD_12_0=0
 BUILD_12_1=0
 BUILD_12_2=0
 BUILD_12_3=1
-BUILD_13_0=1
+BUILD_13_0=0
 BUILD_13_1=1
+BUILD_13_2=1
+BUILD_13_3=1
 BUILD_ES_10_5=0
 BUILD_ES_10_6=1
 BUILD_ES_11_4=1
@@ -108,7 +110,7 @@ build_ver(){  # $1 = version dir under ${DIR} (e.g. 13.1, 12.3-es)
     cloned=1
     case "${ver}" in
       *-es) ~/mariadb-qa/mariadb-build-qa/clone_es.sh "${ver%-es}" ;;  # ES: clone_es.sh <base> clones <base>-es (needs ~/.git-credentials)
-      *)    ~/mariadb-qa/mariadb-build-qa/clone.sh "${ver}" ;;         # CS branch/trunk (13.1 -> main)
+      *)    ~/mariadb-qa/mariadb-build-qa/clone.sh "${ver}" ;;         # CS branch/trunk (13.3 -> main)
     esac
   fi
   if [ ! -d "${DIR}/${ver}" ]; then echo "Skipping ${ver}: no source tree (CLONE_IF_MISSING=0, or clone failed)"; return; fi
@@ -124,6 +126,8 @@ build_ver(){  # $1 = version dir under ${DIR} (e.g. 13.1, 12.3-es)
 }
 
 buildall(){  # Newest first (larger builds first, to optimize initial time-till-ready-for-use)
+  [ ${BUILD_13_3} -eq 1 ]   && build_ver 13.3
+  [ ${BUILD_13_2} -eq 1 ]   && build_ver 13.2
   [ ${BUILD_13_1} -eq 1 ]   && build_ver 13.1
   [ ${BUILD_13_0} -eq 1 ]   && build_ver 13.0
   [ ${BUILD_ES_12_3} -eq 1 ] && build_ver 12.3-es

@@ -64,3 +64,11 @@ ERROR|0v1140|*ORDERBY*|*
 # MDEV-11588, no functional-dependency detection for ONLY_FULL_GROUP_BY. As described in
 # corlogic.known.INFO.
 3962a83db959//ERROR|0v1140|AGG|SELECT COUNT(*),cX FROM tX WHERE cX=N AND cX IS NOT NULL
+
+# MDEV-39097, UPDATE with an IN subquery and ORDER BY writes a value computed from another
+# row. As described in corlogic.known.INFO.
+fa2ee3586106//AFFECTED|13v14|UPDATE|UPDATE IGNORE tX SET cX=cX+N
+
+# MDEV-42476, DELETE with an IN subquery and ORDER BY deletes only one row. As described in
+# corlogic.known.INFO.
+ba50f17e1cb6//AFFECTED|1v82|DELETE,IN,ORDERBY,SUBQ|DELETE QUICK FROM tX WHERE cX IN (SELECT cX FROM tX ) ORDER BY cX DESC, cX

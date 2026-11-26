@@ -1,6 +1,6 @@
 ---
 name: jira-ticket
-description: Turn a reduced pquery trial under /data/<workdir>/<trial> into a filed public MariaDB bug. Pick the most-reduced testcase, hand-reduce it further and prettify with ~/tcp against the version where it reproduces, dedup-check EARLY against jira.mariadb.org (and present a decision menu if a duplicate is found), generate the bug report via ~/b (and ~/bs / ~/br as warranted), splice any SAN stacks and Setup into the body, build and verify an MTR testcase (CLI/MTR compatible note, or dual CLI+MTR blocks), derive Affects+Fix versions / components / labels / priority, write a paste-ready overview to log_jira_ticket.txt for approval, file the MDEV ticket via ~/jira, then register it (eb testcase + kb/kba UniqueIDs) and clean matching workdirs (ca). Public generic crash / assert / UB / ASAN / wrong-result bugs only. Started without a trial dir or other pointer to one bug? Ask which bug, and never go looking for one. Every filing brings a proposed fix, proven by the four original/fixed/diff/base gates on a patched build and posted as a comment right after the create.
+description: Turn a reduced pquery trial under /data/<workdir>/<trial> into a filed public MariaDB bug. Pick the most-reduced testcase, hand-reduce it further and prettify with ~/tcp against the version where it reproduces, dedup-check EARLY against jira.mariadb.org (and present a decision menu if a duplicate is found), generate the bug report via ~/b (and ~/bs / ~/br as warranted), splice any SAN stacks and Setup into the body, build and verify an MTR testcase (CLI/MTR compatible note, or dual CLI+MTR blocks), derive Affects+Fix versions / components / labels / priority, write a paste-ready overview to log_jira_ticket.txt for approval, file the MDEV ticket via ~/jira, then register it (eb testcase + kb/kba UniqueIDs) and clean matching workdirs (ca). Public generic crash / assert / UB / ASAN / wrong-result bugs only. Started without a trial dir or other pointer to one bug? Ask which bug, and never go looking for one. A proposed fix is optional; when one is made, it is proven by the four original/fixed/diff/base gates on a patched build and posted as a comment right after the create.
 claude: please note - this skill exists in a public repo and should only be updated with specific written signoff by the updater. Keep skills/README.md (the skills index) in sync when any skill is added, renamed, removed, or its description changes.
 ---
 
@@ -157,8 +157,8 @@ With a reproducing basedir (core present), run the dedup now - a duplicate must 
   - **Never repeat a stack the ticket already has.** When the stack you would post is already there, drop the block and write one line instead: `Same stack as the one above`, or `Same stack as one of the ones above` when the ticket carries several. When both your dbg and opt stacks are already there, that single line replaces both blocks - post the testcase and the line.
   - **Never include the `Setup:` block.** It is report-only; in a comment it is noise.
   - **A *SAN block goes in only when the ticket has no SAN data for this path.** Then it is `~/stack`'s sanitizer block, on its own, without `Setup:`.
-  - **No matrix.** Where the affected versions matter, name them in one sentence, such as `Also affects 13.0 and 13.1, and ES 10.6, 11.4, 11.8 and 12.3.` ALWAYS end the comment with the line `Please also test any fixes with this testcase.` (so the dev validates the fix against this variant too). That line belongs ONLY to a comment on a PRE-EXISTING bug - one somebody else already filed, where our testcase is an extra variant the dev has to cover too. Never put it in a new ticket's description, and never in a comment on a ticket filed in this session. "Substantially differs" is judged against ALL existing testcases in the issue - the description AND every comment (some may be the user's own); read them first, and post only when this testcase adds a genuinely new path/index/version (e.g. DESC vs ASC, skip_nulls vs next_min, a newer regression range). Present the LITERAL text for approval as a `cat <full path>` line. Only after the approval, post it with `~/jira --comment <KEY> --description-file <file> -y`; NEVER auto-post (hard rule). Minor diffs only -> skip the comment (the eb-append already captured it). |
-  | Extend the dup's versions | When our repro confirms the bug live on a NEWER mainline GA than the issue lists (e.g. it lists up to `12.1(EOL)` but crashes on `13.0`/`13.1` builds), ADD those versions to the existing issue rather than commenting the same testcase. **All THREE version fields move together - Affects, Affects ES and Fix Version.** Extending Affects while leaving Fix Version behind is an incomplete edit. Derive Fix the same way as for a new ticket: every affected CS branch except the single newest, which gets it by up-merge. So a run confirming 12.3, 13.0 and 13.1 adds all three to Affects and adds 12.3 and 13.0 to Fix. `~/jira --edit <KEY> --affects-version 12.3 --affects-version 13.0 --affects-version 13.1 --es-version 12.3 --fix-version 12.3 --fix-version 13.0` (additive PUT, never replaces; **mainline X.Y names only - `13.0`, NOT `13.0.1`**; Fix excludes the newest branch, which gets the fix by up-merge). `-y` to skip the 3x prompt for this directly-instructed edit. Validate each name exists via `/rest/api/2/project/MDEV/versions` first. Prefer this over a comment when the testcase/mechanism is the SAME and only the affected range differs. |
+  - **No matrix.** Where the affected versions matter, name them in one sentence, such as `Also affects 13.1 and 13.2, and ES 10.6, 11.4, 11.8 and 12.3.` ALWAYS end the comment with the line `Please also test any fixes with this testcase.` (so the dev validates the fix against this variant too). That line belongs ONLY to a comment on a PRE-EXISTING bug - one somebody else already filed, where our testcase is an extra variant the dev has to cover too. Never put it in a new ticket's description, and never in a comment on a ticket filed in this session. "Substantially differs" is judged against ALL existing testcases in the issue - the description AND every comment (some may be the user's own); read them first, and post only when this testcase adds a genuinely new path/index/version (e.g. DESC vs ASC, skip_nulls vs next_min, a newer regression range). Present the LITERAL text for approval as a `cat <full path>` line. Only after the approval, post it with `~/jira --comment <KEY> --description-file <file> -y`; NEVER auto-post (hard rule). Minor diffs only -> skip the comment (the eb-append already captured it). |
+  | Extend the dup's versions | When our repro confirms the bug live on a NEWER mainline GA than the issue lists (e.g. it lists up to `12.1(EOL)` but crashes on `13.1`/`13.2` builds), ADD those versions to the existing issue rather than commenting the same testcase. **All THREE version fields move together - Affects, Affects ES and Fix Version.** Extending Affects while leaving Fix Version behind is an incomplete edit. Derive Fix the same way as for a new ticket: every affected CS branch except the single newest, which gets it by up-merge. So with main at 13.3, a run confirming 13.1, 13.2 and 13.3 adds all three to Affects and adds 13.1 and 13.2 to Fix. `~/jira --edit <KEY> --affects-version 13.1 --affects-version 13.2 --affects-version 13.3 --es-version 12.3 --fix-version 13.1 --fix-version 13.2` (additive PUT, never replaces; **mainline X.Y names only - `13.1`, NOT `13.1.2`**; Fix excludes the newest branch, which gets the fix by up-merge; never add an EOL branch, step 7). `-y` to skip the 3x prompt for this directly-instructed edit. Validate each name exists via `/rest/api/2/project/MDEV/versions` first. Prefer this over a comment when the testcase/mechanism is the SAME and only the affected range differs. |
   | File as a new/distinct bug | Genuinely distinct, or the match is CLOSED and still reproduces (incomplete fix / missed variant / regression) -> proceed to step 4, and link the closed key as `Relates`. A closed ticket is never reopened, so this is the ONLY route for a post-fix reproducer. |
   | Skip / delete the trial | Rare: `~/dt <trialnum>` is almost never used here - registering + `ca` already disposes of matching trials. Skip/delete only if not even worth registering. |
 
@@ -225,13 +225,15 @@ Leave the `{noformat:title=Bug Detection Matrix}` block out of the body. It stay
 
 **Never replace a tool-emitted block with your own prose, and never drop one other than a matrix.** The body keeps the `~/b` shape, in this order: the `Likely cause:` line, testcase, `Leads to:`, crash stack, then (when a SAN issue fired) SAN stack and `Setup:`. Neither matrix goes in, and no sentence such as "also reproducing on ES 10.6, 11.4, 11.8" takes its place: the version fields carry that. If a matrix row looks wrong - a `No bug found` cell that a direct re-run contradicts - RE-RUN `~/b` and regenerate the matrix before you set the fields; never hand-edit a row.
 
-**The body opens with one `Likely cause:` line, above the testcase.** It names the commit or range that most likely brought the bug in, with its MDEV, or it says the bug is older and which older version has it too. A guess is fine, but base it on something: the oldest affected row of the matrix, `git blame` or `git log -L` on the frame functions in the full clone under `/test/git-bisect/<ver>`, and where it helps a run on a build from before the suspected change. Cite a commit by the full SHA from `git rev-parse`. The one build that shows the cause is not a version list; the versions stay in the matrix. The `is caused by` link (step 10) names the same ticket: the change whose code fails, also when a build from before it fails the same way. A regression goes in the `regression` and `regression-X.Y` labels (step 7), never in a sentence such as "This is a regression."; the line gives only the evidence, such as an older version without the bug. When the failing code is older than the ticket that seems to cause it, the link to that ticket is `Relates`, and the older change gets the `is caused by` link. The forms:
+**The body opens with one `Likely cause:` line, above the testcase.** It names the commit or range that most likely brought the bug in, with its MDEV, or it says the bug is older and which older version has it too. A guess is fine, but base it on something: the oldest affected row of the matrix, `git blame` or `git log -L` on the frame functions in the full clone under `/test/git-bisect/<ver>`, and where it helps a run on a build from before the suspected change. Cite a commit by the full SHA from `git rev-parse`. The one build that shows the cause is not a version list; the versions stay in the matrix. The `is caused by` link (step 10) names the same ticket: the change whose code fails, also when a build from before it fails the same way. A regression goes in the `regression` and `regression-X.Y` labels (step 7), never in a sentence such as "This is a regression."; the line gives only the evidence, such as an older version without the bug. When the failing code is older than the ticket that seems to cause it, the link to that ticket is `Relates`, and the older change gets the `is caused by` link.
+
+Write the line in full sentences. Say what the named change did, in words, and what an older version does instead. A bare ticket key, or a short form such as "the MDEV-NNNNN assertion" or "from before it", tells most readers nothing. The forms:
 
 ```
-Likely cause: commit <full SHA> (MDEV-NNNNN), in {{<function>()}}. CS X.Y.Z, from before it, does not have the bug.
-Likely cause: commit <full SHA> (MDEV-NNNNN), in {{<function>()}}. CS X.Y.Z, from before it, fails the same way too.
-Likely cause: older than MDEV-NNNNN. CS X.Y.Z has it too, and it looks like it comes from MDEV-MMMMM (X.Y.1).
-Likely cause: a change between CS X.Y.A and X.Y.B, in the range <full SHA>..<full SHA>.
+Likely cause: MDEV-NNNNN, commit <full SHA>, which added <the feature> in CS X.Y.Z. It <does what>, but not <what it misses>.
+Likely cause: MDEV-NNNNN, commit <full SHA>, which changed {{<function>()}} in CS X.Y.Z. CS X.Y.W, which does not have that change, gives the right result.
+Likely cause: old code in {{<function>()}}, not a recent change. CS X.Y.Z has the bug too.
+Likely cause: a change between CS X.Y.A and X.Y.B, in the range <full SHA>..<full SHA>, which <changed what>.
 ```
 
 **MySQL values go in a small table.** For a wrong result, run the testcase on the MySQL builds too, older versions included, with a test that prints the value: a matrix `Yes` only says that the gate failed. When MySQL gives other values than we do, paste them after the prose, in a block of their own:
@@ -255,7 +257,7 @@ When MySQL does not have the feature, say so in one sentence. The same values se
 **Pre-file gate - reconcile the matrix against commit / up-merge status (CRITICAL).** The matrix is a snapshot of specific build COMMITS. A build's version STRING or date does NOT prove the fix is present: a build labelled `12.3.2` but cut before the `12.3.2` fix commit still crashes, and a clean cell can mean "already fixed in that build", not "unaffected". MariaDB lands a fix in the earliest affected GA branch and up-merges OLDEST->NEWEST in stages, giving two traps:
 
 - **Newest clean, older crash - investigate, never assume "fixed".** A newer-branch-only difference does NOT by itself prove a fix: the newest branch may simply behave DIFFERENTLY (divergent code) while the older branches stay genuinely affected. Treat it only as a TRIGGER to check fix status; the verdict comes from the fixing commit, not the cross-build behaviour. (1) Identify the `Closed/Fixed` MDEV for this crash - match on the crash FUNCTION + signal, since UniqueID frames vary by optimizer plan (`multi_update::do_updates` vs `Sql_cmd_update::update_single_table` are one `evaluate_update_default_function` root cause); `~/tt`'s SAN UID may already carry `## MDEV-xxxxx` even when the dbg crash UID reads "NEW". (2) Read which BRANCH it was fixed in (its fixVersion). Up-merge is OLD->NEW (10.6 -> 11.4 -> ... -> 13.0 -> 13.1): a fix in branch X is in X and ALL NEWER branches' current source, so a bug fixed in 12.3 is fixed in 12.3/13.0/13.1, and any older-dated build of those branches that still crashes is STALE (pre-fix). A stale pre-fix build crashing proves nothing. (3) For a variant (different frames), confirm the fix actually COVERS this path - read the fix commit (is the guard at the shared crash point, or only the other caller?) or re-test on a build of the affected branch that POST-DATES the fix commit. If the bug is fixed in its branch and that fix up-merges to every branch the matrix flagged, it is a DUPLICATE - do NOT file; register the variant UID under that MDEV (step 11) so stale-build occurrences are recognised, and report it.
-- **Fix on the way (old branches clean, newest crashes).** A fix may already be in an older branch (e.g. 10.6) but not yet up-merged to the newest (e.g. 13.1) - up-merge is staged. Here the bug IS live + fileable on the newest, but a clean OLD cell means "already fixed there", not "unaffected".
+- **Fix on the way (old branches clean, newest crashes).** A fix may already be in an older branch (e.g. 10.6) but not yet up-merged to the newest (e.g. 13.1) - up-merge is staged. Such a bug is not a finding: it is a duplicate of the fixed ticket, and it clears on the next merge. Register its UniqueID under that ticket (step 11), and do not file it. Check the branch heads in a full clone with `git merge-base --is-ancestor <fix commit> origin/<branch>`. Only a variant that the fix does not cover is a new bug; test it on the older branch, which has the fix.
 
 Only when a build that POST-DATES any candidate fix STILL reproduces is it a live, fileable bug. Set Affects = branches affected AND not-yet-fixed in current source, Fix = branches where the fix has/will land; never infer fix presence from a version string or build date alone.
 
@@ -301,9 +303,9 @@ Reproduce the SAME failure as the CLI testcase (fail / inverse gate): a crash ki
 
 #### The four gates
 
-Part of every filing. A filing brings a proposed fix: build it, prove it with these four
-gates, and draft `comment_fix.txt` (step 8a) before the overview goes out. When no fix holds
-after three tries, say so in the bottom line of the overview.
+Gate 1 is part of every filing. A proposed fix is optional. When one is made, build it, prove
+it with these four gates, and draft `comment_fix.txt` (step 8a) before the overview goes out.
+When no fix holds after three tries, say so in the bottom line of the overview.
 
 Put every testcase in one MTR test, name it `test_claude`, copy the `.test` into both
 basedirs, and run all four gates in this order. The test that goes in the report is the one
@@ -387,9 +389,11 @@ a stale value from the first.
 
 **Each gate stands on its own.** Any variable a gate uses is assigned under that gate's own
 header, so one header plus the lines below it can be copied and run by itself. A gate
-assigns at most ONE variable, its own: gate 1 sets `S`, gate 2 sets `F`, gate 3 sets `T`,
+assigns only its own variables: gate 1 sets `S`, gate 2 sets `F` and `L`, gate 3 sets `T`,
 and gate 4 uses none, it writes both paths out in full. Never open the block with a shared `S=`/`F=`
 preamble above the headers: that makes the reader copy two pieces to run one gate.
+`L` holds the regression test list. A long list goes on more `L="$L ..."` lines, never on `\`
+lines: a space the copy adds after a `\` breaks the command.
 
 ```bash
 # Original (gate 1, must fail):
@@ -402,11 +406,10 @@ cd $S/mariadb-test && ./mtr main.test_claude
 F=<patched basedir>
 cd $F/mariadb-test && ./mtr main.test_claude
 # main.test_claude                         [ pass ]
-cd $F/mariadb-test && ./mtr --parallel=8 --force \
-  main.<test> main.<test> <suite>.<test>
+L="main.<test> main.<test> <suite>.<test>"
+cd $F/mariadb-test && ./mtr --parallel=8 --force $L
 # Completed: All 3 tests were successful.
-cd $F/mariadb-test && ./mtr --parallel=8 --force --ps-protocol \
-  main.<test> main.<test> <suite>.<test>
+cd $F/mariadb-test && ./mtr --parallel=8 --force --ps-protocol $L
 # Completed: All 3 tests were successful.
 
 # Diff (gate 3, must be empty):
@@ -541,9 +544,9 @@ still does not fire on every run".
     'https://jira.mariadb.org/rest/api/2/project/MDEV/versions' | jq -r '.[].name'
   ```
 
-  - **Affects Version/s** (`--affects-version`) = the **CS** rows. Map each `X.Y` to a real Jira version: `X.Y`, else `X.Y(EOL)`, else drop + note (validate against the list above).
+  - **Affects Version/s** (`--affects-version`) = the **CS** rows. Map each `X.Y` to the live Jira version `X.Y` (validate against the list above). Never add an EOL branch to any version field: one named `X.Y(EOL)` in the list, or one the user has named EOL before Jira marks it. Leave it out, and say so in a bullet of the overview. An EOL entry already on a ticket stays in Affects and comes out of Fix.
   - **Affects ES Version/s** (`--es-version` -> `customfield_13204`, a labels field) = the **ES** rows, as bare `X.Y` tokens (no version validation - it is free-text labels). This is a DISTINCT field from CS Affects; populate it whenever the matrix has ES rows, otherwise it defaults to "Unknown". (There is no separate ES Fix field.)
-  - **Fix Version/s** (`--fix-version`) = the CS-affected set minus the version main builds (read `VERSION` on main, currently `13.2`) - it lands by up-merge. Real Jira names only.
+  - **Fix Version/s** (`--fix-version`) = the CS-affected set minus the version main builds (read `VERSION` on main) - it lands by up-merge. Real Jira names only.
   - Surface all three in the overview for adjustment.
   - A clean (`No bug found`) cell can mean *already fixed in that build*, not *unaffected* (step 4 up-merge gate); a crashing older-dated cell can be *stale* (predates an up-merged fix). Reconcile each Affects/Fix entry against the fix-commit status; never set them from build version strings/dates alone.
 - **Components** (1-3) - infer from the crashing subsystem/frames + SQL: `Optimizer`, `Optimizer - Window functions`, `Storage Engine - InnoDB`, `Replication`, `Parser`, `Server`, `GIS`, `Character Sets`, `Partitioning`, `Data Definition - Temporary`, `Data Manipulation - Insert`, `Stored routines`, `Triggers`, `Views`, `Virtual Columns`, `Storage Engine - <Engine>`. Component names are case- and spelling-EXACT - `~/jira` create 400s on a bad one (`Component name '<X>' is not valid`). Common traps: `Stored routines` (lowercase r), DML is split into separate `Data Manipulation - Insert` / `- Update` / `- Delete` / `- Subquery` (no combined name). Validate every `-c` against the live list before filing: `curl -sS -H "Authorization: Bearer $(< ~/.config/mariadb-qa/jira.pat)" 'https://jira.mariadb.org/rest/api/2/project/MDEV/components' | jq -r '.[].name'`. Add an engine component (`Storage Engine - InnoDB`, `Partitioning`, `Storage Engine - <X>`) ONLY when that engine is load-bearing for the repro (per the step-2 engine test) - not merely because the reduced testcase happens to use it. If InnoDB is NOT load-bearing, drop `ENGINE=InnoDB` from the testcase instead (no `have_innodb.inc` needed). **`wsrep` and `Galera` are two different components, and the project says so: `Galera` is "the galera library (libgalera_smm.so)" and `wsrep` is "wsrep-patch in the server".** A bug in server code under `#ifdef WITH_WSREP` is `wsrep`. `Galera` is for the library itself. Take both only when both are genuinely implicated. Reading a neighbouring ticket's components is not a guide here - the two are mixed up in practice.
@@ -553,7 +556,7 @@ still does not fire on every run".
   For an ASAN/UBSAN/MSAN bug, derive the SAN class label from the `SUMMARY:` line of the SAN log - `SUMMARY: <AddressSanitizer|UndefinedBehaviorSanitizer|MemorySanitizer>: <class> <file>:<line>` - take the `<class>` token (e.g. `null-pointer-use`, `heap-use-after-free`, `heap-buffer-overflow`, `stack-buffer-overflow`, `dynamic-stack-buffer-overflow`, `use-after-poison`, `use-of-uninitialized-value`). The SAME bug often emits DIFFERENT wording across builds at the SAME `file:line` (e.g. dbg `load of null pointer` vs opt `member access within null pointer`; both are null-pointer-use). EVERY such applicable variant the matrix sweep produced for this bug IS part of the bug - capture ALL of them for the kb/kba registration (step 11), and use the primary class as the label. (Only a SUMMARY at a genuinely DIFFERENT `file:line` belongs to a different bug.) Validate the label token before use.
 
   **MySQL labels.** When MySQL has the bug too, add one `upstream-X.Y` label for each MySQL version that has it (`upstream-5.5`, `upstream-5.6`, `upstream-5.7`, `upstream-8.0`, `upstream-9.1`), plus `upstream-not-8.0` when MySQL 8.0 and newer do not have it, as on MDEV-41455: `upstream-5.5 upstream-5.6 upstream-5.7 upstream-not-8.0`. Base them on the values each MySQL build gives (step 4), not on a matrix `Yes`. There is no `upstream-not-5.5`.
-- **Priority** - `Major` for a typical crash/assert; `Critical` for a high-impact bug or a regression present for some time; `Blocker` for a recent regression. Never below `Major`.
+- **Priority** - `Major` for a typical crash/assert; `Critical` for a high-impact bug or a regression present for some time; `Blocker` only for a security issue, or for a regression since the last release, that is a bug that was never in any release (check with `git merge-base --is-ancestor <commit> <release tag>` in a full clone). A wrong result is not a `Blocker`, and a plain crash that needs a login is not security related. Never below `Major`.
 - **Assignee** - if someone's patch introduced the bug, that person fixes it. Otherwise it is most often the owner of the area. The patch author is the assignee of the ticket that patch was for, the one the "is caused by" link names; confirm the account is active. For the owner of the area, derive the default by the subsystem owning the bug's ROOT cause (the feature fundamentally involved, not the surface symptom). A virtual-column bug goes to the Virtual columns owner even when it surfaces via the optimizer's filesort. A sibling's assignee (from dedup) is only a weak hint, and only if it is TRULY the same bug - do NOT override the map from a loosely-related sibling. Take the Jira username from the PRE-RESOLVED list at the top of `~/mariadb-qa/skills/_shared/default_assignees.md` - do not re-derive one that is already there. For a name the file does not list, resolve via `https://jira.mariadb.org/rest/api/2/user/search?username=<prefix>` (the param is `username`, NOT `query`) and take the **`name`** field, NOT `key` - see the gotcha below. Set with `--assignee <name>`, and surface it (Display Name + username) in the overview for signoff. Consult the subsystem-to-assignee map in `~/mariadb-qa/skills/_shared/default_assignees.md` to pre-fill the suggestion.
 
 **Username fields (gotcha).** `user/search` returns BOTH a `key` and a `name`, and they are NOT always the same string. Sergei Petrunia is `key=psergey` but `name=psergei`. **`--assignee` takes the `name`.** Passing the `key` fails the create with `User '<key>' does not exist.` So always read `.name`, never `.key`, for `--assignee`:
@@ -603,21 +606,21 @@ Present the overview in this reply shape (keep identical across sessions), in th
 
 1. One line with the bottom line, such as `Ready to file. It is not a duplicate.` It also asks for the approval.
 2. Short bullets, 15 words or fewer: ✅ for a check that holds, ⚠️ for a real gap or overlap, 🔵 for what changed since the last reply. The dedup verdict and the related issues go here.
-3. The ticket fields in a plain fence, with no language tag, one field per line and the values aligned. A long value wraps under its own column. `Line 1` is the `Likely cause:` line of the body, `Type/Prio` always gives the priority, and the links are full URLs:
+3. The ticket fields in a plain fence, with no language tag, one field per line and the values aligned, always these lines in this order, whatever the disposition. No line wraps: each value stays on one line, however long, and only `Links` has one line per link. No Type line, and no `Line 1`: the `Likely cause:` line stays in the body. `Severity` says in a few words what the bug does to the user, and what it does not do, such as `No crash.` `Priority` is the Jira priority; for a comment on an existing ticket, the priority that ticket has now. The links are full URLs:
 
    ```
-   Title     : <title>
-   Line 1    : Likely cause: commit <full SHA> (MDEV-NNNNN), in {{<function>()}}.
-               CS X.Y.Z, from before it, does not have the bug.
-   Type/Prio : MDEV Bug / Major
-   Component : <component>, <component>
-   Assignee  : <Display Name> / <username> (<reason>)
-   Affects   : 12.3, 13.0, 13.1, 13.2
-   Fix       : 12.3, 13.0, 13.1
-   ES        : 12.3
-   Labels    : regression, regression-12.3
-   Links     : is caused by https://jira.mariadb.org/browse/MDEV-NNNNN
-               is part of   https://jira.mariadb.org/browse/TODO-NNNN
+   Title     CHECK TABLE and REPAIR TABLE give "internal error 160" for a row that fits no partition
+   Severity  Unclear error. REPAIR cannot fix the row, and REBUILD drops it silently. No crash.
+   Priority  Major
+   Component Partitioning
+   Assignee  <Display Name> / <username> (partitioning; old code)
+   Affects   11.4, 11.8, 12.3, 13.1, 13.2, 13.3
+   Fix       11.4, 11.8, 12.3, 13.1, 13.2
+   ES        11.4, 11.8, 12.3
+   Labels    upstream-5.7, upstream-8.0, upstream-9.1
+   Links     is part of https://jira.mariadb.org/browse/TODO-6010
+             relates to https://jira.mariadb.org/browse/MDEV-22164
+             relates to https://jira.mariadb.org/browse/MDEV-33128
    ```
 
 4. One `cat <full absolute path>` line per file that gets posted, in a fence, as the first lines after the fields fence, with no `-` in front: `log_jira_ticket.body` and each comment file, such as `comment_fix.txt`. Never the other files of the dir. Nothing goes between the two fences but one blank line: no question such as "Shall I file?", no label, no testcase.
@@ -639,7 +642,9 @@ grep -n '\\-' "$F"                          # any \- : allowed ONLY inside a {{.
 grep -n '||' "$F"                            # Jira pipe table: never allowed, use {noformat:title=...}
 grep -nP '\x{2014}' "$F"                     # em-dash: never allowed
 grep -nE '^h[1-6]\.' "$F"                    # Jira header: drop it
-grep -nE '^#' "$F"                            # line opening with #: numbered-list collision
+awk '/^\{(code|noformat)/{b=!b; next} !b && /^#/ {print NR": "$0}' "$F"
+                                             # prose line opening with #: numbered-list collision
+                                             # (skips code and noformat blocks, so the #0 lines of a stack)
 grep -n 'Please also test any fixes' "$F"    # body only: the line belongs to a comment on a pre-existing bug
 head -1 "$F" | grep -v '^Likely cause: '     # body only: the first line is the Likely cause: line
 grep -nwE 'uuid|varchar|char|int|bigint|timestamp|datetime|date|time|blob|text|binary|varbinary|decimal|inet4|inet6|select|insert|update|delete|create|alter|drop|table|index|foreign key|primary key|unique' "$F"
@@ -649,7 +654,7 @@ awk '/^\{(code|noformat)/{b=!b; next} !b && /\((\*[rgby]?|[xyni!?+\/-]|on|off|fl
                                              # a [ as a link, also in {{..}}: write {{COUNT(\*)}}, {{record\[0\]}}
 ```
 
-Every one of these must return nothing, except three lines. On the `\-` line every hit must sit inside a `{{..}}` monospace span. On the lowercase-SQL line, uppercase every hit that is prose, a `{{..}}` span or SQL you wrote; leave a hit that sits inside quoted server output, a stack, a source line or the customer's own DDL exactly as it came. On the emoticon line, the one hit that may stay is a link you meant, written `[<full link>]`. That is the one rule for the hyphen escape: `\-` only inside `{{..}}`, and only for an issue key (`{{MDEV\-12345}}`) or a leading `--` option (`{{\--ssl-crl}}`). Ordinary prose takes the plain hyphen - `non-default`, `follow-up`, `10.6 - 13.1`, `{{a}} -> {{b}}` - and a bare `MDEV-12345` in prose stays unescaped so Jira links it. See `~/mariadb-qa/skills/_shared/jira_markup.md`.
+Every one of these must return nothing, except three lines. On the `\-` line every hit must sit inside a `{{..}}` monospace span. On the lowercase-SQL line, uppercase every hit that is prose, a `{{..}}` span or SQL you wrote; leave a hit that sits inside quoted server output, a stack, a source line or the customer's own DDL exactly as it came. A plain English word in prose, such as "the index" or "the table", stays as it is. On the emoticon line, the one hit that may stay is a link you meant, written `[<full link>]`. That is the one rule for the hyphen escape: `\-` only inside `{{..}}`, and only for an issue key (`{{MDEV\-12345}}`) or a leading `--` option (`{{\--ssl-crl}}`). Ordinary prose takes the plain hyphen - `non-default`, `follow-up`, `10.6 - 13.1`, `{{a}} -> {{b}}` - and a bare `MDEV-12345` in prose stays unescaped so Jira links it. See `~/mariadb-qa/skills/_shared/jira_markup.md`.
 
 **Keep the prose short.** The testcase, the output and the diff carry the report, so the prose says only what they do not show. In the body, that is a few short sentences under the output. The fix comment, `comment_fix.txt`, is posted on the new ticket right after the create, so it repeats nothing from the description. It is `AI (<model>, <effort> effort) proposed fix:`, the `{code:cpp}` diff, then four short paragraphs of about 150 words in all:
 
@@ -672,7 +677,7 @@ A side effect of the patch goes in too, such as an existing test whose result ch
 
 **Create flags:** `-p MDEV` / `-t Bug` / `-s "<summary>"` / `--description-file <file>` (Jira wiki markup) / `--affects-version V` (CS Affects, repeatable) / `--es-version V` (Enterprise Affects -> `customfield_13204`, repeatable, SEPARATE from CS) / `--fix-version V` (repeatable) / `-c NAME` (component, repeatable) / `-l NAME` (label, repeatable) / `--priority NAME` / `--assignee USER` (Jira username, e.g. `some_user`) / `--dedup-jql <tt URL or JQL>` (repeatable, at least one required) / `--dedup-since <time>` (required) / `--dry-run` / `-y`.
 
-**The dedup runs again at submit.** `~/jira` runs each `--dedup-jql` again right before the create, limited to tickets created since `--dedup-since`. A hit stops the create, and nothing is posted. Pass every search that step 3 read: each `tt` URL verbatim, from every build flavour, and any other search the dedup used. `--dedup-since` is the time those results were read. A stop is new information. Read each ticket it lists, show the user each one with your reading (the step 3.3 gate), and submit only when the user says so again. Then `--dedup-since` becomes the `Searched at` time that the stop printed.
+**The dedup runs again at submit.** `~/jira` runs each `--dedup-jql` again right before the create, limited to tickets created since `--dedup-since`. A hit stops the create, and nothing is posted. Pass every search that step 3 read: each `tt` URL verbatim, from every build flavour, and any other search the dedup used. `--dedup-since` is the time those results were read. A stop is new information. Read each ticket it lists, with the step 3.3 gate. When a hit is clearly another bug, do not ask again: move `--dedup-since` to the `Searched at` time that the stop printed, dry-run, submit, and name the hit in the report with one line of reading. Ask the user again only when a hit can be the same bug, or changes the ticket (a duplicate, a link, a field).
 
 **Argument checks:** a flag whose value is missing is rejected by name; two mode flags in one call are rejected; a flag belonging to another mode is rejected, not ignored (`--relates` / `--reverse` / `--link-type` outside `--link`, `--dev-only` outside `--comment`, `--security-bug` / `--sec-comment` outside create).
 

@@ -1,0 +1,29 @@
+CREATE TABLE t1 (a ENUM('a'), b DATE, c INT, KEY(b)) ENGINE=InnoDB;
+INSERT IGNORE INTO t1 VALUES ('','0000-00-00',0);
+SELECT COUNT(*) FROM t1 WHERE b IN ((SELECT a FROM t1 GROUP BY c), (SELECT a FROM t1 GROUP BY c));
+#CLI: 0; expected 1
+#ERR: - (no error)
+
+CREATE TABLE t1 (id INT, ts TIMESTAMP NULL, KEY (ts));
+INSERT INTO t1 VALUES (1,'0000-00-00 00:00:00'),(2,'2020-01-01 10:00:00'),(3,'2021-01-01 10:00:00');
+SELECT COUNT(*) FROM t1 FORCE INDEX (ts) WHERE ts = 'x';
+#CLI: 0; expected 1 (as with IGNORE INDEX (ts))
+#ERR: - (no error)
+
+CREATE TABLE t1 (id INT, d DATE, KEY (d));
+INSERT INTO t1 VALUES (1,'0000-00-00'),(2,'2020-01-01'),(3,'2000-01-01');
+SELECT COUNT(*) FROM t1 FORCE INDEX (d) WHERE d IN ('2000', '2020-01-01');
+#CLI: 1; expected 2 (as with IGNORE INDEX (d))
+#ERR: - (no error)
+
+CREATE TABLE t1 (id INT, tm TIME, KEY (tm));
+INSERT INTO t1 VALUES (1,'00:00:00'),(2,'10:00:00'),(3,'11:00:00');
+SELECT COUNT(*) FROM t1 FORCE INDEX (tm) WHERE tm IN (b'1', '10:00:00');
+#CLI: 1; expected 2 (as with IGNORE INDEX (tm))
+#ERR: - (no error)
+
+CREATE TABLE t1 (id INT, tm TIME, KEY (tm));
+INSERT INTO t1 VALUES (1,'00:00:00'),(2,'01:00:00'),(3,'02:00:00');
+SELECT COUNT(*) FROM t1 FORCE INDEX (tm) WHERE tm = 20010101010000e0;
+#CLI: 0; expected 1 (as with IGNORE INDEX (tm))
+#ERR: - (no error)

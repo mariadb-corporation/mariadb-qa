@@ -1,0 +1,6 @@
+SET timestamp= UNIX_TIMESTAMP('2026-01-03 12:00:00');
+CREATE TABLE t1 (d DATE) ENGINE=InnoDB;
+INSERT INTO t1 VALUES ('2026-01-02');
+CREATE TABLE t2 (d DATE) ENGINE=InnoDB PARTITION BY RANGE COLUMNS (d) INTERVAL 1 DAY (PARTITION p0 VALUES LESS THAN ('2026-01-01')) SELECT * FROM t1;
+#CLI: ERROR 1526 (HY000): Table has no partition for value from column_list; expected no error
+#ERR: - (no error)

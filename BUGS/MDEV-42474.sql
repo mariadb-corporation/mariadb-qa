@@ -1,0 +1,41 @@
+CREATE TABLE t1 (pk INT, c VARCHAR(10));
+INSERT INTO t1 VALUES (1,'b');
+SELECT COUNT(*) FROM (SELECT pk AS x FROM t1 UNION ALL SELECT c FROM t1) dt WHERE x < 'a';
+#CLI: 0; expected 1
+#ERR: - (no error)
+
+CREATE TABLE t1 (pk INT, c VARCHAR(10));
+INSERT INTO t1 VALUES (1,'b');
+SELECT COUNT(*) FROM (SELECT pk AS x FROM t1 UNION SELECT c FROM t1) dt WHERE x < 'a';
+#CLI: 0; expected 1
+#ERR: - (no error)
+
+CREATE TABLE t1 (pk INT, c VARCHAR(10));
+INSERT INTO t1 VALUES (1,'b');
+SELECT COUNT(*) FROM (SELECT pk AS x FROM t1 GROUP BY pk UNION ALL SELECT c FROM t1) dt WHERE x < 'a';
+#CLI: 0; expected 1
+#ERR: - (no error)
+
+CREATE TABLE t1 (pk INT, c VARCHAR(10));
+INSERT INTO t1 VALUES (1,'b');
+SELECT COUNT(*) FROM (SELECT MAX(pk) AS x FROM t1 UNION ALL SELECT c FROM t1) dt WHERE x < 'a';
+#CLI: 0; expected 1
+#ERR: - (no error)
+
+CREATE TABLE t2 (y YEAR, i INT);
+INSERT INTO t2 VALUES (2006, 6);
+SELECT COUNT(*) FROM (SELECT y AS x FROM t2 UNION ALL SELECT i FROM t2) dt WHERE x > 6;
+#CLI: 0; expected 1
+#ERR: - (no error)
+
+CREATE TABLE t3 (e ENUM('a','b'), i INT);
+INSERT INTO t3 VALUES ('b', 0);
+SELECT COUNT(*) FROM (SELECT e AS x FROM t3 UNION ALL SELECT i FROM t3) dt WHERE x = 0;
+#CLI: 1; expected 2
+#ERR: - (no error)
+
+CREATE TABLE t4 (a VARCHAR(10) COLLATE latin1_bin, b VARCHAR(10) COLLATE utf8mb4_general_ci);
+INSERT INTO t4 VALUES ('E', 'x');
+SELECT COUNT(*) FROM (SELECT a AS x FROM t4 UNION ALL SELECT b FROM t4) dt WHERE x = 'e';
+#CLI: 0; expected 1
+#ERR: - (no error)

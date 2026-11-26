@@ -47,3 +47,25 @@ INSERT INTO t (c) VALUES (10);
 INSERT INTO t (c) VALUES (0),(1),(2),(3),(4),(5),(6),(7),(8),(9);
 ANALYZE TABLE t PERSISTENT FOR ALL;
 SELECT + 1 FROM t WHERE c='100001';
+
+CREATE TABLE t1 (a INT);
+INSERT INTO t1 VALUES (1),(2),(3),(4),(5),(6),(7),(8);
+INSERT INTO t1 SELECT * FROM t1;
+INSERT INTO t1 VALUES (1),(2),(3),(4);
+SET optimizer_use_condition_selectivity=4;
+SET histogram_size=2;
+SET histogram_type=SINGLE_PREC_HB;
+SET use_stat_tables='preferably';
+ANALYZE TABLE t1 PERSISTENT FOR ALL;
+SELECT * FROM t1 WHERE a=10;
+
+CREATE TABLE t1 (a INT);
+INSERT INTO t1 VALUES (1),(2),(3),(4),(5),(6),(7),(8);
+INSERT INTO t1 SELECT * FROM t1;
+INSERT INTO t1 VALUES (1),(2),(3),(4);
+SET optimizer_use_condition_selectivity=4;
+SET histogram_size=1;
+SET histogram_type=DOUBLE_PREC_HB;
+SET use_stat_tables='preferably';
+ANALYZE TABLE t1 PERSISTENT FOR ALL;
+SELECT * FROM t1 WHERE a=10;

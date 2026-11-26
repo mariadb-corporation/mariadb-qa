@@ -478,3 +478,53 @@ mode and not the engine decides this.
 The entry names the INSERT statement kind and leaves the statement text open,
 because any INSERT that writes a value the column cannot hold takes this path.
 Both orders of the pair are written, because the first number is side 1.
+
+
+fa2ee3586106//AFFECTED|13v14|UPDATE|UPDATE IGNORE tX SET cX=cX+N
+----------------------------------------------------------------
+
+MDEV-39097, "UPDATE IGNORE ... ORDER BY returns different results for semantically
+equivalent WHERE predicates with a correlated VARIANCE() subquery". Confirmed.
+
+A single-table UPDATE with an IN subquery and ORDER BY runs as a semi-join that
+sorts through a temporary table. Each changed row then gets its SET value from
+the last row the scan read:
+
+  CREATE TABLE t1 (a INT, KEY(a)) ENGINE=InnoDB;
+  INSERT INTO t1 VALUES (1);
+  CREATE TABLE t2 (a INT, b INT);
+  INSERT INTO t2 VALUES (1,10),(1,20);
+  UPDATE t2 SET b=b+1 WHERE a IN (SELECT a FROM t1) ORDER BY b;
+
+  CS 10.11.21  b is 11 and 21
+  CS 13.3.0    b is 21 and 21
+
+CS 11.4 to 13.3 and ES 11.4 to 12.3 have it. CS 10.11 and ES 10.6 give the
+right result. The run that found it compared one build with
+itself under other optimizer options, so one side order is enough. MDEV-41585 is
+the same mistake through a multi-table UPDATE with ORDER BY.
+
+
+ba50f17e1cb6//AFFECTED|1v82|DELETE,IN,ORDERBY,SUBQ|DELETE QUICK FROM tX WHERE cX IN (SELECT cX FROM tX ) ORDER BY cX DESC, cX
+----------------------------------------------------------------
+
+MDEV-42476, "DELETE with an IN subquery and ORDER BY deletes only one row, which can
+be a row that the WHERE clause does not select". Open.
+
+A single-table DELETE with an IN subquery and ORDER BY runs as a semi-join that
+sorts through a temporary table. The DELETE then removes only the last row the
+join read, which need not match the WHERE clause:
+
+  CREATE TABLE t1 (a INT PRIMARY KEY);
+  INSERT INTO t1 VALUES (1),(2),(3);
+  CREATE TABLE t2 (a INT PRIMARY KEY, b INT);
+  INSERT INTO t2 VALUES (1,1),(2,2),(3,3),(4,4);
+  DELETE FROM t2 WHERE a IN (SELECT a FROM t1) ORDER BY b;
+
+  CS 11.4.15   (1,1), (2,2) and (4,4) stay
+  CS 13.3.0    (4,4) stays
+
+Only CS 11.4 and ES 11.4 have it. CS 10.11, CS 11.8 to 13.3, and ES 10.6, 11.8
+and 12.3 give the right result. The run that found it compared CS 11.4.13 with
+CS 13.1.0, two builds of the same product, so one side order is enough. The same
+mistake also gives an InnoDB assertion, and Aria error 175, in other forms.

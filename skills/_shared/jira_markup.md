@@ -13,6 +13,7 @@ Referenced by the `jira-comment`, `mtr_testcase`, and `jira-ticket` skills.
 - Italic: `_underscores_`.
 - Headers: `h2.` / `h3.` at column 0. Rarely needed in a short comment.
 - Tables: `|| header || header ||` then `| cell | cell |`.
+- A bug report - the description of an MDEV or MENT bug, or a comment that adds a testcase to one - has no bold, no headers and no `||` table. A label is a plain line, and a table goes in a `{noformat:title=...}` block as ASCII, with space-aligned columns. The one bold line is the sporadic line of the `jira-ticket` skill.
 
 ## Escaping (high-frequency error class)
 

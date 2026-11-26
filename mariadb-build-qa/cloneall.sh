@@ -30,6 +30,8 @@ rm -Rf 1[0-3].[0-9]
 #./clone.sh 12.1 &
 #./clone.sh 12.2 &
 ./clone.sh 12.3 &
-./clone.sh 13.0 &
+#./clone.sh 13.0 &
+./clone.sh 13.1 &
+./clone.sh 13.2 &
 # When updating the next line, i.e. when trunk has changed to a new major version, remember to make a similar fix in clone.sh
-git clone --depth=1 --recurse-submodules -j8 https://github.com/MariaDB/server.git 13.1 &  # Trunk is currently 13.1
+git clone --depth=1 --recurse-submodules -j8 https://github.com/MariaDB/server.git 13.3 &  # Trunk is currently 13.3

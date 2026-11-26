@@ -6,8 +6,14 @@ task matches its description.
 
 ## Skills
 
+- `bug-fix-post` - turn an existing MDEV/MENT ticket into a proven `fix.diff`: reproduce every
+  testcase, find the root cause, patch a `/tmp` copy, pass the four original/fixed/diff/base
+  gates, and post the fix comment after approval.
 - `build-fix-diff` - in a `/tmp` copy of the source tree, iterate a candidate fix (edit,
   light patched build, run) and capture it as `fix.diff`.
+- `build-scripts-version-updates` - when trunk moves to a new version, add the new versions to the
+  clone and build scripts in the same form as before, prove the edits with a dry run that clones
+  and builds nothing, then copy the tested files into place.
 - `claude-basedir-fix-copy-setup` - copy a built `/test` basedir to `/tmp` and re-bake the
   path-baked helpers so the copy runs as a standalone server without touching the original.
 - `claude-code` - how to get authoritative Claude Code information and how to run Claude
@@ -18,7 +24,7 @@ task matches its description.
   wiki markup.
 - `jira-ticket` - file a reduced pquery trial as a public MariaDB bug: reduce further,
   dedup against Jira, generate the report, craft the MTR testcase, derive the fields, and
-  file after approval, with a proposed fix proven by the four original/fixed/diff/base gates.
+  file after approval, with an optional fix, proven by the four original/fixed/diff/base gates.
 - `loop-screens-cleanup` - sweep the reducer screens and end the finished ones, reaping
   each ended trial's processes and its `/dev/shm` workdir; leave screens still reducing.
 - `mtr-failure-create-bug` - pull an MTR test's buildbot failure history, filter by similarity to a
@@ -65,8 +71,8 @@ them from their repo path (`~/mariadb-qa/skills/_shared/...`).
 ## Prerequisites
 
 The build, test, and reducer skills (`qa-build`, `verify-fix`, `build-fix-diff`,
-`claude-basedir-fix-copy-setup`, `mtr_testcase`, `loop-screens-cleanup`, `jira-ticket`)
-assume the mariadb-qa framework is installed:
+`claude-basedir-fix-copy-setup`, `mtr_testcase`, `loop-screens-cleanup`, `jira-ticket`,
+`bug-fix-post`, `build-scripts-version-updates`) assume the mariadb-qa framework is installed:
 
 - source trees under `/test/<ver>` and built basedirs under `/test/`,
 - `~/st` (`startup.sh`) to bake the per-basedir helpers,
@@ -75,8 +81,10 @@ assume the mariadb-qa framework is installed:
 - `/data/TARS` for tarball storage,
 - the reducer stack (`reducercpp`, `/test/loop_screens*`, `~/sr`, `/data/<workdir>` trials) for
   `loop-screens-cleanup`,
-- a jira.mariadb.org Personal Access Token for `jira-ticket` and `mtr-failure-create-bug`
-  (`$JIRA_PAT` or `~/.config/mariadb-qa/jira.pat`; each skill explains how to get one).
+- the full-history clones under `/test/git-bisect/<ver>` for `bug-fix-post`,
+- a jira.mariadb.org Personal Access Token for `jira-ticket`, `bug-fix-post` and
+  `mtr-failure-create-bug` (`$JIRA_PAT` or `~/.config/mariadb-qa/jira.pat`; each skill
+  explains how to get one).
 
 The `email`, `claude-code`, and `jira-comment` skills are standalone and need none of the
 above. `mtr-failure-create-bug` only needs the Jira PAT above and Python 3 (stdlib only) - it does

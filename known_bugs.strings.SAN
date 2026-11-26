@@ -22,6 +22,7 @@ LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|alloc_root|memdup_root  ## M
 #LSAN|memory leak|mysys/my_malloc.c|malloc|my_malloc|get_new_start_alter_info|Query_log_event::handle_split_alter_query_log_event                                               ## MDEV-37770 (needs testcase)
 
 ##### CURRENT BUGS (Search key: Mac) #####
+UBSAN|member access within null pointer of type 'TABLE'|sql/sql_base.cc|wait_while_table_is_used|fast_alter_partition_table|mysql_alter_table|Sql_cmd_alter_table::execute     ## MDEV-33131
 ASAN|heap-use-after-free|strings/strings_def.h|skip_trailing_space|my_hash_sort_utf8mb3_general1400_as_ci|my_ci_hash_sort|my_hash_sort                                         ## MDEV-42235
 ASAN|heap-use-after-free|strings/strings_def.h|skip_trailing_space|my_hash_sort_utf8mb3|my_ci_hash_sort|my_hash_sort                                                           ## MDEV-42235
 ASAN|heap-buffer-overflow|sql/item_strfunc.cc|__asan_memcpy|Item_func_rpad::val_str|Item::save_str_in_field|Item::save_in_field                                                ## MDEV-42233

@@ -23,6 +23,9 @@ COMMENT_KEY=""
 COMMENT_ID=""
 LINK_KEY=""
 EDIT_KEY=""
+CLOSE_KEY=""
+RESOLUTION=""
+BUG_CATEGORY=""
 WORKLOG_KEY=""
 TIME_SPENT=""
 STARTED=""
@@ -130,6 +133,14 @@ Modes:
                        --remove-affects-version V / --remove-es-version V / --remove-fix-version V
                      Use mainline X.Y names only (13.0, not 13.0.1).
                      An out-of-support version is refused for Affects CS and Fix, see below.
+  --close KEY        Close issue KEY: --close KEY --resolution NAME [--fix-version V] [--bug-category CAT]
+                       NAME is one the close step offers, e.g. Duplicate, Fixed, "Not a Bug",
+                       "Cannot Reproduce". The list is read from the server; an unknown
+                       name is rejected. For a duplicate, add the link with --link first.
+                       The close step can require a Fix Version (a release such as 11.8.6,
+                       or N/A) and a Bug Category; Jira names a missing one. --fix-version
+                       replaces the Fix Version/s. CAT is checked like NAME. Duplicate sets
+                       Fix Version N/A and Bug Category 'Not for Release Notes' by default.
 
 Create options:
   -p, --project KEY        Project key (default: MDEV; also MENT)
@@ -166,7 +177,8 @@ Create options:
                            finds stops the create, and nothing is posted.
       --dry-run            Print the payload/preview, do not POST. No auth needed,
                            except --link, which reads the link types from the server,
-                           and --comment-id, which reads the comment.
+                           --comment-id, which reads the comment, and --close, which
+                           reads the close step and its resolutions.
                            With a stored token it runs the duplicate searches too.
   -y, --yes                Skip the 3x confirmation (for automation)
   -h, --help               This help
@@ -200,6 +212,9 @@ while [ $# -gt 0 ]; do
     --comment-id) need "$@"; COMMENT_ID="$2"; shift ;;
     --link) need "$@"; mode_once "$1" link; LINK_KEY="$2"; shift ;;
     --edit) need "$@"; mode_once "$1" edit; EDIT_KEY="$2"; shift ;;
+    --close) need "$@"; mode_once "$1" close; CLOSE_KEY="$2"; shift ;;
+    --resolution) need "$@"; RESOLUTION="$2"; shift ;;
+    --bug-category) need "$@"; BUG_CATEGORY="$2"; shift ;;
     --worklog) need "$@"; mode_once "$1" worklog; WORKLOG_KEY="$2"; shift ;;
     --time-spent) need "$@"; TIME_SPENT="$2"; shift ;;
     --started) need "$@"; STARTED="$2"; shift ;;
@@ -247,6 +262,10 @@ fi
 if [ "$MODE" != "comment" ]; then
   [ "$DEV_ONLY" = 0 ] || die "--dev-only is only valid with --comment"
   [ -z "$COMMENT_ID" ] || die "--comment-id is only valid with --comment"
+fi
+if [ "$MODE" != "close" ]; then
+  [ -z "$RESOLUTION" ]   || die "--resolution is only valid with --close"
+  [ -z "$BUG_CATEGORY" ] || die "--bug-category is only valid with --close"
 fi
 if [ "$MODE" != "worklog" ]; then
   [ -z "$TIME_SPENT" ] || die "--time-spent is only valid with --worklog"
@@ -685,6 +704,57 @@ case "$MODE" in
     else
       echo "Edit failed (HTTP $code):" >&2
       printf '%s' "$ebody" | jq . >&2 2>/dev/null || printf '%s\n' "$ebody" >&2
+      exit 1
+    fi
+    exit 0 ;;
+  close)
+    [ -n "$CLOSE_KEY" ] || die "--close requires an issue key (e.g. MDEV-12345)"
+    [ -n "$RESOLUTION" ] || die "--close needs --resolution, e.g. --resolution Duplicate"
+    require_auth
+    tr_resp="$(jira_curl -H 'Accept: application/json' -w $'\n%{http_code}' \
+      "$JIRA_URL/rest/api/2/issue/$CLOSE_KEY/transitions?expand=transitions.fields")" \
+      || die "Cannot reach $JIRA_URL to read the steps of $CLOSE_KEY."
+    tr_code="${tr_resp##*$'\n'}"; tr_json="${tr_resp%$'\n'*}"
+    [ "$tr_code" = "200" ] || die "Cannot read the steps of $CLOSE_KEY (HTTP $tr_code)."
+    TR_ID="$(printf '%s' "$tr_json" | jq -r '[.transitions[]? | select(.to.name=="Closed")][0].id // empty')"
+    [ -n "$TR_ID" ] || die "$CLOSE_KEY has no step to Closed, it may be closed already. Steps: $(printf '%s' "$tr_json" | jq -r '[.transitions[]?.name] | join(", ")')"
+    RES_NAMES="$(printf '%s' "$tr_json" | jq -r --arg id "$TR_ID" '.transitions[] | select(.id==$id) | .fields.resolution.allowedValues[]?.name')"
+    [ -n "$RES_NAMES" ] || die "$CLOSE_KEY: the step to Closed takes no resolution. Steps: $(printf '%s' "$tr_json" | jq -r '[.transitions[]?.name] | join(", ")')"
+    grep -qxF -- "$RESOLUTION" <<< "$RES_NAMES" \
+      || die "Unknown --resolution '$RESOLUTION'. Valid: $(paste -sd, - <<< "$RES_NAMES" | sed 's/,/, /g')"
+    if [ "$RESOLUTION" = "Duplicate" ]; then
+      [ "${#FIXINS[@]}" -gt 0 ] || FIXINS=("N/A")
+      [ -n "$BUG_CATEGORY" ]    || BUG_CATEGORY="Not for Release Notes"
+    fi
+    if [ -n "$BUG_CATEGORY" ]; then
+      CAT_NAMES="$(printf '%s' "$tr_json" | jq -r --arg id "$TR_ID" '.transitions[] | select(.id==$id) | .fields.customfield_13205.allowedValues[]?.value')"
+      grep -qxF -- "$BUG_CATEGORY" <<< "$CAT_NAMES" \
+        || die "Unknown --bug-category '$BUG_CATEGORY'. Valid: $(paste -sd, - <<< "$CAT_NAMES" | sed 's/,/, /g')"
+    fi
+    fv_json="$(jq -n '$ARGS.positional | map({name: .})' --args "${FIXINS[@]}")"
+    payload="$(jq -n --arg id "$TR_ID" --arg r "$RESOLUTION" --arg c "$BUG_CATEGORY" --argjson fv "$fv_json" \
+      '{transition:{id:$id},fields:({resolution:{name:$r}}
+        + (if ($fv|length) > 0 then {fixVersions:$fv} else {} end)
+        + (if $c != "" then {customfield_13205:{value:$c}} else {} end))}')"
+    echo "=== Close $JIRA_URL/browse/$CLOSE_KEY  (resolution: $RESOLUTION, as $WHOAMI) ===" >&2
+    [ "${#FIXINS[@]}" -eq 0 ] || echo "  Fix Version/s: $(IFS=,; echo "${FIXINS[*]}")" >&2
+    [ -z "$BUG_CATEGORY" ]    || echo "  Bug Category: $BUG_CATEGORY" >&2
+    if [ "$DRY_RUN" = 1 ]; then echo "[dry-run] issue not closed." >&2; exit 0; fi
+    if [ "$ASSUME_YES" != 1 ]; then
+      echo "Confirm closing $CLOSE_KEY as $RESOLUTION. Press Enter 3x (Ctrl-C to abort)." >&2
+      read -rp "1x... " _ < /dev/tty
+      read -rp "2x... " _ < /dev/tty
+      read -rp "3x... " _ < /dev/tty
+    fi
+    resp="$(jira_curl -X POST -H 'Content-Type: application/json' -H 'Accept: application/json' \
+      --data-binary "$payload" -w $'\n%{http_code}' "$JIRA_URL/rest/api/2/issue/$CLOSE_KEY/transitions")"
+    code="${resp##*$'\n'}"; tbody="${resp%$'\n'*}"
+    if [ "$code" = "204" ]; then
+      echo "Closed: $CLOSE_KEY (resolution: $RESOLUTION)"
+      echo "URL: $JIRA_URL/browse/$CLOSE_KEY"
+    else
+      echo "Close failed (HTTP $code):" >&2
+      printf '%s' "$tbody" | jq . >&2 2>/dev/null || printf '%s\n' "$tbody" >&2
       exit 1
     fi
     exit 0 ;;
