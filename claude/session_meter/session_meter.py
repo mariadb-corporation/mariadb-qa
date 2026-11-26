@@ -43,6 +43,8 @@ import os
 import re
 import subprocess
 import sys
+if hasattr(sys.stdout, 'reconfigure'):
+  sys.stdout.reconfigure(encoding='utf-8', errors='replace')  # Windows console is cp1252
 import time
 from collections import deque
 from datetime import datetime
